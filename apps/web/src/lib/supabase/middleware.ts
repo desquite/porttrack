@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import type { Database } from "@porttrack/shared";
 
 /**
  * Refreshes the user's Supabase session on every navigation.
@@ -19,7 +20,7 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse;
   }
 
-  const supabase = createServerClient(
+  const supabase = createServerClient<Database>(
     url,
     anonKey,
     {
