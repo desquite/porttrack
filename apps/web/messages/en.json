@@ -1,0 +1,50 @@
+{
+  "app": {
+    "name": "PORTTRACK",
+    "tagline": "Fleet management and port logistics",
+    "footer": "© 2026 PORTTRACK — Port Autonome d'Abidjan"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "flux": "Inbound flows",
+    "conteneurs": "Containers",
+    "affectations": "Assignments",
+    "chauffeurs": "Drivers",
+    "flotte": "Fleet",
+    "facturation": "Billing",
+    "parametres": "Settings",
+    "deconnexion": "Sign out"
+  },
+  "auth": {
+    "login": {
+      "title": "Sign in",
+      "description": "Sign in to your PORTTRACK workspace",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Sign in",
+      "forgot": "Forgot password?",
+      "noAccount": "Don't have an account yet?",
+      "contactUs": "Contact us"
+    }
+  },
+  "home": {
+    "welcome": "Welcome to PORTTRACK",
+    "subtitle": "The app for subcontractors of the Port Autonome d'Abidjan",
+    "cta": "Go to my workspace",
+    "features": {
+      "import": "Multi-shipping-line Excel import",
+      "fleet": "Fleet & documents tracking",
+      "alerts": "BADT & expiry alerts",
+      "billing": "FNE billing & real-time revenue"
+    }
+  },
+  "common": {
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "search": "Search",
+    "back": "Back"
+  }
+}

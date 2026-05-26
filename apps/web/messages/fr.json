@@ -1,0 +1,50 @@
+{
+  "app": {
+    "name": "PORTTRACK",
+    "tagline": "Gestion de flotte et logistique portuaire",
+    "footer": "© 2026 PORTTRACK — Port Autonome d'Abidjan"
+  },
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "flux": "Flux",
+    "conteneurs": "Conteneurs",
+    "affectations": "Affectations",
+    "chauffeurs": "Chauffeurs",
+    "flotte": "Flotte",
+    "facturation": "Facturation",
+    "parametres": "Paramètres",
+    "deconnexion": "Déconnexion"
+  },
+  "auth": {
+    "login": {
+      "title": "Connexion",
+      "description": "Connectez-vous à votre espace PORTTRACK",
+      "email": "Email",
+      "password": "Mot de passe",
+      "submit": "Se connecter",
+      "forgot": "Mot de passe oublié ?",
+      "noAccount": "Pas encore de compte ?",
+      "contactUs": "Contactez-nous"
+    }
+  },
+  "home": {
+    "welcome": "Bienvenue sur PORTTRACK",
+    "subtitle": "L'application des sous-traitants de transport du Port Autonome d'Abidjan",
+    "cta": "Accéder à mon espace",
+    "features": {
+      "import": "Import flux Excel multi-aconiers",
+      "fleet": "Suivi flotte & documents",
+      "alerts": "Alertes BADT & expirations",
+      "billing": "Facturation FNE & CA temps réel"
+    }
+  },
+  "common": {
+    "loading": "Chargement…",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "edit": "Modifier",
+    "search": "Rechercher",
+    "back": "Retour"
+  }
+}

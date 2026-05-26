@@ -1,0 +1,11 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Packages whose postinstall build scripts we accept to run.
+# Add to this list deliberately — pnpm prompts before executing.
+allowBuilds:
+  '@parcel/watcher': true
+  '@swc/core': true
+  sharp: true
+  unrs-resolver: true
