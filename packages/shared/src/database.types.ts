@@ -39,6 +39,258 @@ export type Database = {
   }
   public: {
     Tables: {
+      chauffeurs: {
+        Row: {
+          adresse: string | null
+          categories_permis: string[] | null
+          created_at: string
+          created_by: string | null
+          date_embauche: string | null
+          date_naissance: string | null
+          email: string | null
+          id: string
+          nom: string
+          notes: string | null
+          numero_cni: string | null
+          numero_cnps: string | null
+          numero_permis: string | null
+          permis_expiration: string | null
+          permis_obtention: string | null
+          photo_url: string | null
+          prenoms: string
+          sexe: Database["public"]["Enums"]["sexe"] | null
+          statut: Database["public"]["Enums"]["chauffeur_statut"]
+          telephone: string
+          telephone_secondaire: string | null
+          tenant_id: string
+          updated_at: string
+          visite_medicale_expiration: string | null
+        }
+        Insert: {
+          adresse?: string | null
+          categories_permis?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          date_embauche?: string | null
+          date_naissance?: string | null
+          email?: string | null
+          id?: string
+          nom: string
+          notes?: string | null
+          numero_cni?: string | null
+          numero_cnps?: string | null
+          numero_permis?: string | null
+          permis_expiration?: string | null
+          permis_obtention?: string | null
+          photo_url?: string | null
+          prenoms: string
+          sexe?: Database["public"]["Enums"]["sexe"] | null
+          statut?: Database["public"]["Enums"]["chauffeur_statut"]
+          telephone: string
+          telephone_secondaire?: string | null
+          tenant_id: string
+          updated_at?: string
+          visite_medicale_expiration?: string | null
+        }
+        Update: {
+          adresse?: string | null
+          categories_permis?: string[] | null
+          created_at?: string
+          created_by?: string | null
+          date_embauche?: string | null
+          date_naissance?: string | null
+          email?: string | null
+          id?: string
+          nom?: string
+          notes?: string | null
+          numero_cni?: string | null
+          numero_cnps?: string | null
+          numero_permis?: string | null
+          permis_expiration?: string | null
+          permis_obtention?: string | null
+          photo_url?: string | null
+          prenoms?: string
+          sexe?: Database["public"]["Enums"]["sexe"] | null
+          statut?: Database["public"]["Enums"]["chauffeur_statut"]
+          telephone?: string
+          telephone_secondaire?: string | null
+          tenant_id?: string
+          updated_at?: string
+          visite_medicale_expiration?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chauffeurs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chauffeurs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          created_at: string
+          date_emission: string | null
+          date_expiration: string | null
+          fichier_nom: string | null
+          fichier_taille: number | null
+          fichier_url: string | null
+          id: string
+          notes: string | null
+          numero: string | null
+          owner_id: string
+          owner_type: Database["public"]["Enums"]["document_owner_type"]
+          tenant_id: string
+          type_document: Database["public"]["Enums"]["document_type"]
+          updated_at: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_emission?: string | null
+          date_expiration?: string | null
+          fichier_nom?: string | null
+          fichier_taille?: number | null
+          fichier_url?: string | null
+          id?: string
+          notes?: string | null
+          numero?: string | null
+          owner_id: string
+          owner_type: Database["public"]["Enums"]["document_owner_type"]
+          tenant_id: string
+          type_document: Database["public"]["Enums"]["document_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_emission?: string | null
+          date_expiration?: string | null
+          fichier_nom?: string | null
+          fichier_taille?: number | null
+          fichier_url?: string | null
+          id?: string
+          notes?: string | null
+          numero?: string | null
+          owner_id?: string
+          owner_type?: Database["public"]["Enums"]["document_owner_type"]
+          tenant_id?: string
+          type_document?: Database["public"]["Enums"]["document_type"]
+          updated_at?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      materiel_roulant: {
+        Row: {
+          annee: number | null
+          assurance_fin: string | null
+          autorisation_dgttc_fin: string | null
+          capacite_tonnes: number | null
+          created_at: string
+          created_by: string | null
+          date_acquisition: string | null
+          etat: Database["public"]["Enums"]["materiel_etat"]
+          id: string
+          immatriculation: string
+          kilometrage_actuel: number | null
+          marque: string | null
+          modele: string | null
+          notes: string | null
+          patente_fin: string | null
+          prix_acquisition_fcfa: number | null
+          tenant_id: string
+          type: Database["public"]["Enums"]["materiel_type"]
+          updated_at: string
+          vignette_fin: string | null
+          visite_technique_fin: string | null
+        }
+        Insert: {
+          annee?: number | null
+          assurance_fin?: string | null
+          autorisation_dgttc_fin?: string | null
+          capacite_tonnes?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_acquisition?: string | null
+          etat?: Database["public"]["Enums"]["materiel_etat"]
+          id?: string
+          immatriculation: string
+          kilometrage_actuel?: number | null
+          marque?: string | null
+          modele?: string | null
+          notes?: string | null
+          patente_fin?: string | null
+          prix_acquisition_fcfa?: number | null
+          tenant_id: string
+          type: Database["public"]["Enums"]["materiel_type"]
+          updated_at?: string
+          vignette_fin?: string | null
+          visite_technique_fin?: string | null
+        }
+        Update: {
+          annee?: number | null
+          assurance_fin?: string | null
+          autorisation_dgttc_fin?: string | null
+          capacite_tonnes?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_acquisition?: string | null
+          etat?: Database["public"]["Enums"]["materiel_etat"]
+          id?: string
+          immatriculation?: string
+          kilometrage_actuel?: number | null
+          marque?: string | null
+          modele?: string | null
+          notes?: string | null
+          patente_fin?: string | null
+          prix_acquisition_fcfa?: number | null
+          tenant_id?: string
+          type?: Database["public"]["Enums"]["materiel_type"]
+          updated_at?: string
+          vignette_fin?: string | null
+          visite_technique_fin?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "materiel_roulant_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "materiel_roulant_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       port_codes: {
         Row: {
           actif: boolean
@@ -266,8 +518,38 @@ export type Database = {
       jwt_user_role: { Args: never; Returns: string }
     }
     Enums: {
+      chauffeur_statut: "ACTIF" | "EN_CONGE" | "SUSPENDU" | "INACTIF"
+      document_owner_type: "CHAUFFEUR" | "MATERIEL"
+      document_type:
+        | "CNI"
+        | "PERMIS_CONDUIRE"
+        | "VISITE_MEDICALE"
+        | "ATTESTATION_CNPS"
+        | "CONTRAT_TRAVAIL"
+        | "PHOTO_IDENTITE"
+        | "CARTE_GRISE"
+        | "ASSURANCE"
+        | "VISITE_TECHNIQUE"
+        | "VIGNETTE"
+        | "PATENTE_TRANSPORT"
+        | "AUTORISATION_DGTTC"
+        | "AUTRE"
+      materiel_etat:
+        | "EN_SERVICE"
+        | "EN_PANNE"
+        | "EN_REPARATION"
+        | "HORS_SERVICE"
+        | "VENDU"
+      materiel_type:
+        | "TRACTEUR"
+        | "REMORQUE"
+        | "SEMI_REMORQUE"
+        | "PORTE_CONTENEUR_20"
+        | "PORTE_CONTENEUR_40"
+        | "PORTE_CONTENEUR_MIXTE"
       plan_abonnement: "STARTER" | "BUSINESS" | "PREMIUM"
       port_kind: "PORT_MARITIME" | "VILLE_HINTERLAND" | "PORT_SEC"
+      sexe: "M" | "F"
       tenant_status: "TRIAL" | "ACTIVE" | "SUSPENDED" | "CANCELLED"
       user_role:
         | "SUPER_ADMIN"
@@ -406,8 +688,41 @@ export const Constants = {
   },
   public: {
     Enums: {
+      chauffeur_statut: ["ACTIF", "EN_CONGE", "SUSPENDU", "INACTIF"],
+      document_owner_type: ["CHAUFFEUR", "MATERIEL"],
+      document_type: [
+        "CNI",
+        "PERMIS_CONDUIRE",
+        "VISITE_MEDICALE",
+        "ATTESTATION_CNPS",
+        "CONTRAT_TRAVAIL",
+        "PHOTO_IDENTITE",
+        "CARTE_GRISE",
+        "ASSURANCE",
+        "VISITE_TECHNIQUE",
+        "VIGNETTE",
+        "PATENTE_TRANSPORT",
+        "AUTORISATION_DGTTC",
+        "AUTRE",
+      ],
+      materiel_etat: [
+        "EN_SERVICE",
+        "EN_PANNE",
+        "EN_REPARATION",
+        "HORS_SERVICE",
+        "VENDU",
+      ],
+      materiel_type: [
+        "TRACTEUR",
+        "REMORQUE",
+        "SEMI_REMORQUE",
+        "PORTE_CONTENEUR_20",
+        "PORTE_CONTENEUR_40",
+        "PORTE_CONTENEUR_MIXTE",
+      ],
       plan_abonnement: ["STARTER", "BUSINESS", "PREMIUM"],
       port_kind: ["PORT_MARITIME", "VILLE_HINTERLAND", "PORT_SEC"],
+      sexe: ["M", "F"],
       tenant_status: ["TRIAL", "ACTIVE", "SUSPENDED", "CANCELLED"],
       user_role: [
         "SUPER_ADMIN",
