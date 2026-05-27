@@ -18,16 +18,27 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { TenantForm } from "./_components/tenant-form";
+import { UsersSection } from "./_components/users-section";
 
 export default async function ParametresPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ tenant?: string; updated?: string }>;
+  searchParams: Promise<{
+    tenant?: string;
+    updated?: string;
+    userMsg?: string;
+    userMsgType?: string;
+  }>;
 }) {
   const { locale } = await params;
-  const { tenant: tenantIdParam, updated } = await searchParams;
+  const {
+    tenant: tenantIdParam,
+    updated,
+    userMsg,
+    userMsgType,
+  } = await searchParams;
   setRequestLocale(locale);
 
   const supabase = await createClient();
@@ -215,7 +226,7 @@ export default async function ParametresPage({
         </Alert>
       )}
 
-      {/* Form */}
+      {/* Form profil */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Profil de l'entreprise</CardTitle>
@@ -228,6 +239,18 @@ export default async function ParametresPage({
           <TenantForm tenant={tenant} isSuperAdmin={isSuperAdmin} />
         </CardContent>
       </Card>
+
+      {/* Section Membres */}
+      <UsersSection
+        tenantId={tenant.id}
+        currentUserId={user!.id}
+        userMsg={userMsg}
+        userMsgType={
+          userMsgType === "error" || userMsgType === "success"
+            ? userMsgType
+            : undefined
+        }
+      />
     </div>
   );
 }
