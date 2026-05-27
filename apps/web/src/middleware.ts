@@ -1,20 +1,49 @@
 import createIntlMiddleware from "next-intl/middleware";
-import { type NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 import { routing } from "./i18n/routing";
 import { updateSession } from "./lib/supabase/middleware";
 
 const intlMiddleware = createIntlMiddleware(routing);
 
-export async function middleware(request: NextRequest) {
-  // 1. Refresh the Supabase session (sets/updates auth cookies).
-  // We don't return this response directly — we let next-intl produce the
-  // final response, and we copy the Supabase cookies onto it.
-  const supabaseResponse = await updateSession(request);
+/**
+ * Routes protégées : on REDIRIGE vers /login si l'utilisateur n'a pas
+ * de session. Le match accepte le préfixe locale optionnel (/fr, /en…).
+ */
+const PROTECTED_PATTERN = /^(?:\/(fr|en))?\/(dashboard|app)(\/|$)/;
 
-  // 2. Run the next-intl middleware (handles locale detection + redirects).
+/**
+ * Routes auth (login, verify…) : on REDIRIGE vers /dashboard si l'utilisateur
+ * est DÉJÀ connecté. Évite de revoir le formulaire de login avec une session.
+ */
+const AUTH_PAGES_PATTERN = /^(?:\/(fr|en))?\/login(\/|$)/;
+
+export async function middleware(request: NextRequest) {
+  // 1. Refresh la session Supabase + récupère le user.
+  const { response: supabaseResponse, user } = await updateSession(request);
+
+  const pathname = request.nextUrl.pathname;
+  const isProtected = PROTECTED_PATTERN.test(pathname);
+  const isAuthPage = AUTH_PAGES_PATTERN.test(pathname);
+
+  // 2. Garde-fous d'auth — court-circuitent next-intl si besoin.
+  if (isProtected && !user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
+    url.searchParams.set("redirectTo", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  if (isAuthPage && user) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/dashboard";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
+
+  // 3. Routing next-intl (gère la détection/redirection de locale).
   const intlResponse = intlMiddleware(request);
 
-  // 3. Propagate the Supabase auth cookies onto the intl response.
+  // 4. Propage les cookies de session sur la réponse finale.
   supabaseResponse.cookies.getAll().forEach((cookie) => {
     intlResponse.cookies.set(cookie.name, cookie.value, cookie);
   });
@@ -23,6 +52,6 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  // Skip /api, /_next, /_vercel and any path with a file extension (assets).
+  // Skip /api, /_next, /_vercel et tout fichier statique (assets).
   matcher: "/((?!api|_next|_vercel|.*\\..*).*)",
 };

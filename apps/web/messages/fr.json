@@ -19,12 +19,29 @@
     "login": {
       "title": "Connexion",
       "description": "Connectez-vous à votre espace PORTTRACK",
-      "email": "Email",
-      "password": "Mot de passe",
-      "submit": "Se connecter",
+      "email": "Adresse email",
+      "methodLabel": "Comment veux-tu te connecter ?",
+      "methodCode": "Code à 6 chiffres",
+      "methodCodeHint": "Tu reçois un code à recopier",
+      "methodLink": "Lien magique",
+      "methodLinkHint": "Tu cliques sur le lien dans le mail",
+      "submit": "Recevoir le code",
+      "sending": "Envoi en cours…",
+      "codeSentTitle": "Code envoyé",
+      "codeSentDescription": "Un code à 6 chiffres a été envoyé à {email}. Recopie-le ci-dessous pour te connecter.",
+      "linkSentTitle": "Lien envoyé",
+      "linkSentDescription": "Un lien magique a été envoyé à {email}. Clique dessus depuis ta boîte mail pour te connecter.",
+      "codeLabel": "Code à 6 chiffres",
+      "verifyCta": "Vérifier et se connecter",
+      "verifying": "Vérification…",
+      "resend": "Renvoyer un code",
+      "resending": "Renvoi…",
+      "changeEmail": "Changer d'email",
+      "back": "Recommencer",
+      "errorTitle": "Erreur",
       "forgot": "Mot de passe oublié ?",
       "noAccount": "Pas encore de compte ?",
-      "contactUs": "Contactez-nous"
+      "contactUs": "Contactez-nous."
     }
   },
   "home": {

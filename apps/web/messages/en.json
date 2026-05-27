@@ -19,12 +19,29 @@
     "login": {
       "title": "Sign in",
       "description": "Sign in to your PORTTRACK workspace",
-      "email": "Email",
-      "password": "Password",
-      "submit": "Sign in",
+      "email": "Email address",
+      "methodLabel": "How do you want to sign in?",
+      "methodCode": "6-digit code",
+      "methodCodeHint": "You'll get a code to type back",
+      "methodLink": "Magic link",
+      "methodLinkHint": "You'll click the link in the email",
+      "submit": "Send the code",
+      "sending": "Sending…",
+      "codeSentTitle": "Code sent",
+      "codeSentDescription": "A 6-digit code was sent to {email}. Enter it below to sign in.",
+      "linkSentTitle": "Link sent",
+      "linkSentDescription": "A magic link was sent to {email}. Click it from your inbox to sign in.",
+      "codeLabel": "6-digit code",
+      "verifyCta": "Verify and sign in",
+      "verifying": "Verifying…",
+      "resend": "Resend code",
+      "resending": "Resending…",
+      "changeEmail": "Change email",
+      "back": "Start over",
+      "errorTitle": "Error",
       "forgot": "Forgot password?",
       "noAccount": "Don't have an account yet?",
-      "contactUs": "Contact us"
+      "contactUs": "Contact us."
     }
   },
   "home": {

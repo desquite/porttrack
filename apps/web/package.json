@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@porttrack/shared": "workspace:*",
+    "@radix-ui/react-label": "^2.1.8",
     "@radix-ui/react-slot": "^1.2.4",
     "@supabase/ssr": "^0.10.3",
     "@supabase/supabase-js": "^2.106.2",
