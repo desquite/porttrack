@@ -1,5 +1,5 @@
 import { setRequestLocale } from "next-intl/server";
-import { use } from "react";
+import { Suspense, use } from "react";
 import { LoginForm } from "./login-form";
 
 export default function LoginPage({
@@ -12,7 +12,12 @@ export default function LoginPage({
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-muted/30 px-4 py-10">
-      <LoginForm />
+      {/* Suspense boundary requise : LoginForm utilise useSearchParams()
+          (pour le bypass /login?step=code&email=...) — sans ce wrapper,
+          Next.js refuse de pré-rendre la page côté serveur. */}
+      <Suspense fallback={null}>
+        <LoginForm />
+      </Suspense>
     </main>
   );
 }
