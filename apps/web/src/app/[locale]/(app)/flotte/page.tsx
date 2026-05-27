@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
-import { Truck, Plus, Gauge, Calendar } from "lucide-react";
+import { Truck, Plus, Gauge, Calendar, CheckCircle2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -11,6 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   classifyExpiry,
   EXPIRY_BADGE_VARIANT,
@@ -64,10 +66,13 @@ const DOCS: Array<{ key: keyof Materiel; label: string }> = [
 
 export default async function FlottePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ created?: string }>;
 }) {
   const { locale } = await params;
+  const { created } = await searchParams;
   setRequestLocale(locale);
 
   const supabase = await createClient();
@@ -109,11 +114,24 @@ export default async function FlottePage({
             {enService} en service, {alertes} avec alerte{alertes > 1 ? "s" : ""}.
           </p>
         </div>
-        <Button disabled title="Bientôt disponible">
-          <Plus className="mr-2 size-4" />
-          Nouveau véhicule
+        <Button asChild>
+          <Link href="/flotte/new">
+            <Plus className="mr-2 size-4" />
+            Nouveau véhicule
+          </Link>
         </Button>
       </div>
+
+      {/* Flash de confirmation après création */}
+      {created && (
+        <Alert className="border-emerald-300 bg-emerald-50/60 text-emerald-900">
+          <CheckCircle2 className="size-4" />
+          <AlertTitle>Véhicule créé</AlertTitle>
+          <AlertDescription>
+            <strong className="font-mono">{created}</strong> a été ajouté à la flotte.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Liste */}
       {total === 0 ? (
