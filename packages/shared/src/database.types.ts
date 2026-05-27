@@ -12,8 +12,105 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
+      port_codes: {
+        Row: {
+          actif: boolean
+          code_unlocode: string
+          created_at: string
+          est_destination_courante: boolean
+          id: string
+          kind: Database["public"]["Enums"]["port_kind"]
+          nom_lieu: string
+          nom_pays: string
+          pays_iso: string
+        }
+        Insert: {
+          actif?: boolean
+          code_unlocode: string
+          created_at?: string
+          est_destination_courante?: boolean
+          id?: string
+          kind: Database["public"]["Enums"]["port_kind"]
+          nom_lieu: string
+          nom_pays: string
+          pays_iso: string
+        }
+        Update: {
+          actif?: boolean
+          code_unlocode?: string
+          created_at?: string
+          est_destination_courante?: boolean
+          id?: string
+          kind?: Database["public"]["Enums"]["port_kind"]
+          nom_lieu?: string
+          nom_pays?: string
+          pays_iso?: string
+        }
+        Relationships: []
+      }
+      shipping_lines: {
+        Row: {
+          actif: boolean
+          code_scac: string
+          created_at: string
+          id: string
+          nom: string
+          nom_court: string
+          pays_origine: string | null
+          site_web: string | null
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          code_scac: string
+          created_at?: string
+          id?: string
+          nom: string
+          nom_court: string
+          pays_origine?: string | null
+          site_web?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          code_scac?: string
+          created_at?: string
+          id?: string
+          nom?: string
+          nom_court?: string
+          pays_origine?: string | null
+          site_web?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       tenants: {
         Row: {
           adresse: string | null
@@ -59,6 +156,48 @@ export type Database = {
           statut?: Database["public"]["Enums"]["tenant_status"]
           telephone?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      types_conteneur: {
+        Row: {
+          actif: boolean
+          charge_max_kg: number | null
+          code_iso: string
+          code_trade: string
+          created_at: string
+          description_fr: string
+          famille: string
+          id: string
+          taille_pieds: number
+          tare_kg: number | null
+          volume_m3: number | null
+        }
+        Insert: {
+          actif?: boolean
+          charge_max_kg?: number | null
+          code_iso: string
+          code_trade: string
+          created_at?: string
+          description_fr: string
+          famille: string
+          id?: string
+          taille_pieds: number
+          tare_kg?: number | null
+          volume_m3?: number | null
+        }
+        Update: {
+          actif?: boolean
+          charge_max_kg?: number | null
+          code_iso?: string
+          code_trade?: string
+          created_at?: string
+          description_fr?: string
+          famille?: string
+          id?: string
+          taille_pieds?: number
+          tare_kg?: number | null
+          volume_m3?: number | null
         }
         Relationships: []
       }
@@ -128,6 +267,7 @@ export type Database = {
     }
     Enums: {
       plan_abonnement: "STARTER" | "BUSINESS" | "PREMIUM"
+      port_kind: "PORT_MARITIME" | "VILLE_HINTERLAND" | "PORT_SEC"
       tenant_status: "TRIAL" | "ACTIVE" | "SUSPENDED" | "CANCELLED"
       user_role:
         | "SUPER_ADMIN"
@@ -261,9 +401,13 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       plan_abonnement: ["STARTER", "BUSINESS", "PREMIUM"],
+      port_kind: ["PORT_MARITIME", "VILLE_HINTERLAND", "PORT_SEC"],
       tenant_status: ["TRIAL", "ACTIVE", "SUSPENDED", "CANCELLED"],
       user_role: [
         "SUPER_ADMIN",
