@@ -34,7 +34,7 @@ type NavItem = {
 const NAV_ITEMS: NavItem[] = [
   { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
   { label: "Chauffeurs",      href: "/chauffeurs", icon: Users },
-  { label: "Flotte",          href: "/flotte",     icon: Truck, comingSoon: true },
+  { label: "Flotte",          href: "/flotte",     icon: Truck },
   { label: "Conteneurs",      href: "/conteneurs", icon: Package, comingSoon: true },
   { label: "Flux & affectations", href: "/affectations", icon: ClipboardList, comingSoon: true },
   { label: "Facturation",     href: "/facturation", icon: Receipt, comingSoon: true },
