@@ -20,16 +20,17 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { MaterielForm } from "../_components/materiel-form";
 import { DeleteMaterielButton } from "../_components/delete-materiel-button";
+import { DocumentsSection } from "../../_documents/documents-section";
 
 export default async function EditMaterielPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string; id: string }>;
-  searchParams: Promise<{ updated?: string; error?: string }>;
+  searchParams: Promise<{ updated?: string; error?: string; docError?: string }>;
 }) {
   const { locale, id } = await params;
-  const { updated, error } = await searchParams;
+  const { updated, error, docError } = await searchParams;
   setRequestLocale(locale);
 
   const supabase = await createClient();
@@ -135,6 +136,17 @@ export default async function EditMaterielPage({
           />
         </CardContent>
       </Card>
+
+      {/* Section Documents */}
+      {materiel.tenant_id && (
+        <DocumentsSection
+          ownerType="MATERIEL"
+          ownerId={materiel.id}
+          tenantId={materiel.tenant_id}
+          redirectPath={`/flotte/${materiel.id}`}
+          errorMessage={docError}
+        />
+      )}
 
       {/* Zone de danger */}
       {canDelete && (

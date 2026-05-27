@@ -20,16 +20,17 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ChauffeurForm } from "../_components/chauffeur-form";
 import { DeleteChauffeurButton } from "../_components/delete-chauffeur-button";
+import { DocumentsSection } from "../../_documents/documents-section";
 
 export default async function EditChauffeurPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string; id: string }>;
-  searchParams: Promise<{ updated?: string; error?: string }>;
+  searchParams: Promise<{ updated?: string; error?: string; docError?: string }>;
 }) {
   const { locale, id } = await params;
-  const { updated, error } = await searchParams;
+  const { updated, error, docError } = await searchParams;
   setRequestLocale(locale);
 
   const supabase = await createClient();
@@ -131,6 +132,17 @@ export default async function EditChauffeurPage({
           />
         </CardContent>
       </Card>
+
+      {/* Section Documents (uploads scans PDF) */}
+      {chauffeur.tenant_id && (
+        <DocumentsSection
+          ownerType="CHAUFFEUR"
+          ownerId={chauffeur.id}
+          tenantId={chauffeur.tenant_id}
+          redirectPath={`/chauffeurs/${chauffeur.id}`}
+          errorMessage={docError}
+        />
+      )}
 
       {/* Zone de danger — visible seulement si le user peut supprimer */}
       {canDelete && (
