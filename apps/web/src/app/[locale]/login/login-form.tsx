@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, useTransition } from "react";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { Anchor, Loader2, Mail, KeyRound, ArrowLeft } from "lucide-react";
 
@@ -31,6 +32,7 @@ const initialState: LoginState = { status: "idle" };
 
 export function LoginForm() {
   const t = useTranslations("auth.login");
+  const searchParams = useSearchParams();
   const [requestState, requestSubmit, requestPending] = useActionState(
     requestOtpAction,
     initialState,
@@ -42,9 +44,22 @@ export function LoginForm() {
   const [isPending, startTransition] = useTransition();
   const [method, setMethod] = useState<"code" | "link">("code");
 
+  // Dev bypass: ?step=code&email=... permet d'arriver direct à la saisie
+  // du code (utile quand on a généré un OTP via le script admin pour
+  // contourner la rate limit SMTP de Supabase pendant les tests).
+  const bypassStep = searchParams.get("step");
+  const bypassEmail = searchParams.get("email");
+  const isBypassCode = bypassStep === "code" && !!bypassEmail;
+
   // The "current state" is whichever was most recently updated.
   const state: LoginState =
-    verifyState.status !== "idle" ? verifyState : requestState;
+    verifyState.status !== "idle"
+      ? verifyState
+      : requestState.status !== "idle"
+        ? requestState
+        : isBypassCode
+          ? { status: "sent", method: "code", email: bypassEmail! }
+          : { status: "idle" };
 
   const showCodeStep =
     state.status === "sent" && state.method === "code";
@@ -124,9 +139,9 @@ export function LoginForm() {
                 type="text"
                 inputMode="numeric"
                 pattern="[0-9]*"
-                maxLength={6}
+                maxLength={10}
                 autoComplete="one-time-code"
-                placeholder="123456"
+                placeholder="12345678"
                 required
                 autoFocus
                 className="text-center text-2xl tracking-widest font-mono"

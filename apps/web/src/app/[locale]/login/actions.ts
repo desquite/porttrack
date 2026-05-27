@@ -57,7 +57,8 @@ export async function requestOtpAction(
 }
 
 /**
- * Server Action — étape 2 : vérifie le code à 6 chiffres et ouvre la session.
+ * Server Action — étape 2 : vérifie le code OTP (6 à 10 chiffres selon la
+ * config Supabase Auth → Email OTP Length) et ouvre la session.
  */
 export async function verifyOtpAction(
   _prev: LoginState,
@@ -69,12 +70,12 @@ export async function verifyOtpAction(
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { status: "error", method: "code", email, error: "Email invalide." };
   }
-  if (!/^\d{6}$/.test(token)) {
+  if (!/^\d{6,10}$/.test(token)) {
     return {
       status: "sent",
       method: "code",
       email,
-      error: "Le code doit contenir 6 chiffres.",
+      error: "Le code doit contenir entre 6 et 10 chiffres.",
     };
   }
 
