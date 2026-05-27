@@ -8,8 +8,13 @@ const intlMiddleware = createIntlMiddleware(routing);
 /**
  * Routes protégées : on REDIRIGE vers /login si l'utilisateur n'a pas
  * de session. Le match accepte le préfixe locale optionnel (/fr, /en…).
+ *
+ * Toutes les sections de l'app authentifiée sont listées ici. Le route
+ * group Next.js (app) ne préfixe PAS l'URL — il sert juste à partager
+ * le layout — donc on doit énumérer chaque section.
  */
-const PROTECTED_PATTERN = /^(?:\/(fr|en))?\/(dashboard|app)(\/|$)/;
+const PROTECTED_PATTERN =
+  /^(?:\/(fr|en))?\/(dashboard|chauffeurs|flotte|conteneurs|affectations|facturation|parametres|debug)(\/|$)/;
 
 /**
  * Routes auth (login, verify…) : on REDIRIGE vers /dashboard si l'utilisateur

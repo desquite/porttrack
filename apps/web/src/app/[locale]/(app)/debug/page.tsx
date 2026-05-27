@@ -1,10 +1,7 @@
-import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
-import { use } from "react";
-import { LogOut, Shield, Building2, IdCard, Mail } from "lucide-react";
+import { Building2, IdCard, Mail } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
@@ -12,7 +9,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { signOutAction } from "./actions";
 
 type JwtClaims = {
   sub?: string;
@@ -46,7 +42,7 @@ function decodeJwtPayload(token: string | undefined): JwtClaims | null {
   }
 }
 
-export default async function DashboardPage({
+export default async function DebugPage({
   params,
 }: {
   params: Promise<{ locale: string }>;
@@ -57,56 +53,30 @@ export default async function DashboardPage({
   const supabase = await createClient();
   const {
     data: { user },
-    error: userError,
   } = await supabase.auth.getUser();
 
-  if (userError || !user) {
-    redirect("/login");
-  }
-
-  // Récupère la session pour avoir accès au JWT et inspecter les claims
   const {
     data: { session },
   } = await supabase.auth.getSession();
   const claims = decodeJwtPayload(session?.access_token);
 
-  // Récupère le profil métier (RLS laisse passer "select own row")
   const { data: profile } = await supabase
     .from("users")
     .select("*")
-    .eq("id", user.id)
+    .eq("id", user!.id)
     .maybeSingle();
 
   return (
-    <main className="min-h-screen bg-muted/30">
-      <header className="border-b bg-background">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-2">
-            <Shield className="size-5 text-primary" />
-            <h1 className="text-lg font-semibold tracking-tight">
-              PORTTRACK — Tableau de bord
-            </h1>
-          </div>
-          <form action={signOutAction}>
-            <Button type="submit" variant="outline" size="sm">
-              <LogOut className="mr-2 size-4" />
-              Déconnexion
-            </Button>
-          </form>
-        </div>
-      </header>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight">Debug session</h1>
+        <p className="text-sm text-muted-foreground">
+          Inspection du user, du profil métier et des claims JWT — outil de
+          vérification de la chaîne d'authentification multi-tenant.
+        </p>
+      </div>
 
-      <div className="mx-auto max-w-5xl space-y-6 px-6 py-10">
-        {/* Bandeau de bienvenue */}
-        <section>
-          <h2 className="text-2xl font-bold tracking-tight">
-            Bienvenue, {profile?.prenoms ?? user.email}
-          </h2>
-          <p className="text-muted-foreground">
-            Session active. Cette page est une démo de la chaîne d'authentification multi-tenant.
-          </p>
-        </section>
-
+      <div className="grid gap-6 lg:grid-cols-3">
         {/* Identité du user */}
         <Card>
           <CardHeader>
@@ -119,11 +89,11 @@ export default async function DashboardPage({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
-            <KV label="user.id" value={user.id} mono />
-            <KV label="user.email" value={user.email ?? "—"} />
+            <KV label="user.id" value={user!.id} mono />
+            <KV label="user.email" value={user!.email ?? "—"} />
             <KV
               label="last_sign_in_at"
-              value={user.last_sign_in_at ?? "—"}
+              value={user!.last_sign_in_at ?? "—"}
             />
           </CardContent>
         </Card>
@@ -136,7 +106,7 @@ export default async function DashboardPage({
               Profil métier
             </CardTitle>
             <CardDescription>
-              Issu de <code>public.users</code> via RLS (lecture de sa propre fiche).
+              <code>public.users</code> via RLS (lecture propre fiche).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
@@ -149,25 +119,24 @@ export default async function DashboardPage({
                   mono
                 />
                 <KV label="actif" value={String(profile.actif)} />
-                <KV label="created_at" value={profile.created_at} />
               </>
             ) : (
               <p className="text-muted-foreground">
-                Aucune ligne dans <code>public.users</code> pour ce user — le trigger <code>handle_new_user</code> a-t-il bien fonctionné ?
+                Aucune ligne dans <code>public.users</code>.
               </p>
             )}
           </CardContent>
         </Card>
 
-        {/* Claims du JWT — c'est LA preuve que le auth hook marche */}
+        {/* Claims du JWT */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
               <Building2 className="size-4 text-primary" />
-              Claims du JWT (custom_access_token_hook)
+              Claims du JWT
             </CardTitle>
             <CardDescription>
-              Si <code>tenant_id</code> et <code>user_role</code> apparaissent ci-dessous, c'est que le hook fonctionne.
+              Injectés par <code>custom_access_token_hook</code>.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2 text-sm">
@@ -185,24 +154,26 @@ export default async function DashboardPage({
                   pill
                   highlight={Boolean(claims.user_role)}
                 />
-                <details className="mt-3 rounded-md border bg-muted/40 p-3">
-                  <summary className="cursor-pointer text-xs font-medium text-muted-foreground">
-                    Payload JWT complet (debug)
-                  </summary>
-                  <pre className="mt-2 overflow-x-auto text-[11px] leading-snug">
-                    {JSON.stringify(claims, null, 2)}
-                  </pre>
-                </details>
               </>
             ) : (
-              <p className="text-muted-foreground">
-                Impossible de lire le JWT — la session est peut-être expirée.
-              </p>
+              <p className="text-muted-foreground">JWT illisible.</p>
             )}
           </CardContent>
         </Card>
       </div>
-    </main>
+
+      {/* Payload JWT complet */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Payload JWT complet (debug)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <pre className="overflow-x-auto rounded-md bg-muted/40 p-3 text-[11px] leading-snug">
+            {JSON.stringify(claims, null, 2)}
+          </pre>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
@@ -220,7 +191,7 @@ function KV({
   highlight?: boolean;
 }) {
   return (
-    <div className="grid grid-cols-[160px_1fr] items-center gap-2">
+    <div className="grid grid-cols-[140px_1fr] items-center gap-2">
       <span className="text-xs uppercase tracking-wide text-muted-foreground">
         {label}
       </span>
@@ -238,7 +209,7 @@ function KV({
       ) : (
         <span
           className={
-            (mono ? "font-mono text-xs " : "") +
+            (mono ? "font-mono text-xs break-all " : "") +
             (highlight ? "font-semibold text-primary " : "")
           }
         >
