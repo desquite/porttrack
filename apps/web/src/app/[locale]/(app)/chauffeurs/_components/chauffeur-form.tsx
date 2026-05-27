@@ -12,16 +12,25 @@ import {
   CATEGORIES_PERMIS,
   CHAUFFEUR_STATUTS,
   SEXES,
+  type Database,
 } from "@porttrack/shared";
 import {
   createChauffeurAction,
+  updateChauffeurAction,
   type ChauffeurFormState,
 } from "../actions";
 
+type Chauffeur = Database["public"]["Tables"]["chauffeurs"]["Row"];
+
 type Props = {
+  mode: "create" | "update";
   isSuperAdmin: boolean;
   tenants: { id: string; nom_entreprise: string }[];
   defaultTenantId: string | null;
+  /** Valeurs pré-remplies (mode update) — issues du chauffeur chargé en DB */
+  defaultValues?: Partial<Chauffeur>;
+  /** ID du chauffeur à updater — requis si mode === "update" */
+  chauffeurId?: string;
 };
 
 const STATUT_LABEL: Record<(typeof CHAUFFEUR_STATUTS)[number], string> = {
@@ -33,23 +42,47 @@ const STATUT_LABEL: Record<(typeof CHAUFFEUR_STATUTS)[number], string> = {
 
 const initialState: ChauffeurFormState = { status: "idle" };
 
-export function ChauffeurForm({ isSuperAdmin, tenants, defaultTenantId }: Props) {
-  const [state, formAction, pending] = useActionState(
-    createChauffeurAction,
-    initialState,
-  );
+export function ChauffeurForm({
+  mode,
+  isSuperAdmin,
+  tenants,
+  defaultTenantId,
+  defaultValues,
+  chauffeurId,
+}: Props) {
+  // En update on bind l'id à l'action (plus propre qu'un hidden field tamperable)
+  const boundAction =
+    mode === "update" && chauffeurId
+      ? updateChauffeurAction.bind(null, chauffeurId)
+      : createChauffeurAction;
 
-  // Helpers : récupère la valeur ré-injectée et les erreurs d'un champ
+  const [state, formAction, pending] = useActionState(boundAction, initialState);
+
+  // Helpers : récupère valeur ET erreurs d'un champ.
+  // Priorité : (1) valeurs réinjectées après erreur ; (2) defaultValues (mode update) ; (3) "".
   const getValue = (name: string): string => {
-    if (state.status !== "error") return "";
-    const v = state.values?.[name];
-    return Array.isArray(v) ? v.join(",") : (v as string | undefined) ?? "";
+    if (state.status === "error" && state.values?.[name] !== undefined) {
+      const v = state.values[name];
+      return Array.isArray(v) ? v.join(",") : String(v ?? "");
+    }
+    if (defaultValues && name in defaultValues) {
+      const v = (defaultValues as Record<string, unknown>)[name];
+      if (v == null) return "";
+      if (Array.isArray(v)) return v.join(",");
+      return String(v);
+    }
+    return "";
   };
 
   const getArrayValue = (name: string): string[] => {
-    if (state.status !== "error") return [];
-    const v = state.values?.[name];
-    return Array.isArray(v) ? v : [];
+    if (state.status === "error" && Array.isArray(state.values?.[name])) {
+      return state.values![name] as string[];
+    }
+    if (defaultValues && name in defaultValues) {
+      const v = (defaultValues as Record<string, unknown>)[name];
+      if (Array.isArray(v)) return v as string[];
+    }
+    return [];
   };
 
   const getError = (name: string): string | null => {
@@ -59,6 +92,17 @@ export function ChauffeurForm({ isSuperAdmin, tenants, defaultTenantId }: Props)
 
   const fieldClass = (name: string) =>
     cn(getError(name) && "border-rose-500 focus-visible:ring-rose-500");
+
+  const selectClass = (name: string) =>
+    cn(
+      "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+      getError(name) && "border-rose-500 focus-visible:ring-rose-500",
+    );
+
+  // En mode update on ne montre pas le sélecteur de tenant — le chauffeur reste
+  // attaché à son tenant initial. Le tenant_id est envoyé en hidden depuis
+  // defaultTenantId (qui en update vaut chauffeur.tenant_id, propagé par le parent).
+  const showTenantSelector = mode === "create" && isSuperAdmin;
 
   return (
     <form action={formAction} className="space-y-8">
@@ -70,27 +114,19 @@ export function ChauffeurForm({ isSuperAdmin, tenants, defaultTenantId }: Props)
         </Alert>
       )}
 
-      {/* Tenant — SUPER_ADMIN only */}
-      {isSuperAdmin ? (
+      {/* Tenant — uniquement en création par SUPER_ADMIN */}
+      {showTenantSelector ? (
         <Section
           title="Affectation à une entreprise"
           description="En tant que SUPER_ADMIN, tu dois sélectionner le tenant auquel rattacher ce chauffeur."
         >
-          <Field
-            label="Entreprise"
-            name="tenant_id"
-            required
-            error={getError("tenant_id")}
-          >
+          <Field label="Entreprise" name="tenant_id" required error={getError("tenant_id")}>
             <select
               id="tenant_id"
               name="tenant_id"
               defaultValue={getValue("tenant_id") || defaultTenantId || ""}
               required
-              className={cn(
-                "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
-                getError("tenant_id") && "border-rose-500 focus-visible:ring-rose-500",
-              )}
+              className={selectClass("tenant_id")}
             >
               <option value="">— Sélectionner une entreprise —</option>
               {tenants.map((t) => (
@@ -143,10 +179,7 @@ export function ChauffeurForm({ isSuperAdmin, tenants, defaultTenantId }: Props)
               id="sexe"
               name="sexe"
               defaultValue={getValue("sexe")}
-              className={cn(
-                "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm",
-                getError("sexe") && "border-rose-500",
-              )}
+              className={selectClass("sexe")}
             >
               <option value="">—</option>
               {SEXES.map((s) => (
@@ -330,10 +363,7 @@ export function ChauffeurForm({ isSuperAdmin, tenants, defaultTenantId }: Props)
               name="statut"
               defaultValue={getValue("statut") || "ACTIF"}
               required
-              className={cn(
-                "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm",
-                getError("statut") && "border-rose-500",
-              )}
+              className={selectClass("statut")}
             >
               {CHAUFFEUR_STATUTS.map((s) => (
                 <option key={s} value={s}>
@@ -373,7 +403,7 @@ export function ChauffeurForm({ isSuperAdmin, tenants, defaultTenantId }: Props)
           ) : (
             <>
               <Save className="mr-2 size-4" />
-              Enregistrer le chauffeur
+              {mode === "update" ? "Enregistrer les modifications" : "Enregistrer le chauffeur"}
             </>
           )}
         </Button>

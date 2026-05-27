@@ -44,10 +44,10 @@ export default async function ChauffeursPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ created?: string }>;
+  searchParams: Promise<{ created?: string; deleted?: string }>;
 }) {
   const { locale } = await params;
-  const { created } = await searchParams;
+  const { created, deleted } = await searchParams;
   setRequestLocale(locale);
 
   const supabase = await createClient();
@@ -104,6 +104,17 @@ export default async function ChauffeursPage({
           <AlertTitle>Chauffeur créé</AlertTitle>
           <AlertDescription>
             <strong>{created}</strong> a été ajouté à la liste.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Flash de confirmation après suppression */}
+      {deleted && (
+        <Alert className="border-rose-200 bg-rose-50/60 text-rose-900">
+          <CheckCircle2 className="size-4" />
+          <AlertTitle>Chauffeur supprimé</AlertTitle>
+          <AlertDescription>
+            <strong>{deleted}</strong> a été supprimé de la liste.
           </AlertDescription>
         </Alert>
       )}
@@ -190,10 +201,10 @@ function ChauffeurCard({ chauffeur: c }: { chauffeur: Chauffeur }) {
           status={visiteStatus}
         />
 
-        {/* Lien voir (placeholder) */}
+        {/* Lien vers la page édition */}
         <div className="ml-auto">
-          <Button variant="outline" size="sm" disabled title="Page détail bientôt disponible">
-            Voir
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/chauffeurs/${c.id}`}>Modifier</Link>
           </Button>
         </div>
       </CardContent>

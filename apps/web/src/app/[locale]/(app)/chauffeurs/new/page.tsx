@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ChauffeurForm } from "./chauffeur-form";
+import { ChauffeurForm } from "../_components/chauffeur-form";
 
 export default async function NewChauffeurPage({
   params,
@@ -88,6 +88,7 @@ export default async function NewChauffeurPage({
           </CardHeader>
           <CardContent>
             <ChauffeurForm
+              mode="create"
               isSuperAdmin={isSuperAdmin}
               tenants={tenants}
               defaultTenantId={defaultTenantId}
