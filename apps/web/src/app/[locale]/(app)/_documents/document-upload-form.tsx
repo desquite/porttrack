@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useRef, useEffect } from "react";
+import { useActionState, useRef, useEffect, useMemo } from "react";
 import { Loader2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -12,16 +12,24 @@ import {
   DOCUMENT_TYPES,
   type DocumentOwnerType,
 } from "@porttrack/shared";
+import { formatExpiryLabel } from "@/lib/utils/dates";
 import {
   uploadDocumentAction,
   type DocumentUploadState,
 } from "./actions";
+
+type ExistingDoc = {
+  type_document: (typeof DOCUMENT_TYPES)[number];
+  date_expiration: string | null;
+};
 
 type Props = {
   ownerType: DocumentOwnerType;
   ownerId: string;
   tenantId: string;
   redirectPath: string;
+  /** Documents déjà uploadés — permet d'annoter le sélecteur */
+  existingDocs?: ExistingDoc[];
 };
 
 // Libellés FR par type — séparés par catégorie pour groupage dans le select
@@ -70,6 +78,7 @@ export function DocumentUploadForm({
   ownerId,
   tenantId,
   redirectPath,
+  existingDocs = [],
 }: Props) {
   // bind les params métier à l'action — le formulaire ne passe que les
   // champs métier (type, numéro, dates, fichier)
@@ -104,6 +113,32 @@ export function DocumentUploadForm({
 
   const allowedDocs = DOCS_BY_OWNER[ownerType];
 
+  // Calcule un résumé par type des docs déjà uploadés :
+  //   - count : combien de docs de ce type sont présents
+  //   - soonestExpiration : la date d'expiration la plus proche parmi eux
+  //     (sert à afficher "expire dans Xj" dans le sélecteur)
+  const existingSummary = useMemo(() => {
+    const map: Partial<
+      Record<(typeof DOCUMENT_TYPES)[number], { count: number; soonest: string | null }>
+    > = {};
+    for (const d of existingDocs) {
+      const current = map[d.type_document] ?? { count: 0, soonest: null };
+      current.count += 1;
+      if (
+        d.date_expiration &&
+        (current.soonest === null || d.date_expiration < current.soonest)
+      ) {
+        current.soonest = d.date_expiration;
+      }
+      map[d.type_document] = current;
+    }
+    return map;
+  }, [existingDocs]);
+
+  // Split les types autorisés en 2 groupes pour l'affichage en optgroups
+  const notYetUploaded = allowedDocs.filter((d) => !existingSummary[d]);
+  const alreadyUploaded = allowedDocs.filter((d) => !!existingSummary[d]);
+
   return (
     <form ref={formRef} action={formAction} className="space-y-4">
       {state.status === "error" && state.formError && (
@@ -131,11 +166,34 @@ export function DocumentUploadForm({
             )}
           >
             <option value="">— Sélectionner —</option>
-            {allowedDocs.map((d) => (
-              <option key={d} value={d}>
-                {DOCUMENT_LABELS[d]}
-              </option>
-            ))}
+
+            {notYetUploaded.length > 0 && (
+              <optgroup label="À ajouter">
+                {notYetUploaded.map((d) => (
+                  <option key={d} value={d}>
+                    {DOCUMENT_LABELS[d]}
+                  </option>
+                ))}
+              </optgroup>
+            )}
+
+            {alreadyUploaded.length > 0 && (
+              <optgroup label="Déjà présent (cliquer pour renouveler)">
+                {alreadyUploaded.map((d) => {
+                  const info = existingSummary[d]!;
+                  // Si on a une date d'expiration, on l'affiche ; sinon on
+                  // tombe sur le nombre de docs déjà uploadés.
+                  const suffix = info.soonest
+                    ? formatExpiryLabel(info.soonest)
+                    : `${info.count} doc${info.count > 1 ? "s" : ""} déjà uploadé${info.count > 1 ? "s" : ""}`;
+                  return (
+                    <option key={d} value={d}>
+                      {DOCUMENT_LABELS[d]} · {suffix}
+                    </option>
+                  );
+                })}
+              </optgroup>
+            )}
           </select>
           {getError("type_document") && (
             <p className="text-[11px] text-rose-600">{getError("type_document")}</p>

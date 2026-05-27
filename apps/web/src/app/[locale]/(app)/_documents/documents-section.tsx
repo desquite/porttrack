@@ -122,6 +122,10 @@ export async function DocumentsSection({
             ownerId={ownerId}
             tenantId={tenantId}
             redirectPath={redirectPath}
+            existingDocs={docs.map((d) => ({
+              type_document: d.type_document,
+              date_expiration: d.date_expiration,
+            }))}
           />
         </div>
       </CardContent>
