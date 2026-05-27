@@ -14,6 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Pagination } from "@/components/ui/pagination";
 import {
   classifyExpiry,
   EXPIRY_BADGE_VARIANT,
@@ -21,6 +22,8 @@ import {
   formatExpiryLabel,
 } from "@/lib/utils/dates";
 import type { Database } from "@porttrack/shared";
+import { CHAUFFEUR_STATUTS } from "@porttrack/shared";
+import { ChauffeursFilters } from "./_components/chauffeurs-filters";
 
 type Chauffeur = Database["public"]["Tables"]["chauffeurs"]["Row"];
 type ChauffeurStatut = Database["public"]["Enums"]["chauffeur_statut"];
@@ -39,23 +42,94 @@ const STATUT_LABEL: Record<ChauffeurStatut, string> = {
   INACTIF:  "Inactif",
 };
 
+const PAGE_SIZE = 20;
+
 export default async function ChauffeursPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ created?: string; deleted?: string }>;
+  searchParams: Promise<{
+    created?: string;
+    deleted?: string;
+    q?: string;
+    statut?: string;
+    alerte?: string;
+    page?: string;
+  }>;
 }) {
   const { locale } = await params;
-  const { created, deleted } = await searchParams;
+  const sp = await searchParams;
   setRequestLocale(locale);
 
   const supabase = await createClient();
 
-  const { data: chauffeurs, error } = await supabase
+  // -----------------------------------------------------------------------
+  // 1. Compteurs globaux (sans filtre) — pour le header "X chauffeurs au total"
+  // -----------------------------------------------------------------------
+  const { count: totalGlobal } = await supabase
     .from("chauffeurs")
-    .select("*")
-    .order("nom", { ascending: true });
+    .select("*", { count: "exact", head: true });
+
+  // -----------------------------------------------------------------------
+  // 2. Requête filtrée + paginée
+  // -----------------------------------------------------------------------
+  const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  let query = supabase
+    .from("chauffeurs")
+    .select("*", { count: "exact" })
+    .order("nom", { ascending: true })
+    .range(from, to);
+
+  // Recherche texte sur prénoms, nom, téléphone, CNI
+  const q = sp.q?.trim();
+  if (q) {
+    const esc = q.replace(/[%_]/g, "");
+    query = query.or(
+      `prenoms.ilike.%${esc}%,nom.ilike.%${esc}%,telephone.ilike.%${esc}%,numero_cni.ilike.%${esc}%`,
+    );
+  }
+
+  // Filtre statut (validé contre l'enum)
+  const statut = sp.statut?.trim();
+  if (statut && (CHAUFFEUR_STATUTS as readonly string[]).includes(statut)) {
+    query = query.eq("statut", statut as ChauffeurStatut);
+  }
+
+  // Filtre alerte — on calcule des bornes de dates
+  const alerte = sp.alerte?.trim();
+  if (alerte === "expired") {
+    // Au moins un doc expiré (date passée)
+    const today = new Date().toISOString().slice(0, 10);
+    query = query.or(
+      `permis_expiration.lt.${today},visite_medicale_expiration.lt.${today}`,
+    );
+  } else if (alerte === "soon") {
+    // Au moins un doc qui expire dans les 30 prochains jours (mais pas encore expiré)
+    const today = new Date().toISOString().slice(0, 10);
+    const horizon = new Date();
+    horizon.setDate(horizon.getDate() + 30);
+    const horizonIso = horizon.toISOString().slice(0, 10);
+    query = query.or(
+      [
+        `and(permis_expiration.gte.${today},permis_expiration.lte.${horizonIso})`,
+        `and(visite_medicale_expiration.gte.${today},visite_medicale_expiration.lte.${horizonIso})`,
+      ].join(","),
+    );
+  } else if (alerte === "ok") {
+    // Les deux dates >= aujourd'hui + 30j
+    const horizon = new Date();
+    horizon.setDate(horizon.getDate() + 30);
+    const horizonIso = horizon.toISOString().slice(0, 10);
+    query = query
+      .gte("permis_expiration", horizonIso)
+      .gte("visite_medicale_expiration", horizonIso);
+  }
+
+  const { data: chauffeurs, count: filteredCount, error } = await query;
 
   if (error) {
     return (
@@ -69,13 +143,8 @@ export default async function ChauffeursPage({
     );
   }
 
-  const total = chauffeurs?.length ?? 0;
-  const actifs = chauffeurs?.filter((c) => c.statut === "ACTIF").length ?? 0;
-  const alertes = chauffeurs?.filter(
-    (c) =>
-      classifyExpiry(c.permis_expiration) !== "ok" ||
-      classifyExpiry(c.visite_medicale_expiration) !== "ok",
-  ).length ?? 0;
+  const total = filteredCount ?? 0;
+  const isFiltered = !!(q || statut || alerte);
 
   return (
     <div className="space-y-6">
@@ -84,9 +153,18 @@ export default async function ChauffeursPage({
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Chauffeurs</h1>
           <p className="text-sm text-muted-foreground">
-            {total} chauffeur{total > 1 ? "s" : ""} enregistré{total > 1 ? "s" : ""} —{" "}
-            {actifs} actif{actifs > 1 ? "s" : ""}, {alertes} avec alerte
-            {alertes > 1 ? "s" : ""}.
+            {isFiltered ? (
+              <>
+                <strong className="text-foreground">{total}</strong> résultat{total > 1 ? "s" : ""} sur{" "}
+                {totalGlobal ?? 0} chauffeur{(totalGlobal ?? 0) > 1 ? "s" : ""} au total
+              </>
+            ) : (
+              <>
+                <strong className="text-foreground">{totalGlobal ?? 0}</strong> chauffeur
+                {(totalGlobal ?? 0) > 1 ? "s" : ""} enregistré
+                {(totalGlobal ?? 0) > 1 ? "s" : ""}
+              </>
+            )}
           </p>
         </div>
         <Button asChild>
@@ -97,45 +175,61 @@ export default async function ChauffeursPage({
         </Button>
       </div>
 
-      {/* Flash de confirmation après création */}
-      {created && (
+      {/* Flashes */}
+      {sp.created && (
         <Alert className="border-emerald-300 bg-emerald-50/60 text-emerald-900">
           <CheckCircle2 className="size-4" />
           <AlertTitle>Chauffeur créé</AlertTitle>
           <AlertDescription>
-            <strong>{created}</strong> a été ajouté à la liste.
+            <strong>{sp.created}</strong> a été ajouté à la liste.
           </AlertDescription>
         </Alert>
       )}
-
-      {/* Flash de confirmation après suppression */}
-      {deleted && (
+      {sp.deleted && (
         <Alert className="border-rose-200 bg-rose-50/60 text-rose-900">
           <CheckCircle2 className="size-4" />
           <AlertTitle>Chauffeur supprimé</AlertTitle>
           <AlertDescription>
-            <strong>{deleted}</strong> a été supprimé de la liste.
+            <strong>{sp.deleted}</strong> a été supprimé de la liste.
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Filtres */}
+      <ChauffeursFilters />
 
       {/* Liste */}
       {total === 0 ? (
         <Card>
           <CardHeader className="text-center">
             <Users className="mx-auto size-8 text-muted-foreground" />
-            <CardTitle className="text-base">Aucun chauffeur</CardTitle>
+            <CardTitle className="text-base">
+              {isFiltered ? "Aucun résultat" : "Aucun chauffeur"}
+            </CardTitle>
             <CardDescription>
-              Commencez par créer un chauffeur pour le voir apparaître ici.
+              {isFiltered
+                ? "Aucun chauffeur ne correspond à tes filtres. Essaie de les élargir."
+                : "Commence par créer un chauffeur pour le voir apparaître ici."}
             </CardDescription>
           </CardHeader>
         </Card>
       ) : (
-        <div className="grid gap-3">
-          {chauffeurs!.map((c) => (
-            <ChauffeurCard key={c.id} chauffeur={c} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-3">
+            {chauffeurs!.map((c) => (
+              <ChauffeurCard key={c.id} chauffeur={c} />
+            ))}
+          </div>
+
+          <Pagination
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            pathname="/chauffeurs"
+            itemLabel="chauffeur"
+            className="rounded-md border bg-background"
+          />
+        </>
       )}
     </div>
   );

@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Pagination } from "@/components/ui/pagination";
 import {
   classifyExpiry,
   EXPIRY_BADGE_VARIANT,
@@ -20,12 +21,14 @@ import {
   formatExpiryLabel,
 } from "@/lib/utils/dates";
 import type { Database } from "@porttrack/shared";
+import { MATERIEL_ETATS, MATERIEL_TYPES } from "@porttrack/shared";
+import { MaterielFilters } from "./_components/materiel-filters";
 
 type Materiel = Database["public"]["Tables"]["materiel_roulant"]["Row"];
 type MaterielType = Database["public"]["Enums"]["materiel_type"];
 type MaterielEtat = Database["public"]["Enums"]["materiel_etat"];
 
-// Libellés FR courts pour les types de matériel
+// Libellés FR
 const TYPE_LABEL: Record<MaterielType, string> = {
   TRACTEUR:              "Tracteur",
   REMORQUE:              "Remorque",
@@ -35,7 +38,6 @@ const TYPE_LABEL: Record<MaterielType, string> = {
   PORTE_CONTENEUR_MIXTE: "Porte-conteneur mixte",
 };
 
-// Couleurs des badges d'état
 const ETAT_VARIANT: Record<
   MaterielEtat,
   "success" | "warning" | "danger" | "secondary"
@@ -55,7 +57,6 @@ const ETAT_LABEL: Record<MaterielEtat, string> = {
   VENDU:         "Vendu",
 };
 
-// Configuration des 5 documents à afficher (label court + clé dans la row)
 const DOCS: Array<{ key: keyof Materiel; label: string }> = [
   { key: "assurance_fin",          label: "Assurance" },
   { key: "visite_technique_fin",   label: "VT" },
@@ -64,23 +65,98 @@ const DOCS: Array<{ key: keyof Materiel; label: string }> = [
   { key: "autorisation_dgttc_fin", label: "DGTTC" },
 ];
 
+const PAGE_SIZE = 20;
+
 export default async function FlottePage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ created?: string; deleted?: string }>;
+  searchParams: Promise<{
+    created?: string;
+    deleted?: string;
+    q?: string;
+    type?: string;
+    etat?: string;
+    alerte?: string;
+    page?: string;
+  }>;
 }) {
   const { locale } = await params;
-  const { created, deleted } = await searchParams;
+  const sp = await searchParams;
   setRequestLocale(locale);
 
   const supabase = await createClient();
 
-  const { data: materiels, error } = await supabase
+  // -----------------------------------------------------------------------
+  // 1. Compteur global (sans filtre) pour le header
+  // -----------------------------------------------------------------------
+  const { count: totalGlobal } = await supabase
     .from("materiel_roulant")
-    .select("*")
-    .order("immatriculation", { ascending: true });
+    .select("*", { count: "exact", head: true });
+
+  // -----------------------------------------------------------------------
+  // 2. Requête filtrée + paginée
+  // -----------------------------------------------------------------------
+  const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1);
+  const from = (page - 1) * PAGE_SIZE;
+  const to = from + PAGE_SIZE - 1;
+
+  let query = supabase
+    .from("materiel_roulant")
+    .select("*", { count: "exact" })
+    .order("immatriculation", { ascending: true })
+    .range(from, to);
+
+  // Recherche texte sur immatriculation, marque, modèle
+  const q = sp.q?.trim();
+  if (q) {
+    const esc = q.replace(/[%_]/g, "");
+    query = query.or(
+      `immatriculation.ilike.%${esc}%,marque.ilike.%${esc}%,modele.ilike.%${esc}%`,
+    );
+  }
+
+  // Filtre type
+  const type = sp.type?.trim();
+  if (type && (MATERIEL_TYPES as readonly string[]).includes(type)) {
+    query = query.eq("type", type as MaterielType);
+  }
+
+  // Filtre état
+  const etat = sp.etat?.trim();
+  if (etat && (MATERIEL_ETATS as readonly string[]).includes(etat)) {
+    query = query.eq("etat", etat as MaterielEtat);
+  }
+
+  // Filtre alerte sur les 5 dates documents
+  const alerte = sp.alerte?.trim();
+  if (alerte === "expired") {
+    const today = new Date().toISOString().slice(0, 10);
+    query = query.or(
+      DOCS.map((d) => `${String(d.key)}.lt.${today}`).join(","),
+    );
+  } else if (alerte === "soon") {
+    const today = new Date().toISOString().slice(0, 10);
+    const horizon = new Date();
+    horizon.setDate(horizon.getDate() + 30);
+    const horizonIso = horizon.toISOString().slice(0, 10);
+    query = query.or(
+      DOCS.map(
+        (d) => `and(${String(d.key)}.gte.${today},${String(d.key)}.lte.${horizonIso})`,
+      ).join(","),
+    );
+  } else if (alerte === "ok") {
+    // Toutes les dates >= aujourd'hui + 30j
+    const horizon = new Date();
+    horizon.setDate(horizon.getDate() + 30);
+    const horizonIso = horizon.toISOString().slice(0, 10);
+    for (const d of DOCS) {
+      query = query.gte(String(d.key), horizonIso);
+    }
+  }
+
+  const { data: materiels, count: filteredCount, error } = await query;
 
   if (error) {
     return (
@@ -94,14 +170,8 @@ export default async function FlottePage({
     );
   }
 
-  const total = materiels?.length ?? 0;
-  const enService = materiels?.filter((m) => m.etat === "EN_SERVICE").length ?? 0;
-  const alertes = materiels?.filter((m) =>
-    DOCS.some((d) => {
-      const status = classifyExpiry(m[d.key] as string | null);
-      return status === "expired" || status === "soon";
-    }),
-  ).length ?? 0;
+  const total = filteredCount ?? 0;
+  const isFiltered = !!(q || type || etat || alerte);
 
   return (
     <div className="space-y-6">
@@ -110,8 +180,18 @@ export default async function FlottePage({
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Flotte</h1>
           <p className="text-sm text-muted-foreground">
-            {total} véhicule{total > 1 ? "s" : ""} enregistré{total > 1 ? "s" : ""} —{" "}
-            {enService} en service, {alertes} avec alerte{alertes > 1 ? "s" : ""}.
+            {isFiltered ? (
+              <>
+                <strong className="text-foreground">{total}</strong> résultat{total > 1 ? "s" : ""} sur{" "}
+                {totalGlobal ?? 0} véhicule{(totalGlobal ?? 0) > 1 ? "s" : ""} au total
+              </>
+            ) : (
+              <>
+                <strong className="text-foreground">{totalGlobal ?? 0}</strong> véhicule
+                {(totalGlobal ?? 0) > 1 ? "s" : ""} enregistré
+                {(totalGlobal ?? 0) > 1 ? "s" : ""}
+              </>
+            )}
           </p>
         </div>
         <Button asChild>
@@ -122,45 +202,61 @@ export default async function FlottePage({
         </Button>
       </div>
 
-      {/* Flash de confirmation après création */}
-      {created && (
+      {/* Flashes */}
+      {sp.created && (
         <Alert className="border-emerald-300 bg-emerald-50/60 text-emerald-900">
           <CheckCircle2 className="size-4" />
           <AlertTitle>Véhicule créé</AlertTitle>
           <AlertDescription>
-            <strong className="font-mono">{created}</strong> a été ajouté à la flotte.
+            <strong className="font-mono">{sp.created}</strong> a été ajouté à la flotte.
           </AlertDescription>
         </Alert>
       )}
-
-      {/* Flash de confirmation après suppression */}
-      {deleted && (
+      {sp.deleted && (
         <Alert className="border-rose-200 bg-rose-50/60 text-rose-900">
           <CheckCircle2 className="size-4" />
           <AlertTitle>Véhicule supprimé</AlertTitle>
           <AlertDescription>
-            <strong className="font-mono">{deleted}</strong> a été retiré de la flotte.
+            <strong className="font-mono">{sp.deleted}</strong> a été retiré de la flotte.
           </AlertDescription>
         </Alert>
       )}
+
+      {/* Filtres */}
+      <MaterielFilters />
 
       {/* Liste */}
       {total === 0 ? (
         <Card>
           <CardHeader className="text-center">
             <Truck className="mx-auto size-8 text-muted-foreground" />
-            <CardTitle className="text-base">Aucun matériel enregistré</CardTitle>
+            <CardTitle className="text-base">
+              {isFiltered ? "Aucun résultat" : "Aucun matériel enregistré"}
+            </CardTitle>
             <CardDescription>
-              Ajoutez vos premiers tracteurs, remorques ou porte-conteneurs.
+              {isFiltered
+                ? "Aucun véhicule ne correspond à tes filtres. Essaie de les élargir."
+                : "Ajoute tes premiers tracteurs, remorques ou porte-conteneurs."}
             </CardDescription>
           </CardHeader>
         </Card>
       ) : (
-        <div className="grid gap-3">
-          {materiels!.map((m) => (
-            <MaterielCard key={m.id} materiel={m} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-3">
+            {materiels!.map((m) => (
+              <MaterielCard key={m.id} materiel={m} />
+            ))}
+          </div>
+
+          <Pagination
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={total}
+            pathname="/flotte"
+            itemLabel="véhicule"
+            className="rounded-md border bg-background"
+          />
+        </>
       )}
     </div>
   );
@@ -178,7 +274,6 @@ function MaterielCard({ materiel: m }: { materiel: Materiel }) {
   return (
     <Card className="transition-colors hover:border-primary/30">
       <CardContent className="space-y-3 p-4">
-        {/* Ligne 1 : icône + immat + identification + état */}
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
             <Truck className="size-5" />
@@ -220,7 +315,6 @@ function MaterielCard({ materiel: m }: { materiel: Materiel }) {
           </Button>
         </div>
 
-        {/* Ligne 2 : 5 documents en grille */}
         <div className="grid grid-cols-2 gap-2 border-t pt-3 sm:grid-cols-3 lg:grid-cols-5">
           {DOCS.map((d) => {
             const dateIso = m[d.key] as string | null;
