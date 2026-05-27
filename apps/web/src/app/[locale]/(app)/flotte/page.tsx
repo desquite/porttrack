@@ -21,7 +21,11 @@ import {
   formatExpiryLabel,
 } from "@/lib/utils/dates";
 import type { Database } from "@porttrack/shared";
-import { MATERIEL_ETATS, MATERIEL_TYPES } from "@porttrack/shared";
+import {
+  MATERIEL_ETATS,
+  MATERIEL_TYPES,
+  normalizeForSearch,
+} from "@porttrack/shared";
 import { MaterielFilters } from "./_components/materiel-filters";
 
 type Materiel = Database["public"]["Tables"]["materiel_roulant"]["Row"];
@@ -108,13 +112,14 @@ export default async function FlottePage({
     .order("immatriculation", { ascending: true })
     .range(from, to);
 
-  // Recherche texte sur immatriculation, marque, modèle
+  // Recherche texte tolérante aux accents et à la casse : on cherche dans
+  // la colonne générée `search_text` (lower + unaccent).
   const q = sp.q?.trim();
   if (q) {
-    const esc = q.replace(/[%_]/g, "");
-    query = query.or(
-      `immatriculation.ilike.%${esc}%,marque.ilike.%${esc}%,modele.ilike.%${esc}%`,
-    );
+    const qNorm = normalizeForSearch(q).replace(/[%_]/g, "");
+    if (qNorm) {
+      query = query.ilike("search_text", `%${qNorm}%`);
+    }
   }
 
   // Filtre type

@@ -58,6 +58,7 @@ export type Database = {
           permis_obtention: string | null
           photo_url: string | null
           prenoms: string
+          search_text: string | null
           sexe: Database["public"]["Enums"]["sexe"] | null
           statut: Database["public"]["Enums"]["chauffeur_statut"]
           telephone: string
@@ -84,6 +85,7 @@ export type Database = {
           permis_obtention?: string | null
           photo_url?: string | null
           prenoms: string
+          search_text?: string | null
           sexe?: Database["public"]["Enums"]["sexe"] | null
           statut?: Database["public"]["Enums"]["chauffeur_statut"]
           telephone: string
@@ -110,6 +112,7 @@ export type Database = {
           permis_obtention?: string | null
           photo_url?: string | null
           prenoms?: string
+          search_text?: string | null
           sexe?: Database["public"]["Enums"]["sexe"] | null
           statut?: Database["public"]["Enums"]["chauffeur_statut"]
           telephone?: string
@@ -222,6 +225,7 @@ export type Database = {
           notes: string | null
           patente_fin: string | null
           prix_acquisition_fcfa: number | null
+          search_text: string | null
           tenant_id: string
           type: Database["public"]["Enums"]["materiel_type"]
           updated_at: string
@@ -245,6 +249,7 @@ export type Database = {
           notes?: string | null
           patente_fin?: string | null
           prix_acquisition_fcfa?: number | null
+          search_text?: string | null
           tenant_id: string
           type: Database["public"]["Enums"]["materiel_type"]
           updated_at?: string
@@ -268,6 +273,7 @@ export type Database = {
           notes?: string | null
           patente_fin?: string | null
           prix_acquisition_fcfa?: number | null
+          search_text?: string | null
           tenant_id?: string
           type?: Database["public"]["Enums"]["materiel_type"]
           updated_at?: string
@@ -512,10 +518,14 @@ export type Database = {
     }
     Functions: {
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      immutable_unaccent: { Args: { input: string }; Returns: string }
       is_manager_of: { Args: { p_tenant_id: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       jwt_tenant_id: { Args: never; Returns: string }
       jwt_user_role: { Args: never; Returns: string }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
+      unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       chauffeur_statut: "ACTIF" | "EN_CONGE" | "SUSPENDU" | "INACTIF"

@@ -22,7 +22,7 @@ import {
   formatExpiryLabel,
 } from "@/lib/utils/dates";
 import type { Database } from "@porttrack/shared";
-import { CHAUFFEUR_STATUTS } from "@porttrack/shared";
+import { CHAUFFEUR_STATUTS, normalizeForSearch } from "@porttrack/shared";
 import { ChauffeursFilters } from "./_components/chauffeurs-filters";
 
 type Chauffeur = Database["public"]["Tables"]["chauffeurs"]["Row"];
@@ -84,13 +84,15 @@ export default async function ChauffeursPage({
     .order("nom", { ascending: true })
     .range(from, to);
 
-  // Recherche texte sur prénoms, nom, téléphone, CNI
+  // Recherche texte tolérante aux accents et à la casse : on cherche dans
+  // la colonne générée `search_text` qui contient lower+unaccent de tous les
+  // champs cherchables. La requête côté JS est normalisée de la même façon.
   const q = sp.q?.trim();
   if (q) {
-    const esc = q.replace(/[%_]/g, "");
-    query = query.or(
-      `prenoms.ilike.%${esc}%,nom.ilike.%${esc}%,telephone.ilike.%${esc}%,numero_cni.ilike.%${esc}%`,
-    );
+    const qNorm = normalizeForSearch(q).replace(/[%_]/g, "");
+    if (qNorm) {
+      query = query.ilike("search_text", `%${qNorm}%`);
+    }
   }
 
   // Filtre statut (validé contre l'enum)

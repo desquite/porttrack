@@ -33,6 +33,8 @@ const ALERTE_OPTIONS = [
   { value: "ok",       label: "À jour" },
 ] as const;
 
+const DEBOUNCE_MS = 350;
+
 export function MaterielFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -62,10 +64,16 @@ export function MaterielFilters() {
     });
   }
 
-  function handleSearch(e: React.FormEvent) {
-    e.preventDefault();
-    pushParams({ q });
-  }
+  // Debounce auto sur le champ texte
+  useEffect(() => {
+    const currentInUrl = searchParams.get("q") ?? "";
+    if (q === currentInUrl) return;
+    const timeoutId = setTimeout(() => {
+      pushParams({ q });
+    }, DEBOUNCE_MS);
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [q]);
 
   function handleReset() {
     setQ("");
@@ -81,17 +89,20 @@ export function MaterielFilters() {
 
   return (
     <div className="rounded-md border bg-background p-3">
-      <form onSubmit={handleSearch} className="flex flex-wrap items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <div className="relative min-w-[200px] flex-1">
           <Search className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
           <Input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Rechercher par immat, marque ou modèle…"
-            className="pl-8"
+            placeholder="Rechercher (tolère accents et majuscules)…"
+            className="pl-8 pr-8"
             type="search"
             aria-label="Recherche"
           />
+          {pending && (
+            <Loader2 className="absolute right-2.5 top-1/2 size-3.5 -translate-y-1/2 animate-spin text-muted-foreground" />
+          )}
         </div>
 
         <select
@@ -135,18 +146,13 @@ export function MaterielFilters() {
           ))}
         </select>
 
-        <Button type="submit" variant="default" size="sm" disabled={pending}>
-          {pending ? <Loader2 className="size-3.5 animate-spin" /> : <Search className="size-3.5" />}
-          <span className="ml-1">Rechercher</span>
-        </Button>
-
         {hasAnyFilter && (
           <Button type="button" variant="ghost" size="sm" onClick={handleReset} disabled={pending}>
             <X className="size-3.5" />
             Réinitialiser
           </Button>
         )}
-      </form>
+      </div>
     </div>
   );
 }
