@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
-import { Users, Plus, Phone, Mail, IdCard } from "lucide-react";
+import { Users, Plus, Phone, Mail, IdCard, CheckCircle2 } from "lucide-react";
+
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -39,10 +41,13 @@ const STATUT_LABEL: Record<ChauffeurStatut, string> = {
 
 export default async function ChauffeursPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ created?: string }>;
 }) {
   const { locale } = await params;
+  const { created } = await searchParams;
   setRequestLocale(locale);
 
   const supabase = await createClient();
@@ -84,11 +89,24 @@ export default async function ChauffeursPage({
             {alertes > 1 ? "s" : ""}.
           </p>
         </div>
-        <Button disabled title="Bientôt disponible">
-          <Plus className="mr-2 size-4" />
-          Nouveau chauffeur
+        <Button asChild>
+          <Link href="/chauffeurs/new">
+            <Plus className="mr-2 size-4" />
+            Nouveau chauffeur
+          </Link>
         </Button>
       </div>
+
+      {/* Flash de confirmation après création */}
+      {created && (
+        <Alert className="border-emerald-300 bg-emerald-50/60 text-emerald-900">
+          <CheckCircle2 className="size-4" />
+          <AlertTitle>Chauffeur créé</AlertTitle>
+          <AlertDescription>
+            <strong>{created}</strong> a été ajouté à la liste.
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Liste */}
       {total === 0 ? (
