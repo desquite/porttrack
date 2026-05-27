@@ -69,10 +69,10 @@ export default async function FlottePage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ created?: string }>;
+  searchParams: Promise<{ created?: string; deleted?: string }>;
 }) {
   const { locale } = await params;
-  const { created } = await searchParams;
+  const { created, deleted } = await searchParams;
   setRequestLocale(locale);
 
   const supabase = await createClient();
@@ -129,6 +129,17 @@ export default async function FlottePage({
           <AlertTitle>Véhicule créé</AlertTitle>
           <AlertDescription>
             <strong className="font-mono">{created}</strong> a été ajouté à la flotte.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {/* Flash de confirmation après suppression */}
+      {deleted && (
+        <Alert className="border-rose-200 bg-rose-50/60 text-rose-900">
+          <CheckCircle2 className="size-4" />
+          <AlertTitle>Véhicule supprimé</AlertTitle>
+          <AlertDescription>
+            <strong className="font-mono">{deleted}</strong> a été retiré de la flotte.
           </AlertDescription>
         </Alert>
       )}
@@ -204,8 +215,8 @@ function MaterielCard({ materiel: m }: { materiel: Materiel }) {
             </div>
           </div>
 
-          <Button variant="outline" size="sm" disabled title="Page détail bientôt disponible">
-            Voir
+          <Button asChild variant="outline" size="sm">
+            <Link href={`/flotte/${m.id}`}>Modifier</Link>
           </Button>
         </div>
 

@@ -11,16 +11,25 @@ import { cn } from "@/lib/utils";
 import {
   MATERIEL_ETATS,
   MATERIEL_TYPES,
+  type Database,
 } from "@porttrack/shared";
 import {
   createMaterielAction,
+  updateMaterielAction,
   type MaterielFormState,
 } from "../actions";
 
+type Materiel = Database["public"]["Tables"]["materiel_roulant"]["Row"];
+
 type Props = {
+  mode: "create" | "update";
   isSuperAdmin: boolean;
   tenants: { id: string; nom_entreprise: string }[];
   defaultTenantId: string | null;
+  /** Valeurs pré-remplies en mode update (issues du véhicule chargé en DB) */
+  defaultValues?: Partial<Materiel>;
+  /** ID du véhicule à updater — requis si mode === "update" */
+  materielId?: string;
 };
 
 const TYPE_LABEL: Record<(typeof MATERIEL_TYPES)[number], string> = {
@@ -42,15 +51,33 @@ const ETAT_LABEL: Record<(typeof MATERIEL_ETATS)[number], string> = {
 
 const initialState: MaterielFormState = { status: "idle" };
 
-export function MaterielForm({ isSuperAdmin, tenants, defaultTenantId }: Props) {
-  const [state, formAction, pending] = useActionState(
-    createMaterielAction,
-    initialState,
-  );
+export function MaterielForm({
+  mode,
+  isSuperAdmin,
+  tenants,
+  defaultTenantId,
+  defaultValues,
+  materielId,
+}: Props) {
+  // En update on bind l'id à l'action (plus propre qu'un hidden field tamperable)
+  const boundAction =
+    mode === "update" && materielId
+      ? updateMaterielAction.bind(null, materielId)
+      : createMaterielAction;
 
+  const [state, formAction, pending] = useActionState(boundAction, initialState);
+
+  // Priorité : (1) state.values après erreur ; (2) defaultValues mode update ; (3) ""
   const getValue = (name: string): string => {
-    if (state.status !== "error") return "";
-    return state.values?.[name] ?? "";
+    if (state.status === "error" && state.values?.[name] !== undefined) {
+      return state.values[name] ?? "";
+    }
+    if (defaultValues && name in defaultValues) {
+      const v = (defaultValues as Record<string, unknown>)[name];
+      if (v == null) return "";
+      return String(v);
+    }
+    return "";
   };
   const getError = (name: string): string | null => {
     if (state.status !== "error") return null;
@@ -64,6 +91,10 @@ export function MaterielForm({ isSuperAdmin, tenants, defaultTenantId }: Props) 
       getError(name) && "border-rose-500 focus-visible:ring-rose-500",
     );
 
+  // En mode update on masque le sélecteur de tenant — le véhicule reste attaché
+  // à son tenant initial. Le tenant_id va en hidden depuis defaultTenantId.
+  const showTenantSelector = mode === "create" && isSuperAdmin;
+
   return (
     <form action={formAction} className="space-y-8">
       {/* Erreur globale */}
@@ -74,8 +105,8 @@ export function MaterielForm({ isSuperAdmin, tenants, defaultTenantId }: Props) 
         </Alert>
       )}
 
-      {/* Tenant — SUPER_ADMIN only */}
-      {isSuperAdmin ? (
+      {/* Tenant — uniquement en création par SUPER_ADMIN */}
+      {showTenantSelector ? (
         <Section
           title="Affectation à une entreprise"
           description="En tant que SUPER_ADMIN, tu dois sélectionner le tenant auquel rattacher ce véhicule."
@@ -246,7 +277,12 @@ export function MaterielForm({ isSuperAdmin, tenants, defaultTenantId }: Props) 
               className={fieldClass("patente_fin")}
             />
           </Field>
-          <Field label="Fin autorisation DGTTC" name="autorisation_dgttc_fin" error={getError("autorisation_dgttc_fin")} className="md:col-span-2">
+          <Field
+            label="Fin autorisation DGTTC"
+            name="autorisation_dgttc_fin"
+            error={getError("autorisation_dgttc_fin")}
+            className="md:col-span-2"
+          >
             <Input
               id="autorisation_dgttc_fin"
               name="autorisation_dgttc_fin"
@@ -336,7 +372,7 @@ export function MaterielForm({ isSuperAdmin, tenants, defaultTenantId }: Props) 
           ) : (
             <>
               <Save className="mr-2 size-4" />
-              Enregistrer le véhicule
+              {mode === "update" ? "Enregistrer les modifications" : "Enregistrer le véhicule"}
             </>
           )}
         </Button>
@@ -346,7 +382,7 @@ export function MaterielForm({ isSuperAdmin, tenants, defaultTenantId }: Props) 
 }
 
 // =============================================================================
-// Composants présentationnels (mêmes helpers que chauffeur-form)
+// Composants présentationnels
 // =============================================================================
 
 function Section({

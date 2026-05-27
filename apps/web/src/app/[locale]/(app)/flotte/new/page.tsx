@@ -12,7 +12,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { MaterielForm } from "./materiel-form";
+import { MaterielForm } from "../_components/materiel-form";
 
 export default async function NewMaterielPage({
   params,
@@ -87,6 +87,7 @@ export default async function NewMaterielPage({
           </CardHeader>
           <CardContent>
             <MaterielForm
+              mode="create"
               isSuperAdmin={isSuperAdmin}
               tenants={tenants}
               defaultTenantId={defaultTenantId}
