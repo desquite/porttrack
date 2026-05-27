@@ -38,7 +38,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Conteneurs",      href: "/conteneurs", icon: Package, comingSoon: true },
   { label: "Flux & affectations", href: "/affectations", icon: ClipboardList, comingSoon: true },
   { label: "Facturation",     href: "/facturation", icon: Receipt, comingSoon: true },
-  { label: "Paramètres",      href: "/parametres", icon: Settings, comingSoon: true },
+  { label: "Paramètres",      href: "/parametres", icon: Settings },
 ];
 
 type AppShellProps = {
