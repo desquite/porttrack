@@ -35,7 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
   { label: "Chauffeurs",      href: "/chauffeurs", icon: Users },
   { label: "Flotte",          href: "/flotte",     icon: Truck },
-  { label: "Conteneurs",      href: "/conteneurs", icon: Package, comingSoon: true },
+  { label: "Conteneurs",      href: "/conteneurs", icon: Package },
   { label: "Flux & affectations", href: "/affectations", icon: ClipboardList, comingSoon: true },
   { label: "Facturation",     href: "/facturation", icon: Receipt, comingSoon: true },
   { label: "Paramètres",      href: "/parametres", icon: Settings },
