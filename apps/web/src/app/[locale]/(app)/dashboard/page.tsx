@@ -4,7 +4,8 @@ import {
   Users,
   Truck,
   AlertTriangle,
-  Calendar,
+  Package,
+  ClipboardList,
   ArrowRight,
   CheckCircle2,
 } from "lucide-react";
@@ -22,6 +23,7 @@ import {
   classifyExpiry,
   EXPIRY_BADGE_VARIANT,
   formatExpiryLabel,
+  formatDateFR,
 } from "@/lib/utils/dates";
 
 /**
@@ -47,11 +49,17 @@ export default async function DashboardPage({
     { count: chauffeursTotal },
     { count: materielEnService },
     { count: materielTotal },
+    { count: conteneursEnCours },
+    { count: conteneursTotal },
+    { count: affectationsActives },
   ] = await Promise.all([
     supabase.from("chauffeurs").select("*", { count: "exact", head: true }).eq("statut", "ACTIF"),
     supabase.from("chauffeurs").select("*", { count: "exact", head: true }),
     supabase.from("materiel_roulant").select("*", { count: "exact", head: true }).eq("etat", "EN_SERVICE"),
     supabase.from("materiel_roulant").select("*", { count: "exact", head: true }),
+    supabase.from("conteneurs").select("*", { count: "exact", head: true }).in("statut", ["EN_ATTENTE", "EN_COURS"]),
+    supabase.from("conteneurs").select("*", { count: "exact", head: true }),
+    supabase.from("affectations").select("*", { count: "exact", head: true }).in("statut", ["PLANIFIEE", "EN_COURS"]),
   ]);
 
   // Alertes : on tire les chauffeurs/matériels avec dates d'expiration < J+30
@@ -84,18 +92,36 @@ export default async function DashboardPage({
     .order("assurance_fin", { ascending: true, nullsFirst: false })
     .limit(5);
 
+  // Alertes BADT : conteneurs ouverts dont la BADT approche (J+7) ou est dépassée.
+  // La BADT (Bon À Délivrer Transitaire) est le jalon critique du PAA.
+  const badtHorizon = new Date();
+  badtHorizon.setDate(badtHorizon.getDate() + 7);
+  const { data: conteneursAlertes } = await supabase
+    .from("conteneurs")
+    .select("id, numero, client, date_badt, statut")
+    .in("statut", ["EN_ATTENTE", "EN_COURS"])
+    .not("date_badt", "is", null)
+    .lte("date_badt", badtHorizon.toISOString())
+    .order("date_badt", { ascending: true })
+    .limit(5);
+
+  const totalAlertes =
+    (chauffeursAlertes?.length ?? 0) +
+    (materielAlertes?.length ?? 0) +
+    (conteneursAlertes?.length ?? 0);
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Tableau de bord</h1>
         <p className="text-sm text-muted-foreground">
-          Vue d'ensemble de votre activité — chauffeurs, flotte, alertes documents.
+          Vue d'ensemble de votre activité — chauffeurs, flotte, conteneurs, affectations et alertes.
         </p>
       </div>
 
       {/* Compteurs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <KpiCard
           title="Chauffeurs actifs"
           value={chauffeursActifs ?? 0}
@@ -109,19 +135,25 @@ export default async function DashboardPage({
           subtitle={`sur ${materielTotal ?? 0} au total`}
           icon={<Truck className="size-4 text-primary" />}
           href="/flotte"
-          disabled
         />
         <KpiCard
           title="Conteneurs en cours"
-          value={0}
-          subtitle="Module non activé"
-          icon={<Calendar className="size-4 text-muted-foreground" />}
-          disabled
+          value={conteneursEnCours ?? 0}
+          subtitle={`sur ${conteneursTotal ?? 0} au total`}
+          icon={<Package className="size-4 text-primary" />}
+          href="/conteneurs"
+        />
+        <KpiCard
+          title="Affectations actives"
+          value={affectationsActives ?? 0}
+          subtitle="Planifiées ou en cours"
+          icon={<ClipboardList className="size-4 text-primary" />}
+          href="/affectations"
         />
         <KpiCard
           title="Alertes ouvertes"
-          value={(chauffeursAlertes?.length ?? 0) + (materielAlertes?.length ?? 0)}
-          subtitle="Documents à renouveler"
+          value={totalAlertes}
+          subtitle="Documents & BADT"
           icon={<AlertTriangle className="size-4 text-amber-600" />}
           highlight
         />
@@ -236,6 +268,57 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Alertes BADT — jalon critique PAA */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Package className="size-4 text-primary" />
+            BADT à surveiller
+          </CardTitle>
+          <CardDescription>
+            Conteneurs ouverts dont le Bon À Délivrer Transitaire approche (≤ 7 jours) ou est dépassé.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {!conteneursAlertes || conteneursAlertes.length === 0 ? (
+            <EmptyState message="Aucune BADT urgente — tous les conteneurs sont sous contrôle." />
+          ) : (
+            <ul className="space-y-3">
+              {conteneursAlertes.map((c) => {
+                const dateOnly = c.date_badt ? c.date_badt.slice(0, 10) : null;
+                const status = classifyExpiry(dateOnly, 7);
+                return (
+                  <li
+                    key={c.id}
+                    className="flex items-start justify-between gap-3 rounded-md border p-3"
+                  >
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono text-sm font-medium">{c.numero}</span>
+                        {c.client && (
+                          <span className="text-xs text-muted-foreground">{c.client}</span>
+                        )}
+                      </div>
+                      <div className="mt-1">
+                        <Badge variant={EXPIRY_BADGE_VARIANT[status]}>
+                          BADT {formatDateFR(dateOnly)} — {formatExpiryLabel(dateOnly)}
+                        </Badge>
+                      </div>
+                    </div>
+                    <Link
+                      href={`/conteneurs/${c.id}`}
+                      className="text-xs text-primary hover:underline whitespace-nowrap pt-1"
+                    >
+                      Voir →
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
