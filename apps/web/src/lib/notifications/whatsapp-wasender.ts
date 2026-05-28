@@ -3,33 +3,39 @@ import type { ChannelResult } from "./types";
 /**
  * Envoi d'un message WhatsApp via WasenderAPI.
  *
- * Format (confirmé via la doc WasenderAPI) :
- *   POST https://www.wasenderapi.com/api/send-message
- *   Authorization: Bearer <token>
+ * Format ALIGNÉ sur l'implémentation éprouvée du projet muscu-pwa :
+ *   POST https://wasenderapi.com/api/send-message
+ *   Authorization: Bearer <WASENDER_API_KEY>
  *   Content-Type: application/json
- *   { "to": "+225XXXXXXXX", "text": "..." }
+ *   { "sessionId": "...", "to": "+225XXXXXXXX", "text": "..." }
  *
  * Env requis :
- *   - WASENDER_API_KEY : token généré après connexion de la session WhatsApp
- *   - WASENDER_API_URL : optionnel, défaut https://www.wasenderapi.com/api/send-message
+ *   - WASENDER_API_KEY    : token du compte WasenderAPI
+ *   - WASENDER_SESSION_ID : id de la session WhatsApp connectée
+ *   - WASENDER_API_URL    : optionnel, défaut https://wasenderapi.com/api/send-message
  *
  * ⚠️ WasenderAPI est un wrapper non-officiel de WhatsApp Web. Risque de
  * coupure/ban si Meta détecte l'automation. À migrer vers l'API officielle
- * Meta Cloud (via Twilio ou direct) pour la prod à volume.
+ * Meta Cloud pour la prod à volume.
  */
 export async function sendWhatsapp(
   to: string,
   text: string,
 ): Promise<ChannelResult> {
   const apiKey = process.env.WASENDER_API_KEY;
+  const sessionId = process.env.WASENDER_SESSION_ID;
   const url =
-    process.env.WASENDER_API_URL ?? "https://www.wasenderapi.com/api/send-message";
+    process.env.WASENDER_API_URL ?? "https://wasenderapi.com/api/send-message";
 
-  if (!apiKey) {
-    return { channel: "whatsapp", ok: false, skipped: true, error: "WASENDER_API_KEY manquant" };
+  if (!apiKey || !sessionId) {
+    return {
+      channel: "whatsapp",
+      ok: false,
+      skipped: true,
+      error: "WASENDER_API_KEY ou WASENDER_SESSION_ID manquant",
+    };
   }
 
-  // Normalise le numéro : WasenderAPI attend un format international avec +
   const normalized = normalizePhone(to);
   if (!normalized) {
     return { channel: "whatsapp", ok: false, error: `Numéro invalide: ${to}` };
@@ -42,7 +48,7 @@ export async function sendWhatsapp(
         Authorization: `Bearer ${apiKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ to: normalized, text }),
+      body: JSON.stringify({ sessionId, to: normalized, text }),
     });
 
     if (!res.ok) {
@@ -69,7 +75,6 @@ export async function sendWhatsapp(
  */
 function normalizePhone(raw: string): string | null {
   const cleaned = raw.replace(/[\s()-]/g, "");
-  // Doit commencer par + et avoir au moins 8 chiffres
   if (!/^\+?\d{8,15}$/.test(cleaned)) return null;
   return cleaned.startsWith("+") ? cleaned : `+${cleaned}`;
 }
