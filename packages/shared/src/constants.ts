@@ -155,6 +155,14 @@ export const CONTENEUR_STATUTS = [
 ] as const;
 export type ConteneurStatut = (typeof CONTENEUR_STATUTS)[number];
 
+export const AFFECTATION_STATUTS = [
+  "PLANIFIEE",
+  "EN_COURS",
+  "TERMINEE",
+  "ANNULEE",
+] as const;
+export type AffectationStatut = (typeof AFFECTATION_STATUTS)[number];
+
 // Alias legacy (compat)
 export const STATUTS_CONTENEUR = CONTENEUR_STATUTS;
 export type StatutConteneur = ConteneurStatut;

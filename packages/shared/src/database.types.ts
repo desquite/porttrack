@@ -39,6 +39,109 @@ export type Database = {
   }
   public: {
     Tables: {
+      affectations: {
+        Row: {
+          chauffeur_id: string | null
+          conteneur_id: string
+          created_at: string
+          created_by: string | null
+          date_affectation: string
+          date_depart_prevue: string | null
+          date_depart_reelle: string | null
+          date_retour: string | null
+          id: string
+          km_depart: number | null
+          km_retour: number | null
+          notes: string | null
+          remorque_id: string | null
+          statut: Database["public"]["Enums"]["affectation_statut"]
+          tenant_id: string
+          tracteur_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          chauffeur_id?: string | null
+          conteneur_id: string
+          created_at?: string
+          created_by?: string | null
+          date_affectation?: string
+          date_depart_prevue?: string | null
+          date_depart_reelle?: string | null
+          date_retour?: string | null
+          id?: string
+          km_depart?: number | null
+          km_retour?: number | null
+          notes?: string | null
+          remorque_id?: string | null
+          statut?: Database["public"]["Enums"]["affectation_statut"]
+          tenant_id: string
+          tracteur_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chauffeur_id?: string | null
+          conteneur_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_affectation?: string
+          date_depart_prevue?: string | null
+          date_depart_reelle?: string | null
+          date_retour?: string | null
+          id?: string
+          km_depart?: number | null
+          km_retour?: number | null
+          notes?: string | null
+          remorque_id?: string | null
+          statut?: Database["public"]["Enums"]["affectation_statut"]
+          tenant_id?: string
+          tracteur_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affectations_chauffeur_id_fkey"
+            columns: ["chauffeur_id"]
+            isOneToOne: false
+            referencedRelation: "chauffeurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affectations_conteneur_id_fkey"
+            columns: ["conteneur_id"]
+            isOneToOne: false
+            referencedRelation: "conteneurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affectations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affectations_remorque_id_fkey"
+            columns: ["remorque_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affectations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affectations_tracteur_id_fkey"
+            columns: ["tracteur_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chauffeurs: {
         Row: {
           adresse: string | null
@@ -662,6 +765,7 @@ export type Database = {
       unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
+      affectation_statut: "PLANIFIEE" | "EN_COURS" | "TERMINEE" | "ANNULEE"
       chauffeur_statut: "ACTIF" | "EN_CONGE" | "SUSPENDU" | "INACTIF"
       conteneur_statut: "EN_ATTENTE" | "EN_COURS" | "LIVRE" | "ANNULE"
       document_owner_type: "CHAUFFEUR" | "MATERIEL"
@@ -833,6 +937,7 @@ export const Constants = {
   },
   public: {
     Enums: {
+      affectation_statut: ["PLANIFIEE", "EN_COURS", "TERMINEE", "ANNULEE"],
       chauffeur_statut: ["ACTIF", "EN_CONGE", "SUSPENDU", "INACTIF"],
       conteneur_statut: ["EN_ATTENTE", "EN_COURS", "LIVRE", "ANNULE"],
       document_owner_type: ["CHAUFFEUR", "MATERIEL"],
