@@ -35,15 +35,21 @@ export type AnalyzeFluxResult =
       aconier: Aconier;
       headers: string[];
       mapping: FluxMapping;
-      previewRows: Record<string, string>[]; // clés = en-têtes, valeurs d'affichage
+      samples: Record<string, string>;       // header → exemple de valeur
+      previewRows: Record<string, string>[];  // clés = en-têtes, valeurs d'affichage
       totalRows: number;
+      profileApplied: boolean;                 // un profil mémorisé a été réappliqué
     }
   | { ok: false; error: string };
+
+const SCAN_ROWS = 25; // lignes scannées pour détecter aconier + colonne numéro
 
 export async function analyzeFluxAction(
   formData: FormData,
 ): Promise<AnalyzeFluxResult> {
   const file = formData.get("file");
+  const tenantId = String(formData.get("tenantId") ?? "").trim();
+
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Aucun fichier reçu." };
   }
@@ -66,8 +72,40 @@ export async function analyzeFluxAction(
     return { ok: false, error: "Le fichier ne contient aucune donnée exploitable." };
   }
 
-  const aconier = detectAconier(file.name, parsed.headers);
-  const mapping = suggestMapping(parsed.headers);
+  // Lignes-échantillon (valeurs en chaînes, alignées par index aux headers)
+  // pour la détection par contenu (aconier) et du numéro de conteneur (ISO 6346).
+  const sampleRows: string[][] = parsed.rows.slice(0, SCAN_ROWS).map((row) =>
+    parsed.headers.map((h) => cellToDisplay(row[h] ?? null)),
+  );
+  const contentSamples = [...parsed.headers, ...sampleRows.flat()];
+
+  const aconier = detectAconier(file.name, parsed.headers, contentSamples);
+  let mapping = suggestMapping(parsed.headers, sampleRows);
+
+  // Réapplique le profil de mapping mémorisé pour ce (tenant, aconier), si présent.
+  let profileApplied = false;
+  if (tenantId) {
+    const supabase = await createClient();
+    const { data: profile } = await supabase
+      .from("flux_mapping_profiles")
+      .select("mapping")
+      .eq("tenant_id", tenantId)
+      .eq("aconier", aconier)
+      .maybeSingle();
+    if (profile?.mapping) {
+      const saved = profile.mapping as Record<string, string>;
+      const headerSet = new Set(parsed.headers);
+      const merged = { ...mapping };
+      for (const [field, header] of Object.entries(saved)) {
+        // n'applique que si l'en-tête existe encore dans ce fichier
+        if (field in merged && header && headerSet.has(header)) {
+          merged[field as keyof FluxMapping] = header;
+          profileApplied = true;
+        }
+      }
+      mapping = merged;
+    }
+  }
 
   const previewRows = parsed.rows.slice(0, PREVIEW_ROWS).map((row) => {
     const out: Record<string, string> = {};
@@ -82,8 +120,10 @@ export async function analyzeFluxAction(
     aconier,
     headers: parsed.headers,
     mapping,
+    samples: parsed.samples,
     previewRows,
     totalRows: parsed.rows.length,
+    profileApplied,
   };
 }
 
@@ -130,6 +170,7 @@ function emptyReport(meta: { aconier: string; nomFichier: string }): FluxImportR
     nombreImportes: 0,
     nombreDoublons: 0,
     nombreErreurs: 0,
+    nombreIgnorees: 0,
     statut: "ECHEC",
     doublons: [],
     erreurs: [],
@@ -199,6 +240,7 @@ export async function importFluxAction(
   const erreurs: { ligne: number; message: string }[] = [];
   const avertissements: { ligne: number; message: string }[] = [];
   const seenInBatch = new Set<string>();
+  let ignorees = 0;
 
   parsed.rows.forEach((row, idx) => {
     const ligne = idx + 1;
@@ -206,7 +248,9 @@ export async function importFluxAction(
 
     let numero = cellToString(std.numero);
     if (!numero) {
-      erreurs.push({ ligne, message: "Numéro de conteneur manquant." });
+      // Ligne sans numéro de conteneur : footer, ligne de total, ligne vide de
+      // données… → ignorée silencieusement (pas une erreur de validation).
+      ignorees += 1;
       return;
     }
     numero = numero.toUpperCase();
@@ -344,6 +388,7 @@ export async function importFluxAction(
       nombreLignes,
       nombreDoublons: doublons.length,
       nombreErreurs: erreurs.length,
+      nombreIgnorees: ignorees,
       doublons,
       erreurs: [...erreurs, { ligne: 0, message }],
       avertissements,
@@ -385,6 +430,25 @@ export async function importFluxAction(
     .update({ nombre_importes: importes, nombre_erreurs: erreurs.length, statut })
     .eq("id", flux.id);
 
+  // --- 9. Mémorisation du profil de mapping (cahier §4.4) ---
+  // Dès qu'au moins une ligne est importée, on enregistre le mapping retenu
+  // pour ce (tenant, aconier) afin de le réappliquer aux imports suivants.
+  if (importes > 0) {
+    const { error: profileErr } = await supabase
+      .from("flux_mapping_profiles")
+      .upsert(
+        {
+          tenant_id: meta.tenantId,
+          aconier: meta.aconier,
+          mapping,
+          created_by: user.id,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "tenant_id,aconier" },
+      );
+    if (profileErr) console.error("[importFluxAction] profil mapping", profileErr);
+  }
+
   revalidatePath("/conteneurs");
   revalidatePath("/dashboard");
 
@@ -396,6 +460,7 @@ export async function importFluxAction(
     nombreImportes: importes,
     nombreDoublons: doublons.length,
     nombreErreurs: erreurs.length,
+    nombreIgnorees: ignorees,
     statut,
     doublons,
     erreurs,

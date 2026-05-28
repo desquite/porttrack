@@ -31,6 +31,7 @@ export interface FluxImportReport {
   nombreImportes: number;
   nombreDoublons: number;
   nombreErreurs: number;
+  nombreIgnorees: number; // lignes sans n° de conteneur (footers, lignes vides de données)
   statut: "TERMINE" | "PARTIEL" | "ECHEC";
   doublons: string[]; // numéros ignorés
   erreurs: { ligne: number; message: string }[];

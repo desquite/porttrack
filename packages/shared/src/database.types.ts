@@ -494,6 +494,51 @@ export type Database = {
           },
         ]
       }
+      flux_mapping_profiles: {
+        Row: {
+          aconier: string
+          created_at: string
+          created_by: string | null
+          id: string
+          mapping: Json
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          aconier: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mapping?: Json
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          aconier?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          mapping?: Json
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flux_mapping_profiles_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flux_mapping_profiles_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materiel_roulant: {
         Row: {
           annee: number | null

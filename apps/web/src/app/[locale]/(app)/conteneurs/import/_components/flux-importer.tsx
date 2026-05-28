@@ -43,8 +43,9 @@ type Analysis = Extract<AnalyzeFluxResult, { ok: true }>;
 
 const ACONIER_LABEL: Record<Aconier, string> = {
   MEDLOG: "MEDLOG",
-  AGL: "AGL",
   MAERSK: "MAERSK",
+  "CMA CGM": "CMA CGM",
+  AGL: "AGL",
   AUTRE: "Autre / inconnu",
 };
 
@@ -71,6 +72,7 @@ export function FluxImporter({ isSuperAdmin, tenants, defaultTenantId }: Props) 
     try {
       const fd = new FormData();
       fd.append("file", file);
+      fd.append("tenantId", tenantId);
       const result = await analyzeFluxAction(fd);
       if (!result.ok) {
         setError(result.error);
@@ -317,6 +319,17 @@ function MappingStep({
         </div>
       </div>
 
+      {analysis.profileApplied && (
+        <Alert className="border-emerald-300 bg-emerald-50/60 text-emerald-900">
+          <CheckCircle2 className="size-4" />
+          <AlertTitle>Profil mémorisé appliqué</AlertTitle>
+          <AlertDescription>
+            Le mapping enregistré pour <strong>{ACONIER_LABEL[aconier]}</strong> a été
+            réappliqué automatiquement. Tu peux l&apos;ajuster ci-dessous si besoin.
+          </AlertDescription>
+        </Alert>
+      )}
+
       {!numeroMapped && (
         <Alert variant="destructive">
           <AlertTriangle className="size-4" />
@@ -353,7 +366,7 @@ function MappingStep({
                 <option value="">— Ignorer —</option>
                 {analysis.headers.map((h) => (
                   <option key={h} value={h}>
-                    {h}
+                    {analysis.samples[h] ? `${h} — ex : ${analysis.samples[h]}` : h}
                   </option>
                 ))}
               </select>
@@ -448,11 +461,12 @@ function ReportStep({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
         <Stat label="Lignes lues" value={report.nombreLignes} />
         <Stat label="Importés" value={report.nombreImportes} tone="success" />
-        <Stat label="Doublons ignorés" value={report.nombreDoublons} tone="warn" />
+        <Stat label="Doublons" value={report.nombreDoublons} tone="warn" />
         <Stat label="Erreurs" value={report.nombreErreurs} tone="danger" />
+        <Stat label="Ignorées (sans n°)" value={report.nombreIgnorees} />
       </div>
 
       {report.doublons.length > 0 && (

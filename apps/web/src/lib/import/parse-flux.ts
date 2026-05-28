@@ -12,8 +12,9 @@ import { normalizeHeader, MEDLOG_HEADER_ALIASES } from "@porttrack/shared";
 export type FluxCell = string | number | boolean | Date | null;
 
 export interface ParsedFlux {
-  headers: string[];
+  headers: string[];                       // libellés uniques (colonnes sans titre → "Colonne N")
   rows: Record<string, FluxCell>[];
+  samples: Record<string, string>;         // header → 1ʳᵉ valeur non vide (aide à reconnaître la colonne)
 }
 
 const MAX_ROWS = 5000; // garde-fou : un flux raisonnable dépasse rarement quelques centaines de lignes
@@ -51,17 +52,23 @@ export async function parseFluxFile(file: File): Promise<ParsedFlux> {
   });
 
   if (matrix.length === 0) {
-    return { headers: [], rows: [] };
+    return { headers: [], rows: [], samples: {} };
   }
 
   const headerRowIndex = findHeaderRow(matrix);
   const rawHeaders = matrix[headerRowIndex] ?? [];
+  const colCount = matrix.reduce((max, row) => Math.max(max, row?.length ?? 0), rawHeaders.length);
 
-  // Normalise les libellés d'en-tête (string non vide, fallback COL_n)
-  const headers: string[] = rawHeaders.map((cell, i) => {
-    const label = cellToText(cell).trim();
-    return label === "" ? `COL_${i + 1}` : label;
-  });
+  // Libellés d'en-tête : colonne sans titre → "Colonne N", puis dédoublonnage
+  // (certains fichiers réels répètent un même libellé, ex. « CODE », « DATE DE RE »).
+  const seen = new Map<string, number>();
+  const headers: string[] = [];
+  for (let i = 0; i < colCount; i++) {
+    const base = cellToText(rawHeaders[i]).trim() || `Colonne ${i + 1}`;
+    const n = (seen.get(base) ?? 0) + 1;
+    seen.set(base, n);
+    headers.push(n === 1 ? base : `${base} (${n})`);
+  }
 
   const rows: Record<string, FluxCell>[] = [];
   for (let r = headerRowIndex + 1; r < matrix.length && rows.length < MAX_ROWS; r++) {
@@ -75,7 +82,19 @@ export async function parseFluxFile(file: File): Promise<ParsedFlux> {
     rows.push(row);
   }
 
-  return { headers, rows };
+  // Échantillon : 1ʳᵉ valeur non vide par colonne (pour les en-têtes vides surtout)
+  const samples: Record<string, string> = {};
+  for (const h of headers) {
+    for (const row of rows) {
+      const display = sampleDisplay(row[h]);
+      if (display) {
+        samples[h] = display;
+        break;
+      }
+    }
+  }
+
+  return { headers, rows, samples };
 }
 
 // =============================================================================
@@ -114,4 +133,14 @@ function cellToText(cell: FluxCell): string {
   if (cell === null || cell === undefined) return "";
   if (cell instanceof Date) return cell.toISOString();
   return String(cell);
+}
+
+/** Valeur courte et lisible pour l'échantillon d'une colonne (dates → JJ/MM/AAAA). */
+function sampleDisplay(cell: FluxCell): string {
+  if (cell === null || cell === undefined) return "";
+  if (cell instanceof Date) {
+    return `${String(cell.getUTCDate()).padStart(2, "0")}/${String(cell.getUTCMonth() + 1).padStart(2, "0")}/${cell.getUTCFullYear()}`;
+  }
+  const s = String(cell).trim();
+  return s.length > 24 ? s.slice(0, 24) + "…" : s;
 }
