@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.5"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       affectations: {
@@ -252,8 +227,10 @@ export type Database = {
           date_livraison_reelle: string | null
           destination_id: string | null
           destination_libre: string | null
+          flux_id: string | null
           id: string
           marchandise: string | null
+          mode_livraison: string | null
           navire_voyage: string | null
           notes: string | null
           num_declaration: string | null
@@ -267,6 +244,7 @@ export type Database = {
           statut: Database["public"]["Enums"]["conteneur_statut"]
           tenant_id: string
           transitaire: string | null
+          transporteur: string | null
           type_conteneur_id: string | null
           type_visite: string | null
           updated_at: string
@@ -281,8 +259,10 @@ export type Database = {
           date_livraison_reelle?: string | null
           destination_id?: string | null
           destination_libre?: string | null
+          flux_id?: string | null
           id?: string
           marchandise?: string | null
+          mode_livraison?: string | null
           navire_voyage?: string | null
           notes?: string | null
           num_declaration?: string | null
@@ -296,6 +276,7 @@ export type Database = {
           statut?: Database["public"]["Enums"]["conteneur_statut"]
           tenant_id: string
           transitaire?: string | null
+          transporteur?: string | null
           type_conteneur_id?: string | null
           type_visite?: string | null
           updated_at?: string
@@ -310,8 +291,10 @@ export type Database = {
           date_livraison_reelle?: string | null
           destination_id?: string | null
           destination_libre?: string | null
+          flux_id?: string | null
           id?: string
           marchandise?: string | null
+          mode_livraison?: string | null
           navire_voyage?: string | null
           notes?: string | null
           num_declaration?: string | null
@@ -325,6 +308,7 @@ export type Database = {
           statut?: Database["public"]["Enums"]["conteneur_statut"]
           tenant_id?: string
           transitaire?: string | null
+          transporteur?: string | null
           type_conteneur_id?: string | null
           type_visite?: string | null
           updated_at?: string
@@ -342,6 +326,13 @@ export type Database = {
             columns: ["destination_id"]
             isOneToOne: false
             referencedRelation: "port_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteneurs_flux_id_fkey"
+            columns: ["flux_id"]
+            isOneToOne: false
+            referencedRelation: "flux"
             referencedColumns: ["id"]
           },
           {
@@ -439,6 +430,66 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      flux: {
+        Row: {
+          aconier: string
+          created_at: string
+          created_by: string | null
+          date_import: string
+          id: string
+          nom_fichier: string
+          nombre_doublons: number
+          nombre_erreurs: number
+          nombre_importes: number
+          nombre_lignes: number
+          statut: Database["public"]["Enums"]["flux_import_statut"]
+          tenant_id: string
+        }
+        Insert: {
+          aconier: string
+          created_at?: string
+          created_by?: string | null
+          date_import?: string
+          id?: string
+          nom_fichier: string
+          nombre_doublons?: number
+          nombre_erreurs?: number
+          nombre_importes?: number
+          nombre_lignes?: number
+          statut?: Database["public"]["Enums"]["flux_import_statut"]
+          tenant_id: string
+        }
+        Update: {
+          aconier?: string
+          created_at?: string
+          created_by?: string | null
+          date_import?: string
+          id?: string
+          nom_fichier?: string
+          nombre_doublons?: number
+          nombre_erreurs?: number
+          nombre_importes?: number
+          nombre_lignes?: number
+          statut?: Database["public"]["Enums"]["flux_import_statut"]
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flux_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "flux_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -783,6 +834,7 @@ export type Database = {
         | "PATENTE_TRANSPORT"
         | "AUTORISATION_DGTTC"
         | "AUTRE"
+      flux_import_statut: "TERMINE" | "PARTIEL" | "ECHEC"
       materiel_etat:
         | "EN_SERVICE"
         | "EN_PANNE"
@@ -932,9 +984,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       affectation_statut: ["PLANIFIEE", "EN_COURS", "TERMINEE", "ANNULEE"],
@@ -956,6 +1005,7 @@ export const Constants = {
         "AUTORISATION_DGTTC",
         "AUTRE",
       ],
+      flux_import_statut: ["TERMINE", "PARTIEL", "ECHEC"],
       materiel_etat: [
         "EN_SERVICE",
         "EN_PANNE",

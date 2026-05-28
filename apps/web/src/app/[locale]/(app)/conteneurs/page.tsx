@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
-import { Package, Plus, CheckCircle2, Ship, MapPin, Calendar } from "lucide-react";
+import { Package, Plus, CheckCircle2, Ship, MapPin, Calendar, FileSpreadsheet } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -122,12 +122,20 @@ export default async function ConteneursPage({
             )}
           </p>
         </div>
-        <Button asChild>
-          <Link href="/conteneurs/new">
-            <Plus className="mr-2 size-4" />
-            Nouveau conteneur
-          </Link>
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button asChild variant="outline">
+            <Link href="/conteneurs/import">
+              <FileSpreadsheet className="mr-2 size-4" />
+              Importer Excel
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link href="/conteneurs/new">
+              <Plus className="mr-2 size-4" />
+              Nouveau conteneur
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {sp.created && (
