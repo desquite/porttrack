@@ -2,8 +2,15 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { tenantUpdateSchema, type TenantUpdateInput } from "@porttrack/shared";
+import { headers } from "next/headers";
+import {
+  tenantUpdateSchema,
+  tenantCreateSchema,
+  type TenantUpdateInput,
+  type TenantCreateInput,
+} from "@porttrack/shared";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // =============================================================================
 // État partagé avec le composant client
@@ -142,5 +149,153 @@ export async function updateTenantAction(
     : "/parametres";
   redirect(
     `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}updated=${encodeURIComponent(parsed.data.nom_entreprise)}`,
+  );
+}
+
+// =============================================================================
+// État + Server Action : création d'un tenant (SUPER_ADMIN uniquement)
+// =============================================================================
+
+export type TenantCreateState =
+  | { status: "idle" }
+  | {
+      status: "error";
+      formError?: string;
+      fieldErrors?: Partial<Record<keyof TenantCreateInput, string[]>>;
+      values?: Partial<Record<string, string>>;
+    };
+
+export async function createTenantAction(
+  _prev: TenantCreateState,
+  formData: FormData,
+): Promise<TenantCreateState> {
+  const values = readFormValues(formData);
+
+  // 1. Validation Zod
+  const parsed = tenantCreateSchema.safeParse(values);
+  if (!parsed.success) {
+    const fieldErrors: Partial<Record<keyof TenantCreateInput, string[]>> = {};
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0] as keyof TenantCreateInput | undefined;
+      if (!field) continue;
+      const existing = fieldErrors[field] ?? [];
+      existing.push(issue.message);
+      fieldErrors[field] = existing;
+    }
+    return {
+      status: "error",
+      formError: "Le formulaire contient des erreurs. Corrige les champs en rouge.",
+      fieldErrors,
+      values,
+    };
+  }
+
+  // 2. Vérifie que l'appelant est SUPER_ADMIN
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { status: "error", formError: "Session expirée. Reconnecte-toi.", values };
+  }
+  const { data: profile } = await supabase
+    .from("users")
+    .select("role")
+    .eq("id", user.id)
+    .maybeSingle();
+  if (profile?.role !== "SUPER_ADMIN") {
+    return {
+      status: "error",
+      formError: "Seul un SUPER_ADMIN peut créer une entreprise.",
+      values,
+    };
+  }
+
+  // 3. Insertion du tenant (RLS tenants_insert_super_only valide is_super_admin)
+  const { data: tenant, error: insertErr } = await supabase
+    .from("tenants")
+    .insert({
+      nom_entreprise: parsed.data.nom_entreprise,
+      rccm: parsed.data.rccm,
+      email_manager: parsed.data.email_manager,
+      telephone: parsed.data.telephone,
+      adresse: parsed.data.adresse,
+      plan: parsed.data.plan,
+      statut: parsed.data.statut,
+    })
+    .select("id, nom_entreprise")
+    .single();
+
+  if (insertErr || !tenant) {
+    console.error("[createTenantAction] insert:", insertErr);
+    if (insertErr?.code === "23505") {
+      return {
+        status: "error",
+        fieldErrors: { rccm: ["Un tenant avec ce RCCM existe déjà"] },
+        values,
+      };
+    }
+    return {
+      status: "error",
+      formError: `Erreur base de données : ${insertErr?.message ?? "inconnue"}`,
+      values,
+    };
+  }
+
+  // 4. Invitation optionnelle du premier MANAGER
+  if (parsed.data.manager_email) {
+    const admin = createAdminClient();
+
+    // Vérifie unicité de l'email
+    const { data: existing } = await admin.auth.admin.listUsers();
+    const alreadyExists = existing?.users.some(
+      (u) => u.email?.toLowerCase() === parsed.data.manager_email!.toLowerCase(),
+    );
+
+    if (alreadyExists) {
+      // Tenant créé mais manager pas invité — on remonte un message non-bloquant
+      revalidatePath("/parametres");
+      redirect(
+        `/parametres?tenant=${tenant.id}&updated=${encodeURIComponent(
+          tenant.nom_entreprise,
+        )}&userMsg=${encodeURIComponent(
+          "Entreprise créée. Le manager n'a pas été invité : un compte avec cet email existe déjà.",
+        )}&userMsgType=error`,
+      );
+    }
+
+    const { error: createUserErr } = await admin.auth.admin.createUser({
+      email: parsed.data.manager_email,
+      email_confirm: true,
+      app_metadata: { tenant_id: tenant.id, role: "MANAGER" },
+    });
+
+    if (createUserErr) {
+      console.error("[createTenantAction] createUser:", createUserErr);
+      revalidatePath("/parametres");
+      redirect(
+        `/parametres?tenant=${tenant.id}&updated=${encodeURIComponent(
+          tenant.nom_entreprise,
+        )}&userMsg=${encodeURIComponent(
+          `Entreprise créée. Échec invitation manager : ${createUserErr.message}`,
+        )}&userMsgType=error`,
+      );
+    }
+
+    // Magic link bonus
+    const host = (await headers()).get("host") ?? "localhost:3000";
+    const protocol = host.startsWith("localhost") ? "http" : "https";
+    await admin.auth.admin.generateLink({
+      type: "magiclink",
+      email: parsed.data.manager_email,
+      options: { redirectTo: `${protocol}://${host}/api/auth/callback` },
+    });
+  }
+
+  // 5. Succès — redirige vers la page du tenant créé
+  revalidatePath("/parametres");
+  revalidatePath("/dashboard");
+  redirect(
+    `/parametres?tenant=${tenant.id}&updated=${encodeURIComponent(tenant.nom_entreprise)}`,
   );
 }

@@ -5,7 +5,9 @@ import {
   CheckCircle2,
   ChevronRight,
   Settings,
+  Plus,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 import { createClient } from "@/lib/supabase/server";
 import {
@@ -73,12 +75,20 @@ export default async function ParametresPage({
 
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Paramètres — entreprises</h1>
-          <p className="text-sm text-muted-foreground">
-            En tant que SUPER_ADMIN, sélectionne une entreprise pour éditer ses
-            paramètres (informations légales, contact, plan d'abonnement, statut).
-          </p>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Paramètres — entreprises</h1>
+            <p className="text-sm text-muted-foreground">
+              En tant que SUPER_ADMIN, sélectionne une entreprise pour éditer ses
+              paramètres (informations légales, contact, plan d'abonnement, statut).
+            </p>
+          </div>
+          <Button asChild>
+            <Link href="/parametres/nouveau">
+              <Plus className="mr-2 size-4" />
+              Nouvelle entreprise
+            </Link>
+          </Button>
         </div>
 
         {!tenants || tenants.length === 0 ? (

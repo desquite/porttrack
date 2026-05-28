@@ -63,3 +63,45 @@ export const tenantUpdateSchema = z.object({
 
 export type TenantUpdateInput = z.input<typeof tenantUpdateSchema>;
 export type TenantUpdateData = z.output<typeof tenantUpdateSchema>;
+
+// =============================================================================
+// Schéma création tenant (réservé SUPER_ADMIN)
+// =============================================================================
+
+export const tenantCreateSchema = z.object({
+  nom_entreprise: z
+    .string()
+    .trim()
+    .min(1, "Nom obligatoire")
+    .max(200, "Nom trop long (max 200)"),
+  rccm: optionalString(50),
+  email_manager: z
+    .string()
+    .trim()
+    .min(1, "Email du contact principal obligatoire")
+    .max(150, "Email trop long")
+    .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Adresse email invalide"),
+  telephone: optionalString(30).refine(
+    (v) => v === null || /^[+0-9 ()-]+$/.test(v as string),
+    "Format de téléphone invalide",
+  ),
+  adresse: optionalString(500),
+  plan: z.enum(PLANS_ABONNEMENT).default("STARTER"),
+  statut: z.enum(TENANT_STATUTS).default("TRIAL"),
+
+  // Optionnel : email du premier MANAGER à inviter en même temps
+  manager_email: z.preprocess(
+    (val) => {
+      if (typeof val !== "string") return val;
+      const t = val.trim();
+      return t === "" ? null : t;
+    },
+    z
+      .string()
+      .regex(/^[^\s@]+@[^\s@]+\.[^\s@]+$/, "Adresse email du manager invalide")
+      .nullable(),
+  ),
+});
+
+export type TenantCreateInput = z.input<typeof tenantCreateSchema>;
+export type TenantCreateData = z.output<typeof tenantCreateSchema>;
