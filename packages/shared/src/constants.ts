@@ -147,12 +147,17 @@ export const SEUILS_BADT = {
 // Conteneurs (futur)
 // =============================================================================
 
-export const STATUTS_CONTENEUR = [
+export const CONTENEUR_STATUTS = [
   "EN_ATTENTE",
   "EN_COURS",
   "LIVRE",
+  "ANNULE",
 ] as const;
-export type StatutConteneur = (typeof STATUTS_CONTENEUR)[number];
+export type ConteneurStatut = (typeof CONTENEUR_STATUTS)[number];
+
+// Alias legacy (compat)
+export const STATUTS_CONTENEUR = CONTENEUR_STATUTS;
+export type StatutConteneur = ConteneurStatut;
 
 // =============================================================================
 // Bot WhatsApp (futur — cahier §7.5)

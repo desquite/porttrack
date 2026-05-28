@@ -138,6 +138,139 @@ export type Database = {
           },
         ]
       }
+      conteneurs: {
+        Row: {
+          client: string | null
+          created_at: string
+          created_by: string | null
+          date_badt: string | null
+          date_do: string | null
+          date_livraison_prevue: string | null
+          date_livraison_reelle: string | null
+          destination_id: string | null
+          destination_libre: string | null
+          id: string
+          marchandise: string | null
+          navire_voyage: string | null
+          notes: string | null
+          num_declaration: string | null
+          numero: string
+          numero_bl: string | null
+          origine_id: string | null
+          plomb: string | null
+          poids_kg: number | null
+          search_text: string | null
+          shipping_line_id: string | null
+          statut: Database["public"]["Enums"]["conteneur_statut"]
+          tenant_id: string
+          transitaire: string | null
+          type_conteneur_id: string | null
+          type_visite: string | null
+          updated_at: string
+        }
+        Insert: {
+          client?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_badt?: string | null
+          date_do?: string | null
+          date_livraison_prevue?: string | null
+          date_livraison_reelle?: string | null
+          destination_id?: string | null
+          destination_libre?: string | null
+          id?: string
+          marchandise?: string | null
+          navire_voyage?: string | null
+          notes?: string | null
+          num_declaration?: string | null
+          numero: string
+          numero_bl?: string | null
+          origine_id?: string | null
+          plomb?: string | null
+          poids_kg?: number | null
+          search_text?: string | null
+          shipping_line_id?: string | null
+          statut?: Database["public"]["Enums"]["conteneur_statut"]
+          tenant_id: string
+          transitaire?: string | null
+          type_conteneur_id?: string | null
+          type_visite?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_badt?: string | null
+          date_do?: string | null
+          date_livraison_prevue?: string | null
+          date_livraison_reelle?: string | null
+          destination_id?: string | null
+          destination_libre?: string | null
+          id?: string
+          marchandise?: string | null
+          navire_voyage?: string | null
+          notes?: string | null
+          num_declaration?: string | null
+          numero?: string
+          numero_bl?: string | null
+          origine_id?: string | null
+          plomb?: string | null
+          poids_kg?: number | null
+          search_text?: string | null
+          shipping_line_id?: string | null
+          statut?: Database["public"]["Enums"]["conteneur_statut"]
+          tenant_id?: string
+          transitaire?: string | null
+          type_conteneur_id?: string | null
+          type_visite?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conteneurs_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteneurs_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "port_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteneurs_origine_id_fkey"
+            columns: ["origine_id"]
+            isOneToOne: false
+            referencedRelation: "port_codes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteneurs_shipping_line_id_fkey"
+            columns: ["shipping_line_id"]
+            isOneToOne: false
+            referencedRelation: "shipping_lines"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteneurs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "conteneurs_type_conteneur_id_fkey"
+            columns: ["type_conteneur_id"]
+            isOneToOne: false
+            referencedRelation: "types_conteneur"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           created_at: string
@@ -525,10 +658,12 @@ export type Database = {
       jwt_user_role: { Args: never; Returns: string }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
+      storage_tenant_from_path: { Args: { file_name: string }; Returns: string }
       unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
       chauffeur_statut: "ACTIF" | "EN_CONGE" | "SUSPENDU" | "INACTIF"
+      conteneur_statut: "EN_ATTENTE" | "EN_COURS" | "LIVRE" | "ANNULE"
       document_owner_type: "CHAUFFEUR" | "MATERIEL"
       document_type:
         | "CNI"
@@ -699,6 +834,7 @@ export const Constants = {
   public: {
     Enums: {
       chauffeur_statut: ["ACTIF", "EN_CONGE", "SUSPENDU", "INACTIF"],
+      conteneur_statut: ["EN_ATTENTE", "EN_COURS", "LIVRE", "ANNULE"],
       document_owner_type: ["CHAUFFEUR", "MATERIEL"],
       document_type: [
         "CNI",
