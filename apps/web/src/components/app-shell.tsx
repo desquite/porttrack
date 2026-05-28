@@ -36,7 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Chauffeurs",      href: "/chauffeurs", icon: Users },
   { label: "Flotte",          href: "/flotte",     icon: Truck },
   { label: "Conteneurs",      href: "/conteneurs", icon: Package },
-  { label: "Flux & affectations", href: "/affectations", icon: ClipboardList, comingSoon: true },
+  { label: "Flux & affectations", href: "/affectations", icon: ClipboardList },
   { label: "Facturation",     href: "/facturation", icon: Receipt, comingSoon: true },
   { label: "Paramètres",      href: "/parametres", icon: Settings },
 ];
