@@ -41,6 +41,8 @@ type Props = {
   tenantId: string;
   isSelf: boolean;          // l'utilisateur courant = ce user → guards spéciaux
   createdAt: string;
+  /** Le caller peut-il administrer (modifier rôle / activer) ? Sinon lecture seule. */
+  canAdmin?: boolean;
 };
 
 export function UserRow({
@@ -51,6 +53,7 @@ export function UserRow({
   tenantId,
   isSelf,
   createdAt,
+  canAdmin = true,
 }: Props) {
   const [rolePending, startRoleTransition] = useTransition();
   const [actifPending, startActifTransition] = useTransition();
@@ -115,8 +118,8 @@ export function UserRow({
 
       {/* Sélecteur rôle inline */}
       <div className="flex items-center gap-2">
-        {role === "SUPER_ADMIN" ? (
-          // SUPER_ADMIN n'est pas modifiable via cette UI
+        {role === "SUPER_ADMIN" || !canAdmin ? (
+          // SUPER_ADMIN non modifiable, ou caller sans droits d'admin → badge figé
           <Badge variant={ROLE_VARIANT[role]} className="text-[10px]">
             {ROLE_LABEL[role]}
           </Badge>
@@ -149,8 +152,8 @@ export function UserRow({
           </div>
         )}
 
-        {/* Bouton activer/désactiver */}
-        {!isSelf && role !== "SUPER_ADMIN" && (
+        {/* Bouton activer/désactiver — réservé aux administrateurs */}
+        {canAdmin && !isSelf && role !== "SUPER_ADMIN" && (
           <Button
             type="button"
             variant="ghost"

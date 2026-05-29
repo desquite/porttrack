@@ -19,6 +19,8 @@ type Props = {
   tenantId: string;
   /** ID du caller — pour marquer "Toi" et désactiver les self-actions */
   currentUserId: string;
+  /** Le caller peut-il gérer les membres (SUPER_ADMIN / MANAGER) ? */
+  canAdmin: boolean;
   /** Message flash propagé via ?userMsg=… */
   userMsg?: string;
   userMsgType?: "success" | "error";
@@ -27,6 +29,7 @@ type Props = {
 export async function UsersSection({
   tenantId,
   currentUserId,
+  canAdmin,
   userMsg,
   userMsgType,
 }: Props) {
@@ -46,8 +49,9 @@ export async function UsersSection({
           Membres ({users?.length ?? 0})
         </CardTitle>
         <CardDescription>
-          Invite tes dispatchers, comptables et chefs de garage. Chaque membre
-          aura accès à PORTTRACK avec son propre identifiant et son rôle dédié.
+          {canAdmin
+            ? "Invite tes dispatchers, comptables et chefs de garage. Chaque membre aura accès à PORTTRACK avec son propre identifiant et son rôle dédié."
+            : "Liste des membres de l'entreprise (lecture seule). Seul le manager peut modifier les rôles ou inviter de nouveaux membres."}
         </CardDescription>
       </CardHeader>
 
@@ -95,6 +99,7 @@ export async function UsersSection({
                 tenantId={tenantId}
                 isSelf={u.id === currentUserId}
                 createdAt={u.created_at}
+                canAdmin={canAdmin}
               />
             ))}
           </ul>
@@ -105,13 +110,15 @@ export async function UsersSection({
           </div>
         )}
 
-        {/* Formulaire d'invitation */}
-        <div className="border-t pt-6">
-          <h4 className="mb-3 text-sm font-semibold tracking-tight">
-            Inviter un nouveau membre
-          </h4>
-          <InviteUserForm tenantId={tenantId} />
-        </div>
+        {/* Formulaire d'invitation — réservé aux administrateurs */}
+        {canAdmin && (
+          <div className="border-t pt-6">
+            <h4 className="mb-3 text-sm font-semibold tracking-tight">
+              Inviter un nouveau membre
+            </h4>
+            <InviteUserForm tenantId={tenantId} />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

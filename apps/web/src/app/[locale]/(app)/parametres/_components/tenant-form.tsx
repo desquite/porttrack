@@ -20,6 +20,8 @@ type Tenant = Database["public"]["Tables"]["tenants"]["Row"];
 type Props = {
   tenant: Tenant;
   isSuperAdmin: boolean;
+  /** Le caller peut-il éditer (SUPER_ADMIN / MANAGER) ? Sinon lecture seule. */
+  canEdit?: boolean;
 };
 
 const PLAN_LABEL: Record<(typeof PLANS_ABONNEMENT)[number], string> = {
@@ -37,7 +39,7 @@ const STATUT_LABEL: Record<(typeof TENANT_STATUTS)[number], string> = {
 
 const initialState: TenantFormState = { status: "idle" };
 
-export function TenantForm({ tenant, isSuperAdmin }: Props) {
+export function TenantForm({ tenant, isSuperAdmin, canEdit = true }: Props) {
   const boundAction = updateTenantAction.bind(null, tenant.id);
   const [state, formAction, pending] = useActionState(boundAction, initialState);
 
@@ -70,6 +72,7 @@ export function TenantForm({ tenant, isSuperAdmin }: Props) {
         </Alert>
       )}
 
+      <fieldset disabled={!canEdit} className="m-0 min-w-0 space-y-8 border-0 p-0 disabled:opacity-70">
       {/* Identité */}
       <Section title="Identité de l'entreprise">
         <Grid cols={2}>
@@ -214,22 +217,30 @@ export function TenantForm({ tenant, isSuperAdmin }: Props) {
         </Section>
       )}
 
-      {/* Submit */}
-      <div className="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:justify-end">
-        <Button type="submit" disabled={pending}>
-          {pending ? (
-            <>
-              <Loader2 className="mr-2 size-4 animate-spin" />
-              Enregistrement…
-            </>
-          ) : (
-            <>
-              <Save className="mr-2 size-4" />
-              Enregistrer les modifications
-            </>
-          )}
-        </Button>
-      </div>
+      </fieldset>
+
+      {/* Submit — réservé aux administrateurs */}
+      {canEdit ? (
+        <div className="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:justify-end">
+          <Button type="submit" disabled={pending}>
+            {pending ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Enregistrement…
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 size-4" />
+                Enregistrer les modifications
+              </>
+            )}
+          </Button>
+        </div>
+      ) : (
+        <p className="border-t pt-6 text-xs text-muted-foreground">
+          Lecture seule — seul le manager de l&apos;entreprise peut modifier ces informations.
+        </p>
+      )}
     </form>
   );
 }

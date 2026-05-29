@@ -56,6 +56,9 @@ export default async function ParametresPage({
     .maybeSingle();
 
   const isSuperAdmin = profile?.role === "SUPER_ADMIN";
+  // Seuls SUPER_ADMIN et MANAGER peuvent administrer l'entreprise (éditer le
+  // profil, gérer les membres). Les autres rôles voient la page en lecture seule.
+  const canAdmin = isSuperAdmin || profile?.role === "MANAGER";
 
   // Détermine quel tenant on édite :
   //   - MANAGER (ou autre rôle avec tenant_id) → son tenant
@@ -220,8 +223,9 @@ export default async function ParametresPage({
         <p className="text-sm text-muted-foreground">
           {isSuperAdmin
             ? "Édite tous les paramètres incluant le plan d'abonnement et le statut."
-            : "Édite les informations de ton entreprise. Les champs marqués d'une "
-              + "★ sont obligatoires."}
+            : canAdmin
+              ? "Édite les informations de ton entreprise. Les champs marqués d'une ★ sont obligatoires."
+              : "Consultation des informations de ton entreprise (lecture seule — la gestion est réservée au manager)."}
         </p>
       </div>
 
@@ -246,7 +250,7 @@ export default async function ParametresPage({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <TenantForm tenant={tenant} isSuperAdmin={isSuperAdmin} />
+          <TenantForm tenant={tenant} isSuperAdmin={isSuperAdmin} canEdit={canAdmin} />
         </CardContent>
       </Card>
 
@@ -254,6 +258,7 @@ export default async function ParametresPage({
       <UsersSection
         tenantId={tenant.id}
         currentUserId={user!.id}
+        canAdmin={canAdmin}
         userMsg={userMsg}
         userMsgType={
           userMsgType === "error" || userMsgType === "success"
