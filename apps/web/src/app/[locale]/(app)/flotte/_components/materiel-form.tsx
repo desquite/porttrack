@@ -43,8 +43,9 @@ const TYPE_LABEL: Record<(typeof MATERIEL_TYPES)[number], string> = {
 
 const ETAT_LABEL: Record<(typeof MATERIEL_ETATS)[number], string> = {
   EN_SERVICE:    "En service",
-  EN_REPARATION: "En réparation",
   EN_PANNE:      "En panne",
+  INDISPONIBLE:  "Indisponible (accident)",
+  EN_REPARATION: "En réparation",
   HORS_SERVICE:  "Hors service",
   VENDU:         "Vendu",
 };
@@ -259,36 +260,36 @@ export function MaterielForm({
               className={fieldClass("visite_technique_fin")}
             />
           </Field>
-          <Field label="Fin de vignette" name="vignette_fin" error={getError("vignette_fin")}>
+          <Field label="Fin Carte de transport" name="carte_transport_fin" error={getError("carte_transport_fin")}>
             <Input
-              id="vignette_fin"
-              name="vignette_fin"
+              id="carte_transport_fin"
+              name="carte_transport_fin"
               type="date"
-              defaultValue={getValue("vignette_fin")}
-              className={fieldClass("vignette_fin")}
+              defaultValue={getValue("carte_transport_fin")}
+              className={fieldClass("carte_transport_fin")}
             />
           </Field>
-          <Field label="Fin de patente" name="patente_fin" error={getError("patente_fin")}>
+          <Field label="Fin Carte de stationnement" name="carte_stationnement_fin" error={getError("carte_stationnement_fin")}>
+            <Input
+              id="carte_stationnement_fin"
+              name="carte_stationnement_fin"
+              type="date"
+              defaultValue={getValue("carte_stationnement_fin")}
+              className={fieldClass("carte_stationnement_fin")}
+            />
+          </Field>
+          <Field
+            label="Fin de patente (semi-remorque)"
+            name="patente_fin"
+            error={getError("patente_fin")}
+            className="md:col-span-2"
+          >
             <Input
               id="patente_fin"
               name="patente_fin"
               type="date"
               defaultValue={getValue("patente_fin")}
               className={fieldClass("patente_fin")}
-            />
-          </Field>
-          <Field
-            label="Fin autorisation DGTTC"
-            name="autorisation_dgttc_fin"
-            error={getError("autorisation_dgttc_fin")}
-            className="md:col-span-2"
-          >
-            <Input
-              id="autorisation_dgttc_fin"
-              name="autorisation_dgttc_fin"
-              type="date"
-              defaultValue={getValue("autorisation_dgttc_fin")}
-              className={fieldClass("autorisation_dgttc_fin")}
             />
           </Field>
         </Grid>

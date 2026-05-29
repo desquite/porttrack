@@ -86,7 +86,8 @@ export type MaterielType = (typeof MATERIEL_TYPES)[number];
 
 export const MATERIEL_ETATS = [
   "EN_SERVICE",
-  "EN_PANNE",
+  "EN_PANNE",        // panne mécanique
+  "INDISPONIBLE",    // immobilisé suite à un accident (§5.2)
   "EN_REPARATION",
   "HORS_SERVICE",
   "VENDU",
@@ -108,13 +109,14 @@ export const DOCUMENT_TYPES = [
   "ATTESTATION_CNPS",
   "CONTRAT_TRAVAIL",
   "PHOTO_IDENTITE",
-  // Matériel
+  // Matériel (ordre cahier §8 : Carte Grise, Assurance, Visite Technique,
+  // Carte de Transport, Carte de Stationnement, Patente)
   "CARTE_GRISE",
   "ASSURANCE",
   "VISITE_TECHNIQUE",
-  "VIGNETTE",
+  "CARTE_TRANSPORT",
+  "CARTE_STATIONNEMENT",
   "PATENTE_TRANSPORT",
-  "AUTORISATION_DGTTC",
   // Autre
   "AUTRE",
 ] as const;
@@ -175,9 +177,9 @@ export const BOT_WHATSAPP_COMMANDES = {
   CG: "CARTE_GRISE",
   AS: "ASSURANCE",
   VT: "VISITE_TECHNIQUE",
-  VG: "VIGNETTE",
+  CT: "CARTE_TRANSPORT",
+  CS: "CARTE_STATIONNEMENT",
   PT: "PATENTE_TRANSPORT",
-  DG: "AUTORISATION_DGTTC",
   PC: "PERMIS_CONDUIRE",
   VM: "VISITE_MEDICALE",
   CNI: "CNI",

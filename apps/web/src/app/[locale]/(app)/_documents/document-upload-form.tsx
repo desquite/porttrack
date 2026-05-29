@@ -43,9 +43,9 @@ const DOCUMENT_LABELS: Record<(typeof DOCUMENT_TYPES)[number], string> = {
   CARTE_GRISE:          "Carte grise",
   ASSURANCE:            "Police d'assurance",
   VISITE_TECHNIQUE:     "Procès-verbal de visite technique",
-  VIGNETTE:             "Vignette automobile",
+  CARTE_TRANSPORT:      "Carte de transport",
+  CARTE_STATIONNEMENT:  "Carte de stationnement",
   PATENTE_TRANSPORT:    "Patente de transport",
-  AUTORISATION_DGTTC:   "Autorisation DGTTC",
   AUTRE:                "Autre",
 };
 
@@ -64,9 +64,9 @@ const DOCS_BY_OWNER: Record<DocumentOwnerType, readonly (typeof DOCUMENT_TYPES)[
     "CARTE_GRISE",
     "ASSURANCE",
     "VISITE_TECHNIQUE",
-    "VIGNETTE",
+    "CARTE_TRANSPORT",
+    "CARTE_STATIONNEMENT",
     "PATENTE_TRANSPORT",
-    "AUTORISATION_DGTTC",
     "AUTRE",
   ],
 };

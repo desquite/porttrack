@@ -66,11 +66,11 @@ export const materielRoulantCreateSchema = z.object({
   ),
 
   // -- Dates documents (dénormalisées dans la table) --
-  assurance_fin:          optionalDate,
-  visite_technique_fin:   optionalDate,
-  vignette_fin:           optionalDate,
-  patente_fin:            optionalDate,
-  autorisation_dgttc_fin: optionalDate,
+  assurance_fin:           optionalDate,
+  visite_technique_fin:    optionalDate,
+  carte_transport_fin:     optionalDate,
+  carte_stationnement_fin: optionalDate,
+  patente_fin:             optionalDate,
 
   // -- État --
   etat: z.enum(MATERIEL_ETATS).default("EN_SERVICE"),

@@ -20,8 +20,9 @@ const TYPE_LABEL: Record<(typeof MATERIEL_TYPES)[number], string> = {
 
 const ETAT_LABEL: Record<(typeof MATERIEL_ETATS)[number], string> = {
   EN_SERVICE:    "En service",
-  EN_REPARATION: "En réparation",
   EN_PANNE:      "En panne",
+  INDISPONIBLE:  "Indisponible",
+  EN_REPARATION: "En réparation",
   HORS_SERVICE:  "Hors service",
   VENDU:         "Vendu",
 };

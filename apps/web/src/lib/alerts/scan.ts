@@ -82,7 +82,7 @@ export async function scanAllTenantsForAlerts(
     const { data: materiels } = await admin
       .from("materiel_roulant")
       .select(
-        "immatriculation, marque, assurance_fin, visite_technique_fin, vignette_fin, patente_fin, autorisation_dgttc_fin",
+        "immatriculation, marque, assurance_fin, visite_technique_fin, carte_transport_fin, carte_stationnement_fin, patente_fin",
       )
       .eq("tenant_id", tenant.id)
       .eq("etat", "EN_SERVICE")
@@ -90,9 +90,9 @@ export async function scanAllTenantsForAlerts(
         [
           `assurance_fin.lte.${docHorizon}`,
           `visite_technique_fin.lte.${docHorizon}`,
-          `vignette_fin.lte.${docHorizon}`,
+          `carte_transport_fin.lte.${docHorizon}`,
+          `carte_stationnement_fin.lte.${docHorizon}`,
           `patente_fin.lte.${docHorizon}`,
-          `autorisation_dgttc_fin.lte.${docHorizon}`,
         ].join(","),
       );
 
@@ -100,15 +100,15 @@ export async function scanAllTenantsForAlerts(
     type MatDocKey =
       | "assurance_fin"
       | "visite_technique_fin"
-      | "vignette_fin"
-      | "patente_fin"
-      | "autorisation_dgttc_fin";
+      | "carte_transport_fin"
+      | "carte_stationnement_fin"
+      | "patente_fin";
     const matDocs: Array<{ key: MatDocKey; label: string }> = [
       { key: "assurance_fin", label: "assurance" },
       { key: "visite_technique_fin", label: "visite technique" },
-      { key: "vignette_fin", label: "vignette" },
+      { key: "carte_transport_fin", label: "carte de transport" },
+      { key: "carte_stationnement_fin", label: "carte de stationnement" },
       { key: "patente_fin", label: "patente" },
-      { key: "autorisation_dgttc_fin", label: "autorisation DGTTC" },
     ];
     for (const m of materiels ?? []) {
       const immat = m.marque ? `${m.immatriculation} (${m.marque})` : m.immatriculation;

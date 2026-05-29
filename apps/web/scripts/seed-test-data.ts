@@ -162,9 +162,9 @@ const MATERIEL = [
     kilometrage_actuel: 287_450,
     assurance_fin: dateIn(120), // OK
     visite_technique_fin: dateIn(45), // OK
-    vignette_fin: dateIn(20), // ⚠️ Bientôt
+    carte_stationnement_fin: dateIn(20), // ⚠️ Bientôt
     patente_fin: dateIn(300),
-    autorisation_dgttc_fin: dateIn(180),
+    carte_transport_fin: dateIn(180),
     etat: "EN_SERVICE" as const,
     date_acquisition: "2019-08-15",
     prix_acquisition_fcfa: 45_000_000,
@@ -179,9 +179,9 @@ const MATERIEL = [
     kilometrage_actuel: 156_890,
     assurance_fin: dateIn(-5), // ❌ EXPIRÉE — alerte rouge
     visite_technique_fin: dateIn(90),
-    vignette_fin: dateIn(45),
+    carte_stationnement_fin: dateIn(45),
     patente_fin: dateIn(200),
-    autorisation_dgttc_fin: dateIn(150),
+    carte_transport_fin: dateIn(150),
     etat: "EN_SERVICE" as const,
     date_acquisition: "2021-11-02",
     prix_acquisition_fcfa: 58_500_000,
@@ -196,9 +196,9 @@ const MATERIEL = [
     kilometrage_actuel: 198_320,
     assurance_fin: dateIn(60),
     visite_technique_fin: dateIn(15), // ⚠️ Bientôt
-    vignette_fin: dateIn(180),
+    carte_stationnement_fin: dateIn(180),
     patente_fin: dateIn(220),
-    autorisation_dgttc_fin: dateIn(90),
+    carte_transport_fin: dateIn(90),
     etat: "EN_SERVICE" as const,
     date_acquisition: "2020-04-22",
     prix_acquisition_fcfa: 22_000_000,
@@ -213,9 +213,9 @@ const MATERIEL = [
     kilometrage_actuel: 412_580,
     assurance_fin: dateIn(200),
     visite_technique_fin: dateIn(80),
-    vignette_fin: dateIn(110),
+    carte_stationnement_fin: dateIn(110),
     patente_fin: dateIn(50),
-    autorisation_dgttc_fin: dateIn(140),
+    carte_transport_fin: dateIn(140),
     etat: "EN_REPARATION" as const, // Pas dans les alertes EN_SERVICE
     date_acquisition: "2018-06-10",
     prix_acquisition_fcfa: 18_000_000,

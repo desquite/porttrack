@@ -47,26 +47,28 @@ const ETAT_VARIANT: Record<
   "success" | "warning" | "danger" | "secondary"
 > = {
   EN_SERVICE:    "success",
-  EN_REPARATION: "warning",
   EN_PANNE:      "danger",
+  INDISPONIBLE:  "warning",
+  EN_REPARATION: "warning",
   HORS_SERVICE:  "secondary",
   VENDU:         "secondary",
 };
 
 const ETAT_LABEL: Record<MaterielEtat, string> = {
   EN_SERVICE:    "En service",
-  EN_REPARATION: "En réparation",
   EN_PANNE:      "En panne",
+  INDISPONIBLE:  "Indisponible",
+  EN_REPARATION: "En réparation",
   HORS_SERVICE:  "Hors service",
   VENDU:         "Vendu",
 };
 
 const DOCS: Array<{ key: keyof Materiel; label: string }> = [
-  { key: "assurance_fin",          label: "Assurance" },
-  { key: "visite_technique_fin",   label: "VT" },
-  { key: "vignette_fin",           label: "Vignette" },
-  { key: "patente_fin",            label: "Patente" },
-  { key: "autorisation_dgttc_fin", label: "DGTTC" },
+  { key: "assurance_fin",           label: "Assurance" },
+  { key: "visite_technique_fin",    label: "VT" },
+  { key: "carte_transport_fin",     label: "Carte transport" },
+  { key: "carte_stationnement_fin", label: "Carte stationnement" },
+  { key: "patente_fin",             label: "Patente" },
 ];
 
 const PAGE_SIZE = 20;

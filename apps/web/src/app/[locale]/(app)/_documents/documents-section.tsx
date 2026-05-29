@@ -40,11 +40,11 @@ const DOC_LABEL: Record<DocType, string> = {
   PHOTO_IDENTITE:     "Photo d'identité",
   CARTE_GRISE:        "Carte grise",
   ASSURANCE:          "Assurance",
-  VISITE_TECHNIQUE:   "Visite technique",
-  VIGNETTE:           "Vignette",
-  PATENTE_TRANSPORT:  "Patente transport",
-  AUTORISATION_DGTTC: "Autorisation DGTTC",
-  AUTRE:              "Autre",
+  VISITE_TECHNIQUE:    "Visite technique",
+  CARTE_TRANSPORT:     "Carte de transport",
+  CARTE_STATIONNEMENT: "Carte de stationnement",
+  PATENTE_TRANSPORT:   "Patente transport",
+  AUTRE:               "Autre",
 };
 
 type Props = {

@@ -543,8 +543,9 @@ export type Database = {
         Row: {
           annee: number | null
           assurance_fin: string | null
-          autorisation_dgttc_fin: string | null
           capacite_tonnes: number | null
+          carte_stationnement_fin: string | null
+          carte_transport_fin: string | null
           created_at: string
           created_by: string | null
           date_acquisition: string | null
@@ -561,14 +562,14 @@ export type Database = {
           tenant_id: string
           type: Database["public"]["Enums"]["materiel_type"]
           updated_at: string
-          vignette_fin: string | null
           visite_technique_fin: string | null
         }
         Insert: {
           annee?: number | null
           assurance_fin?: string | null
-          autorisation_dgttc_fin?: string | null
           capacite_tonnes?: number | null
+          carte_stationnement_fin?: string | null
+          carte_transport_fin?: string | null
           created_at?: string
           created_by?: string | null
           date_acquisition?: string | null
@@ -585,14 +586,14 @@ export type Database = {
           tenant_id: string
           type: Database["public"]["Enums"]["materiel_type"]
           updated_at?: string
-          vignette_fin?: string | null
           visite_technique_fin?: string | null
         }
         Update: {
           annee?: number | null
           assurance_fin?: string | null
-          autorisation_dgttc_fin?: string | null
           capacite_tonnes?: number | null
+          carte_stationnement_fin?: string | null
+          carte_transport_fin?: string | null
           created_at?: string
           created_by?: string | null
           date_acquisition?: string | null
@@ -609,7 +610,6 @@ export type Database = {
           tenant_id?: string
           type?: Database["public"]["Enums"]["materiel_type"]
           updated_at?: string
-          vignette_fin?: string | null
           visite_technique_fin?: string | null
         }
         Relationships: [
@@ -875,9 +875,9 @@ export type Database = {
         | "CARTE_GRISE"
         | "ASSURANCE"
         | "VISITE_TECHNIQUE"
-        | "VIGNETTE"
+        | "CARTE_STATIONNEMENT"
         | "PATENTE_TRANSPORT"
-        | "AUTORISATION_DGTTC"
+        | "CARTE_TRANSPORT"
         | "AUTRE"
       flux_import_statut: "TERMINE" | "PARTIEL" | "ECHEC"
       materiel_etat:
@@ -886,6 +886,7 @@ export type Database = {
         | "EN_REPARATION"
         | "HORS_SERVICE"
         | "VENDU"
+        | "INDISPONIBLE"
       materiel_type:
         | "TRACTEUR"
         | "REMORQUE"
@@ -1045,9 +1046,9 @@ export const Constants = {
         "CARTE_GRISE",
         "ASSURANCE",
         "VISITE_TECHNIQUE",
-        "VIGNETTE",
+        "CARTE_STATIONNEMENT",
         "PATENTE_TRANSPORT",
-        "AUTORISATION_DGTTC",
+        "CARTE_TRANSPORT",
         "AUTRE",
       ],
       flux_import_statut: ["TERMINE", "PARTIEL", "ECHEC"],
@@ -1057,6 +1058,7 @@ export const Constants = {
         "EN_REPARATION",
         "HORS_SERVICE",
         "VENDU",
+        "INDISPONIBLE",
       ],
       materiel_type: [
         "TRACTEUR",

@@ -78,15 +78,15 @@ export default async function DashboardPage({
 
   const { data: materielAlertes } = await supabase
     .from("materiel_roulant")
-    .select("id, immatriculation, marque, modele, type, assurance_fin, visite_technique_fin, vignette_fin, patente_fin, autorisation_dgttc_fin")
+    .select("id, immatriculation, marque, modele, type, assurance_fin, visite_technique_fin, carte_transport_fin, carte_stationnement_fin, patente_fin")
     .eq("etat", "EN_SERVICE")
     .or(
       [
         `assurance_fin.lte.${horizonIso}`,
         `visite_technique_fin.lte.${horizonIso}`,
-        `vignette_fin.lte.${horizonIso}`,
+        `carte_transport_fin.lte.${horizonIso}`,
+        `carte_stationnement_fin.lte.${horizonIso}`,
         `patente_fin.lte.${horizonIso}`,
-        `autorisation_dgttc_fin.lte.${horizonIso}`,
       ].join(","),
     )
     .order("assurance_fin", { ascending: true, nullsFirst: false })
@@ -222,7 +222,7 @@ export default async function DashboardPage({
               Documents matériel à surveiller
             </CardTitle>
             <CardDescription>
-              Assurance, visite technique, vignette, patente, autorisation DGTTC.
+              Assurance, visite technique, carte de transport, carte de stationnement, patente.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -231,13 +231,13 @@ export default async function DashboardPage({
             ) : (
               <ul className="space-y-3">
                 {materielAlertes.map((m) => {
-                  type DocKey = "assurance_fin" | "visite_technique_fin" | "vignette_fin" | "patente_fin" | "autorisation_dgttc_fin";
+                  type DocKey = "assurance_fin" | "visite_technique_fin" | "carte_transport_fin" | "carte_stationnement_fin" | "patente_fin";
                   const docs: Array<{ key: DocKey; label: string }> = [
                     { key: "assurance_fin",           label: "Assurance" },
                     { key: "visite_technique_fin",    label: "VT" },
-                    { key: "vignette_fin",            label: "Vignette" },
+                    { key: "carte_transport_fin",     label: "Carte transport" },
+                    { key: "carte_stationnement_fin", label: "Carte stationnement" },
                     { key: "patente_fin",             label: "Patente" },
-                    { key: "autorisation_dgttc_fin",  label: "DGTTC" },
                   ];
                   const alertes = docs
                     .map((d) => ({ ...d, status: classifyExpiry(m[d.key]), date: m[d.key] }))
