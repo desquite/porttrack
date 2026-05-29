@@ -6,6 +6,8 @@ import { headers } from "next/headers";
 import { ROLES, type Role } from "@porttrack/shared";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { sendEmail } from "@/lib/notifications/email-resend";
+import type { NotificationMessage } from "@/lib/notifications/types";
 
 // =============================================================================
 // État partagé pour le formulaire d'invitation
@@ -23,6 +25,8 @@ export type InviteUserState =
       status: "success";
       email: string;
       magicLink: string | null;
+      /** true si l'email d'invitation a bien été expédié via Resend */
+      emailSent: boolean;
     };
 
 // =============================================================================
@@ -186,12 +190,34 @@ export async function inviteUserAction(
     // connecter via /login normalement. Le magic link n'est qu'un bonus.
   }
 
+  const magicLink = linkData?.properties?.action_link ?? null;
+
+  // -------- Envoi automatique de l'invitation par email (Resend) --------
+  // Best-effort : si Resend n'est pas configuré (RESEND_API_KEY absent) ou
+  // échoue, on retourne quand même un succès avec le lien à copier/envoyer.
+  let emailSent = false;
+  if (magicLink) {
+    const result = await sendEmail(
+      email,
+      buildInviteEmail({
+        magicLink,
+        loginUrl: `${origin}/login`,
+        roleLabel: ROLE_LABELS_FR[role as Role] ?? role,
+      }),
+    );
+    emailSent = result.ok === true;
+    if (!result.ok) {
+      console.error("[inviteUserAction] sendEmail:", result.error);
+    }
+  }
+
   revalidatePath("/parametres");
 
   return {
     status: "success",
     email,
-    magicLink: linkData?.properties?.action_link ?? null,
+    magicLink,
+    emailSent,
   };
 }
 
@@ -306,4 +332,64 @@ export async function toggleUserActiveAction(
       currentActif ? "Utilisateur désactivé" : "Utilisateur réactivé",
     )}&userMsgType=success`,
   );
+}
+
+// =============================================================================
+// Email d'invitation (envoyé via Resend)
+// =============================================================================
+
+const ROLE_LABELS_FR: Record<Role, string> = {
+  SUPER_ADMIN: "Super Admin",
+  MANAGER:     "Manager",
+  DISPATCHER:  "Dispatcher",
+  COMPTABLE:   "Comptable",
+  CHEF_GARAGE: "Chef de garage",
+  CUSTOM:      "Utilisateur",
+};
+
+function buildInviteEmail({
+  magicLink,
+  loginUrl,
+  roleLabel,
+}: {
+  magicLink: string;
+  loginUrl: string;
+  roleLabel: string;
+}): NotificationMessage {
+  const subject = "Invitation à PORTTRACK";
+
+  const textBody = [
+    "Bonjour,",
+    "",
+    `Tu as été invité(e) à rejoindre PORTTRACK en tant que ${roleLabel}.`,
+    "",
+    "Connecte-toi en cliquant sur ce lien (valable environ 1 heure) :",
+    magicLink,
+    "",
+    `Si le lien a expiré, va sur ${loginUrl} et saisis cette adresse email : tu recevras un code de connexion à 6 chiffres.`,
+    "",
+    "— L'équipe PORTTRACK",
+  ].join("\n");
+
+  const htmlBody = `
+  <div style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;max-width:520px;margin:0 auto;color:#0f172a">
+    <h2 style="margin:0 0 4px">PORTTRACK</h2>
+    <p style="color:#475569;margin:0 0 20px">Suivi de flotte & logistique portuaire</p>
+    <p>Bonjour,</p>
+    <p>Tu as été invité(e) à rejoindre <strong>PORTTRACK</strong> en tant que <strong>${roleLabel}</strong>.</p>
+    <p style="margin:24px 0">
+      <a href="${magicLink}" style="background:#0f172a;color:#fff;text-decoration:none;padding:12px 20px;border-radius:8px;display:inline-block;font-weight:600">
+        Me connecter à PORTTRACK
+      </a>
+    </p>
+    <p style="color:#64748b;font-size:13px">Ce lien est valable environ 1 heure.</p>
+    <p style="color:#64748b;font-size:13px">
+      S'il a expiré, rends-toi sur <a href="${loginUrl}">${loginUrl}</a> et saisis cette adresse email :
+      tu recevras un code de connexion à 6 chiffres.
+    </p>
+    <hr style="border:none;border-top:1px solid #e2e8f0;margin:24px 0" />
+    <p style="color:#94a3b8;font-size:12px">— L'équipe PORTTRACK</p>
+  </div>`;
+
+  return { subject, textBody, htmlBody };
 }

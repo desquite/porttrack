@@ -69,7 +69,7 @@ export function InviteUserForm({ tenantId }: Props) {
       {/* Erreur globale */}
       {state.status === "error" && state.formError && !state.fieldErrors && (
         <Alert variant="destructive">
-          <AlertTitle>Impossible d'inviter</AlertTitle>
+          <AlertTitle>Impossible d&apos;inviter</AlertTitle>
           <AlertDescription>{state.formError}</AlertDescription>
         </Alert>
       )}
@@ -81,8 +81,19 @@ export function InviteUserForm({ tenantId }: Props) {
           <AlertTitle>Utilisateur invité</AlertTitle>
           <AlertDescription className="space-y-3">
             <p>
-              Le compte <strong>{state.email}</strong> a été créé. Il peut
-              maintenant se connecter directement via la page de connexion.
+              {state.emailSent ? (
+                <>
+                  Un email d&apos;invitation a été envoyé à{" "}
+                  <strong>{state.email}</strong> avec son lien de connexion. Le
+                  lien reste affiché ci-dessous au cas où.
+                </>
+              ) : (
+                <>
+                  Le compte <strong>{state.email}</strong> a été créé, mais
+                  l&apos;email automatique n&apos;a pas pu partir. Copie le lien
+                  ci-dessous et envoie-le-lui (WhatsApp/email).
+                </>
+              )}
             </p>
 
             {state.magicLink && (
