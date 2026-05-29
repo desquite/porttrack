@@ -145,8 +145,24 @@ export async function inviteUserAction(
     };
   }
 
-  // Le trigger handle_new_user a créé public.users avec tenant_id + role
-  // (lus depuis raw_app_meta_data).
+  // Le trigger handle_new_user a créé la ligne public.users — MAIS
+  // admin.createUser écrit app_metadata (tenant_id/role) APRÈS l'insert
+  // d'auth.users, donc le trigger les voit vides et met les valeurs par défaut
+  // (CUSTOM / tenant_id null). On force donc explicitement les bonnes valeurs
+  // via service_role, ce qui est déterministe et insensible à ce timing.
+  const { error: syncErr } = await admin
+    .from("users")
+    .update({ tenant_id: tenantId, role: role as Role })
+    .eq("id", created.user.id);
+
+  if (syncErr) {
+    console.error("[inviteUserAction] sync public.users:", syncErr);
+    return {
+      status: "error",
+      formError: `Compte créé mais le rattachement à l'entreprise a échoué : ${syncErr.message}. Corrige le rôle/l'entreprise depuis la liste des utilisateurs.`,
+      values: { email, role },
+    };
+  }
 
   // -------- Génération d'un magic link --------
   // On déduit l'origin de la requête pour construire l'URL de redirection
