@@ -67,7 +67,7 @@ export function TenantForm({ tenant, isSuperAdmin, canEdit = true }: Props) {
     <form action={formAction} className="space-y-8">
       {state.status === "error" && state.formError && (
         <Alert variant="destructive">
-          <AlertTitle>Impossible d'enregistrer</AlertTitle>
+          <AlertTitle>Impossible d&apos;enregistrer</AlertTitle>
           <AlertDescription>{state.formError}</AlertDescription>
         </Alert>
       )}
@@ -197,7 +197,7 @@ export function TenantForm({ tenant, isSuperAdmin, canEdit = true }: Props) {
             </Field>
           </Grid>
         </Section>
-      ) : (
+      ) : canEdit ? (
         <Section
           title="Abonnement"
           description="Pour modifier ton plan d'abonnement, contacte l'équipe PORTTRACK."
@@ -215,7 +215,7 @@ export function TenantForm({ tenant, isSuperAdmin, canEdit = true }: Props) {
             />
           </div>
         </Section>
-      )}
+      ) : null}
 
       </fieldset>
 
