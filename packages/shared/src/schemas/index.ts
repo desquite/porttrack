@@ -3,4 +3,5 @@ export * from "./materiel-roulant";
 export * from "./conteneur";
 export * from "./affectation";
 export * from "./flux";
+export * from "./panne";
 export * from "./tenant";

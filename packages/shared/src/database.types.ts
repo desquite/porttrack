@@ -629,6 +629,91 @@ export type Database = {
           },
         ]
       }
+      pannes: {
+        Row: {
+          cout_estime_fcfa: number | null
+          cout_reel_fcfa: number | null
+          created_at: string
+          created_by: string | null
+          date_debut_reparation: string | null
+          date_declaration: string
+          date_fin_reparation: string | null
+          description: string
+          facture_nom: string | null
+          facture_url: string | null
+          garage: string | null
+          id: string
+          materiel_roulant_id: string
+          notes: string | null
+          statut: Database["public"]["Enums"]["panne_statut"]
+          tenant_id: string
+          type_panne: string | null
+          updated_at: string
+        }
+        Insert: {
+          cout_estime_fcfa?: number | null
+          cout_reel_fcfa?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_debut_reparation?: string | null
+          date_declaration?: string
+          date_fin_reparation?: string | null
+          description: string
+          facture_nom?: string | null
+          facture_url?: string | null
+          garage?: string | null
+          id?: string
+          materiel_roulant_id: string
+          notes?: string | null
+          statut?: Database["public"]["Enums"]["panne_statut"]
+          tenant_id: string
+          type_panne?: string | null
+          updated_at?: string
+        }
+        Update: {
+          cout_estime_fcfa?: number | null
+          cout_reel_fcfa?: number | null
+          created_at?: string
+          created_by?: string | null
+          date_debut_reparation?: string | null
+          date_declaration?: string
+          date_fin_reparation?: string | null
+          description?: string
+          facture_nom?: string | null
+          facture_url?: string | null
+          garage?: string | null
+          id?: string
+          materiel_roulant_id?: string
+          notes?: string | null
+          statut?: Database["public"]["Enums"]["panne_statut"]
+          tenant_id?: string
+          type_panne?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pannes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pannes_materiel_roulant_id_fkey"
+            columns: ["materiel_roulant_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pannes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       port_codes: {
         Row: {
           actif: boolean
@@ -858,6 +943,10 @@ export type Database = {
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       storage_tenant_from_path: { Args: { file_name: string }; Returns: string }
+      sync_materiel_etat_for_panne: {
+        Args: { p_mr_id: string }
+        Returns: undefined
+      }
       unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
@@ -894,6 +983,7 @@ export type Database = {
         | "PORTE_CONTENEUR_20"
         | "PORTE_CONTENEUR_40"
         | "PORTE_CONTENEUR_MIXTE"
+      panne_statut: "DECLAREE" | "EN_REPARATION" | "REPAREE" | "ANNULEE"
       plan_abonnement: "STARTER" | "BUSINESS" | "PREMIUM"
       port_kind: "PORT_MARITIME" | "VILLE_HINTERLAND" | "PORT_SEC"
       sexe: "M" | "F"
@@ -1068,6 +1158,7 @@ export const Constants = {
         "PORTE_CONTENEUR_40",
         "PORTE_CONTENEUR_MIXTE",
       ],
+      panne_statut: ["DECLAREE", "EN_REPARATION", "REPAREE", "ANNULEE"],
       plan_abonnement: ["STARTER", "BUSINESS", "PREMIUM"],
       port_kind: ["PORT_MARITIME", "VILLE_HINTERLAND", "PORT_SEC"],
       sexe: ["M", "F"],

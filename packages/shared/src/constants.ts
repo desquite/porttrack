@@ -165,6 +165,21 @@ export const AFFECTATION_STATUTS = [
 ] as const;
 export type AffectationStatut = (typeof AFFECTATION_STATUTS)[number];
 
+// =============================================================================
+// Pannes / Ordre de Réparation (§8.6) — workflow Déclarée → Réparée
+// =============================================================================
+
+export const PANNE_STATUTS = [
+  "DECLAREE",
+  "EN_REPARATION",
+  "REPAREE",
+  "ANNULEE",
+] as const;
+export type PanneStatut = (typeof PANNE_STATUTS)[number];
+
+/** Statuts considérés comme « ouverts » (le matériel reste indisponible). */
+export const PANNE_STATUTS_OUVERTS = ["DECLAREE", "EN_REPARATION"] as const;
+
 // Alias legacy (compat)
 export const STATUTS_CONTENEUR = CONTENEUR_STATUTS;
 export type StatutConteneur = ConteneurStatut;

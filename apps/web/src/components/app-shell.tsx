@@ -17,6 +17,7 @@ import {
   X,
   ChevronDown,
   Bug,
+  Wrench,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -35,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
   { label: "Chauffeurs",      href: "/chauffeurs", icon: Users },
   { label: "Flotte",          href: "/flotte",     icon: Truck },
+  { label: "Pannes",          href: "/pannes",     icon: Wrench },
   { label: "Conteneurs",      href: "/conteneurs", icon: Package },
   { label: "Flux & affectations", href: "/affectations", icon: ClipboardList },
   { label: "Facturation",     href: "/facturation", icon: Receipt, comingSoon: true },

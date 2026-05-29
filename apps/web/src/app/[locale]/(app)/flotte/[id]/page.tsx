@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   ShieldAlert,
+  Wrench,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
@@ -58,6 +59,19 @@ export default async function EditMaterielPage({
 
   const isSuperAdmin = profile?.role === "SUPER_ADMIN";
   const canDelete = isSuperAdmin || profile?.role === "MANAGER";
+
+  // Pannes pour ce matériel (compte par statut, 3 dernières)
+  const { count: pannesOuvertes } = await supabase
+    .from("pannes")
+    .select("*", { count: "exact", head: true })
+    .eq("materiel_roulant_id", materiel.id)
+    .in("statut", ["DECLAREE", "EN_REPARATION"]);
+  const { data: pannesRecentes } = await supabase
+    .from("pannes")
+    .select("id, date_declaration, description, statut")
+    .eq("materiel_roulant_id", materiel.id)
+    .order("date_declaration", { ascending: false })
+    .limit(3);
 
   // 3. Nom du tenant pour l'affichage en sous-titre
   let tenantName: string | null = null;
@@ -147,6 +161,57 @@ export default async function EditMaterielPage({
           errorMessage={docError}
         />
       )}
+
+      {/* Section Pannes */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Wrench className="size-4 text-primary" />
+            Pannes & réparations
+            {pannesOuvertes! > 0 && (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+                {pannesOuvertes} ouverte{pannesOuvertes! > 1 ? "s" : ""}
+              </span>
+            )}
+          </CardTitle>
+          <CardDescription>
+            Quand une panne est ouverte, le matériel est automatiquement marqué
+            « En panne » et retiré des listes d&apos;affectation.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {pannesRecentes && pannesRecentes.length > 0 ? (
+            <ul className="divide-y rounded-md border">
+              {pannesRecentes.map((p) => (
+                <li key={p.id} className="flex items-center gap-3 p-3 text-sm">
+                  <span className="flex-1 truncate">{p.description}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {p.date_declaration ? new Date(p.date_declaration).toLocaleDateString("fr-FR") : ""}
+                  </span>
+                  <Button asChild variant="ghost" size="sm">
+                    <Link href={`/pannes/${p.id}`}>Voir</Link>
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Aucune panne enregistrée pour ce matériel.
+            </p>
+          )}
+          <div className="flex flex-wrap gap-2">
+            <Button asChild>
+              <Link href={`/pannes/new?materiel=${materiel.id}`}>
+                <Wrench className="mr-2 size-4" />
+                Déclarer une panne
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/pannes">Voir toutes les pannes</Link>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Zone de danger */}
       {canDelete && (

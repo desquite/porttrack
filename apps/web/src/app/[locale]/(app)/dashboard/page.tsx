@@ -8,6 +8,7 @@ import {
   ClipboardList,
   ArrowRight,
   CheckCircle2,
+  Wrench,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
@@ -110,6 +111,25 @@ export default async function DashboardPage({
     (materielAlertes?.length ?? 0) +
     (conteneursAlertes?.length ?? 0);
 
+  // Pannes : nombre d'interventions ouvertes + coût réel du mois en cours
+  const { count: pannesOuvertes } = await supabase
+    .from("pannes")
+    .select("*", { count: "exact", head: true })
+    .in("statut", ["DECLAREE", "EN_REPARATION"]);
+
+  const debutMois = new Date();
+  debutMois.setDate(1);
+  debutMois.setHours(0, 0, 0, 0);
+  const { data: pannesMois } = await supabase
+    .from("pannes")
+    .select("cout_reel_fcfa")
+    .gte("date_declaration", debutMois.toISOString().slice(0, 10))
+    .not("cout_reel_fcfa", "is", null);
+  const coutPannesMois = (pannesMois ?? []).reduce(
+    (acc, p) => acc + Number(p.cout_reel_fcfa ?? 0),
+    0,
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -121,7 +141,7 @@ export default async function DashboardPage({
       </div>
 
       {/* Compteurs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
         <KpiCard
           title="Chauffeurs actifs"
           value={chauffeursActifs ?? 0}
@@ -156,6 +176,13 @@ export default async function DashboardPage({
           subtitle="Documents & BADT"
           icon={<AlertTriangle className="size-4 text-amber-600" />}
           highlight
+        />
+        <KpiCard
+          title="Pannes ouvertes"
+          value={pannesOuvertes ?? 0}
+          subtitle={`Coût mois : ${coutPannesMois.toLocaleString("fr-FR")} FCFA`}
+          icon={<Wrench className="size-4 text-primary" />}
+          href="/pannes"
         />
       </div>
 
