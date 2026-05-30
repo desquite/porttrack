@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   ShieldAlert,
+  Gavel,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
@@ -59,6 +60,30 @@ export default async function EditChauffeurPage({
 
   const isSuperAdmin = profile?.role === "SUPER_ADMIN";
   const canDelete = isSuperAdmin || profile?.role === "MANAGER";
+
+  // Accidents + infractions liés à ce chauffeur
+  const [{ count: accidentsTotal }, { data: accidentsRecents }, infractionsAgg] = await Promise.all([
+    supabase
+      .from("accidents")
+      .select("*", { count: "exact", head: true })
+      .eq("chauffeur_id", chauffeur.id),
+    supabase
+      .from("accidents")
+      .select("id, date_accident, circonstances, statut")
+      .eq("chauffeur_id", chauffeur.id)
+      .order("date_accident", { ascending: false })
+      .limit(3),
+    supabase
+      .from("infractions")
+      .select("id, montant_fcfa, statut, date_infraction, type_infraction")
+      .eq("chauffeur_id", chauffeur.id)
+      .order("date_infraction", { ascending: false }),
+  ]);
+  const infractionsTotal = infractionsAgg.data?.length ?? 0;
+  const infractionsRecentes = (infractionsAgg.data ?? []).slice(0, 3);
+  const montantDu = (infractionsAgg.data ?? [])
+    .filter((i) => i.statut === "NON_PAYEE")
+    .reduce((acc, i) => acc + Number(i.montant_fcfa ?? 0), 0);
 
   // 3. Si SUPER_ADMIN, charge la liste des tenants (utile pour le nom affiché)
   let tenantName: string | null = null;
@@ -143,6 +168,90 @@ export default async function EditChauffeurPage({
           errorMessage={docError}
         />
       )}
+
+      {/* Section Accidents + Infractions */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ShieldAlert className="size-4 text-rose-600" />
+              Accidents
+              <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-900">
+                {accidentsTotal ?? 0}
+              </span>
+            </CardTitle>
+            <CardDescription>
+              Historique des accidents impliquant ce chauffeur.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {accidentsRecents && accidentsRecents.length > 0 ? (
+              <ul className="divide-y rounded-md border">
+                {accidentsRecents.map((a) => (
+                  <li key={a.id} className="flex items-center gap-3 p-3 text-sm">
+                    <span className="flex-1 truncate">{a.circonstances}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {a.date_accident ? new Date(a.date_accident).toLocaleDateString("fr-FR") : ""}
+                    </span>
+                    <Button asChild variant="ghost" size="sm">
+                      <Link href={`/accidents/${a.id}`}>Voir</Link>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">Aucun accident enregistré.</p>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Gavel className="size-4 text-amber-700" />
+              Infractions
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[11px] font-medium text-amber-900">
+                {infractionsTotal}
+              </span>
+              {montantDu > 0 && (
+                <span className="rounded-full bg-rose-100 px-2 py-0.5 text-[11px] font-medium text-rose-900">
+                  {montantDu.toLocaleString("fr-FR")} FCFA dûs
+                </span>
+              )}
+            </CardTitle>
+            <CardDescription>
+              PV et amendes liés à ce chauffeur.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {infractionsRecentes.length > 0 ? (
+              <ul className="divide-y rounded-md border">
+                {infractionsRecentes.map((i) => (
+                  <li key={i.id} className="flex items-center gap-3 p-3 text-sm">
+                    <span className="flex-1 truncate">{i.type_infraction}</span>
+                    <span className="text-xs text-muted-foreground">
+                      {Number(i.montant_fcfa).toLocaleString("fr-FR")} FCFA
+                    </span>
+                    <Button asChild variant="ghost" size="sm">
+                      <Link href={`/infractions/${i.id}`}>Voir</Link>
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="text-sm text-muted-foreground">Aucune infraction enregistrée.</p>
+            )}
+            <div className="flex flex-wrap gap-2">
+              <Button asChild size="sm">
+                <Link href={`/infractions/new?chauffeur=${chauffeur.id}`}>
+                  <Gavel className="mr-2 size-4" />
+                  Enregistrer une infraction
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Zone de danger — visible seulement si le user peut supprimer */}
       {canDelete && (
