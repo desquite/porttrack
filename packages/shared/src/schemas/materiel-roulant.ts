@@ -48,6 +48,7 @@ export const materielRoulantCreateSchema = z.object({
     .trim()
     .min(1, "Immatriculation obligatoire")
     .max(20, "Immatriculation trop longue (max 20)"),
+  chrono: optionalString(20),
   marque: optionalString(50),
   modele: optionalString(50),
   annee: optionalNumber.refine(

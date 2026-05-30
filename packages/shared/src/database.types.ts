@@ -605,6 +605,93 @@ export type Database = {
           },
         ]
       }
+      designations: {
+        Row: {
+          chauffeur_id: string
+          created_at: string
+          created_by: string | null
+          date_designation: string
+          equipe_id: string | null
+          id: string
+          materiel_roulant_id: string
+          notes: string | null
+          tenant_id: string
+          updated_at: string
+          whatsapp_attempts: number
+          whatsapp_error: string | null
+          whatsapp_sent_at: string | null
+          whatsapp_statut: Database["public"]["Enums"]["designation_whatsapp_statut"]
+        }
+        Insert: {
+          chauffeur_id: string
+          created_at?: string
+          created_by?: string | null
+          date_designation?: string
+          equipe_id?: string | null
+          id?: string
+          materiel_roulant_id: string
+          notes?: string | null
+          tenant_id: string
+          updated_at?: string
+          whatsapp_attempts?: number
+          whatsapp_error?: string | null
+          whatsapp_sent_at?: string | null
+          whatsapp_statut?: Database["public"]["Enums"]["designation_whatsapp_statut"]
+        }
+        Update: {
+          chauffeur_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_designation?: string
+          equipe_id?: string | null
+          id?: string
+          materiel_roulant_id?: string
+          notes?: string | null
+          tenant_id?: string
+          updated_at?: string
+          whatsapp_attempts?: number
+          whatsapp_error?: string | null
+          whatsapp_sent_at?: string | null
+          whatsapp_statut?: Database["public"]["Enums"]["designation_whatsapp_statut"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "designations_chauffeur_id_fkey"
+            columns: ["chauffeur_id"]
+            isOneToOne: false
+            referencedRelation: "chauffeurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "designations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "designations_equipe_id_fkey"
+            columns: ["equipe_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "designations_materiel_roulant_id_fkey"
+            columns: ["materiel_roulant_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "designations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       documents: {
         Row: {
           created_at: string
@@ -953,6 +1040,7 @@ export type Database = {
           capacite_tonnes: number | null
           carte_stationnement_fin: string | null
           carte_transport_fin: string | null
+          chrono: string | null
           created_at: string
           created_by: string | null
           date_acquisition: string | null
@@ -977,6 +1065,7 @@ export type Database = {
           capacite_tonnes?: number | null
           carte_stationnement_fin?: string | null
           carte_transport_fin?: string | null
+          chrono?: string | null
           created_at?: string
           created_by?: string | null
           date_acquisition?: string | null
@@ -1001,6 +1090,7 @@ export type Database = {
           capacite_tonnes?: number | null
           carte_stationnement_fin?: string | null
           carte_transport_fin?: string | null
+          chrono?: string | null
           created_at?: string
           created_by?: string | null
           date_acquisition?: string | null
@@ -1367,6 +1457,7 @@ export type Database = {
       affectation_statut: "PLANIFIEE" | "EN_COURS" | "TERMINEE" | "ANNULEE"
       chauffeur_statut: "ACTIF" | "EN_CONGE" | "SUSPENDU" | "INACTIF"
       conteneur_statut: "EN_ATTENTE" | "EN_COURS" | "LIVRE" | "ANNULE"
+      designation_whatsapp_statut: "PENDING" | "SENT" | "FAILED" | "SKIPPED"
       document_owner_type: "CHAUFFEUR" | "MATERIEL"
       document_type:
         | "CNI"
@@ -1549,6 +1640,7 @@ export const Constants = {
       affectation_statut: ["PLANIFIEE", "EN_COURS", "TERMINEE", "ANNULEE"],
       chauffeur_statut: ["ACTIF", "EN_CONGE", "SUSPENDU", "INACTIF"],
       conteneur_statut: ["EN_ATTENTE", "EN_COURS", "LIVRE", "ANNULE"],
+      designation_whatsapp_statut: ["PENDING", "SENT", "FAILED", "SKIPPED"],
       document_owner_type: ["CHAUFFEUR", "MATERIEL"],
       document_type: [
         "CNI",

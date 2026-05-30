@@ -170,6 +170,21 @@ export function MaterielForm({
             />
           </Field>
 
+          <Field
+            label="Chrono (nom interne)"
+            name="chrono"
+            error={getError("chrono")}
+            hint="Surnom maison facultatif (ex. TIGER 01, LION 02). Affiché à côté de l'immatriculation."
+          >
+            <Input
+              id="chrono"
+              name="chrono"
+              defaultValue={getValue("chrono")}
+              placeholder="TIGER 01"
+              className={cn("font-mono", fieldClass("chrono"))}
+            />
+          </Field>
+
           <Field label="Marque" name="marque" error={getError("marque")}>
             <Input
               id="marque"

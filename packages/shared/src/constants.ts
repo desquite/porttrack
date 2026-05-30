@@ -235,6 +235,18 @@ export const WEEKDAYS = [
 export const PLANNING_CODE_ABSENCE = "A";
 export const PLANNING_CODE_CONGE   = "C";
 
+// =============================================================================
+// Désignations (§7.3) — statuts d'envoi WhatsApp
+// =============================================================================
+
+export const DESIGNATION_WHATSAPP_STATUTS = [
+  "PENDING",
+  "SENT",
+  "FAILED",
+  "SKIPPED",
+] as const;
+export type DesignationWhatsappStatut = (typeof DESIGNATION_WHATSAPP_STATUTS)[number];
+
 // Alias legacy (compat)
 export const STATUTS_CONTENEUR = CONTENEUR_STATUTS;
 export type StatutConteneur = ConteneurStatut;

@@ -23,6 +23,7 @@ import {
   CalendarRange,
   CalendarOff,
   CalendarClock,
+  Megaphone,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -41,6 +42,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Tableau de bord", href: "/dashboard", icon: LayoutDashboard },
   { label: "Chauffeurs",      href: "/chauffeurs", icon: Users },
   { label: "Planning",        href: "/planning",   icon: CalendarRange },
+  { label: "Désignations",    href: "/designations", icon: Megaphone },
   { label: "Équipes",         href: "/equipes",    icon: CalendarClock },
   { label: "Absences",        href: "/absences",   icon: CalendarOff },
   { label: "Flotte",          href: "/flotte",     icon: Truck },

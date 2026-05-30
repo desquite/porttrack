@@ -8,4 +8,5 @@ export * from "./accident";
 export * from "./infraction";
 export * from "./equipe";
 export * from "./absence";
+export * from "./designation";
 export * from "./tenant";

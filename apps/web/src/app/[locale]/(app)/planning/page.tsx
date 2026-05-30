@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
-import { CalendarRange, ChevronLeft, ChevronRight, RotateCcw, Plus, Users } from "lucide-react";
+import { CalendarRange, ChevronLeft, ChevronRight, RotateCcw, Plus, Users, Megaphone } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -250,13 +250,19 @@ export default async function PlanningPage({
       )}
 
       <div className="flex flex-wrap items-center gap-2">
+        <Button asChild>
+          <Link href={`/designations?date=${todayIso}`}>
+            <Megaphone className="mr-2 size-4" />
+            Désignations du jour
+          </Link>
+        </Button>
         <Button asChild variant="outline" size="sm">
           <Link href="/equipes"><Plus className="mr-2 size-4" />Gérer les équipes</Link>
         </Button>
         <Button asChild variant="outline" size="sm">
           <Link href="/absences"><Plus className="mr-2 size-4" />Gérer les absences</Link>
         </Button>
-        <Badge variant="secondary" className="text-[10px]">Vue lecture seule — édition cellule-par-cellule à venir (V3b)</Badge>
+        <Badge variant="secondary" className="text-[10px]">Édition cellule à venir (V3c)</Badge>
       </div>
     </div>
   );
