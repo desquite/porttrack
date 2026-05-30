@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import {
   ArrowLeft, Megaphone, CheckCircle2, XCircle, Send, Truck, User, MessageSquare,
-  MessageSquareWarning, MessageSquareOff,
+  MessageSquareWarning, MessageSquareOff, ClipboardCheck, AlertTriangle,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
@@ -51,6 +51,13 @@ export default async function DesignationDetailPage({
     .eq("id", id)
     .maybeSingle();
   if (!d) notFound();
+
+  // Check-list associée éventuelle (UNIQUE designation_id ⇒ au plus 1)
+  const { data: checklist } = await supabase
+    .from("checklists_depart")
+    .select("id, statut_global, heure_validation")
+    .eq("designation_id", d.id)
+    .maybeSingle();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ch = (d as any).chauffeur as { id: string; nom: string; prenoms: string; telephone: string | null } | null;
@@ -149,6 +156,43 @@ export default async function DesignationDetailPage({
           </CardHeader>
         </Card>
       )}
+
+      {/* Check-list de départ */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-sm font-semibold">
+            <ClipboardCheck className="size-4 text-primary" />
+            Check-list de départ
+            {checklist && (
+              <Badge variant={checklist.statut_global === "FAITE" ? "success" : "warning"} className="gap-1 text-[10px]">
+                {checklist.statut_global === "FAITE"
+                  ? <CheckCircle2 className="size-3" />
+                  : <AlertTriangle className="size-3" />}
+                {checklist.statut_global === "FAITE" ? "Faite" : "Remarque"}
+              </Badge>
+            )}
+          </CardTitle>
+          <CardDescription className="text-xs">
+            {checklist
+              ? <>Validée à {new Date(checklist.heure_validation).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}</>
+              : <>Aucune check-list n&apos;a encore été saisie pour cette désignation.</>}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {checklist ? (
+            <Button asChild variant="outline" size="sm">
+              <Link href={`/checklists/${checklist.id}`}>Ouvrir la check-list</Link>
+            </Button>
+          ) : (
+            <Button asChild size="sm">
+              <Link href={`/checklists/new?designation=${d.id}`}>
+                <ClipboardCheck className="mr-2 size-4" />
+                Saisir la check-list
+              </Link>
+            </Button>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Statut WhatsApp + renvoyer */}
       <Card>

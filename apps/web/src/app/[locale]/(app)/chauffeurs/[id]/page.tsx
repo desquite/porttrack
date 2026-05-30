@@ -7,6 +7,8 @@ import {
   AlertTriangle,
   ShieldAlert,
   Gavel,
+  ClipboardCheck,
+  MinusCircle,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
@@ -84,6 +86,20 @@ export default async function EditChauffeurPage({
   const montantDu = (infractionsAgg.data ?? [])
     .filter((i) => i.statut === "NON_PAYEE")
     .reduce((acc, i) => acc + Number(i.montant_fcfa ?? 0), 0);
+
+  // Check-lists de départ liées à ce chauffeur (5 dernières + compteur)
+  const [{ count: checklistsTotal }, { data: checklistsRecentes }] = await Promise.all([
+    supabase
+      .from("checklists_depart")
+      .select("*", { count: "exact", head: true })
+      .eq("chauffeur_id", chauffeur.id),
+    supabase
+      .from("checklists_depart")
+      .select("id, date_depart, statut_global, heure_validation, remarque")
+      .eq("chauffeur_id", chauffeur.id)
+      .order("date_depart", { ascending: false })
+      .limit(5),
+  ]);
 
   // Équipes pour le sélecteur « Équipe par défaut »
   const { data: equipesRaw } = await supabase
@@ -261,6 +277,49 @@ export default async function EditChauffeurPage({
           </CardContent>
         </Card>
       </div>
+
+      {/* Section Check-lists de départ */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ClipboardCheck className="size-4 text-primary" />
+            Check-lists de départ
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+              {checklistsTotal ?? 0}
+            </span>
+          </CardTitle>
+          <CardDescription>
+            Historique des check-lists effectuées avant le départ (cahier v7 §7.3).
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {checklistsRecentes && checklistsRecentes.length > 0 ? (
+            <ul className="divide-y rounded-md border">
+              {checklistsRecentes.map((c) => {
+                const isFaite = c.statut_global === "FAITE";
+                const Icon = isFaite ? CheckCircle2 : AlertTriangle;
+                const heure = new Date(c.heure_validation).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+                return (
+                  <li key={c.id} className="flex items-center gap-3 p-3 text-sm">
+                    <Icon className={isFaite ? "size-4 text-emerald-600" : "size-4 text-amber-600"} />
+                    <span className="font-medium">{new Date(c.date_depart + "T12:00:00").toLocaleDateString("fr-FR")}</span>
+                    <span className="text-xs text-muted-foreground">{heure}</span>
+                    {c.remarque && <span className="ml-2 flex-1 truncate text-xs italic text-muted-foreground">— {c.remarque}</span>}
+                    <Button asChild variant="ghost" size="sm" className="ml-auto">
+                      <Link href={`/checklists/${c.id}`}>Voir</Link>
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : (
+            <p className="flex items-center gap-2 text-sm text-muted-foreground">
+              <MinusCircle className="size-4" />
+              Aucune check-list enregistrée.
+            </p>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Zone de danger — visible seulement si le user peut supprimer */}
       {canDelete && (

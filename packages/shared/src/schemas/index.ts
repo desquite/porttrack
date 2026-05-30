@@ -9,4 +9,5 @@ export * from "./infraction";
 export * from "./equipe";
 export * from "./absence";
 export * from "./designation";
+export * from "./checklist-depart";
 export * from "./tenant";

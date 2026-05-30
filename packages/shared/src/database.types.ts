@@ -456,6 +456,157 @@ export type Database = {
           },
         ]
       }
+      checklist_photos: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          id: string
+          photo_nom: string | null
+          photo_url: string
+          tenant_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          id?: string
+          photo_nom?: string | null
+          photo_url: string
+          tenant_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          id?: string
+          photo_nom?: string | null
+          photo_url?: string
+          tenant_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_photos_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists_depart"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_photos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_photos_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      checklists_depart: {
+        Row: {
+          chauffeur_id: string
+          created_at: string
+          created_by: string | null
+          date_depart: string
+          designation_id: string
+          heure_validation: string
+          id: string
+          item_documents: Database["public"]["Enums"]["checklist_item_etat"]
+          item_feux: Database["public"]["Enums"]["checklist_item_etat"]
+          item_freins: Database["public"]["Enums"]["checklist_item_etat"]
+          item_huile: Database["public"]["Enums"]["checklist_item_etat"]
+          item_pneus: Database["public"]["Enums"]["checklist_item_etat"]
+          item_retros: Database["public"]["Enums"]["checklist_item_etat"]
+          materiel_roulant_id: string
+          remarque: string | null
+          statut_global: string | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          chauffeur_id: string
+          created_at?: string
+          created_by?: string | null
+          date_depart?: string
+          designation_id: string
+          heure_validation?: string
+          id?: string
+          item_documents?: Database["public"]["Enums"]["checklist_item_etat"]
+          item_feux?: Database["public"]["Enums"]["checklist_item_etat"]
+          item_freins?: Database["public"]["Enums"]["checklist_item_etat"]
+          item_huile?: Database["public"]["Enums"]["checklist_item_etat"]
+          item_pneus?: Database["public"]["Enums"]["checklist_item_etat"]
+          item_retros?: Database["public"]["Enums"]["checklist_item_etat"]
+          materiel_roulant_id: string
+          remarque?: string | null
+          statut_global?: string | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          chauffeur_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_depart?: string
+          designation_id?: string
+          heure_validation?: string
+          id?: string
+          item_documents?: Database["public"]["Enums"]["checklist_item_etat"]
+          item_feux?: Database["public"]["Enums"]["checklist_item_etat"]
+          item_freins?: Database["public"]["Enums"]["checklist_item_etat"]
+          item_huile?: Database["public"]["Enums"]["checklist_item_etat"]
+          item_pneus?: Database["public"]["Enums"]["checklist_item_etat"]
+          item_retros?: Database["public"]["Enums"]["checklist_item_etat"]
+          materiel_roulant_id?: string
+          remarque?: string | null
+          statut_global?: string | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklists_depart_chauffeur_id_fkey"
+            columns: ["chauffeur_id"]
+            isOneToOne: false
+            referencedRelation: "chauffeurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_depart_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_depart_designation_id_fkey"
+            columns: ["designation_id"]
+            isOneToOne: true
+            referencedRelation: "designations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_depart_materiel_roulant_id_fkey"
+            columns: ["materiel_roulant_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklists_depart_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conteneurs: {
         Row: {
           client: string | null
@@ -1456,6 +1607,7 @@ export type Database = {
       accident_statut: "DECLARE" | "EN_COURS_TRAITEMENT" | "CLOTURE"
       affectation_statut: "PLANIFIEE" | "EN_COURS" | "TERMINEE" | "ANNULEE"
       chauffeur_statut: "ACTIF" | "EN_CONGE" | "SUSPENDU" | "INACTIF"
+      checklist_item_etat: "OK" | "ANOMALIE"
       conteneur_statut: "EN_ATTENTE" | "EN_COURS" | "LIVRE" | "ANNULE"
       designation_whatsapp_statut: "PENDING" | "SENT" | "FAILED" | "SKIPPED"
       document_owner_type: "CHAUFFEUR" | "MATERIEL"
@@ -1639,6 +1791,7 @@ export const Constants = {
       accident_statut: ["DECLARE", "EN_COURS_TRAITEMENT", "CLOTURE"],
       affectation_statut: ["PLANIFIEE", "EN_COURS", "TERMINEE", "ANNULEE"],
       chauffeur_statut: ["ACTIF", "EN_CONGE", "SUSPENDU", "INACTIF"],
+      checklist_item_etat: ["OK", "ANOMALIE"],
       conteneur_statut: ["EN_ATTENTE", "EN_COURS", "LIVRE", "ANNULE"],
       designation_whatsapp_statut: ["PENDING", "SENT", "FAILED", "SKIPPED"],
       document_owner_type: ["CHAUFFEUR", "MATERIEL"],
