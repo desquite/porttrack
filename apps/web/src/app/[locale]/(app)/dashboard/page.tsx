@@ -9,6 +9,8 @@ import {
   ArrowRight,
   CheckCircle2,
   Wrench,
+  ShieldAlert,
+  Gavel,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
@@ -130,6 +132,22 @@ export default async function DashboardPage({
     0,
   );
 
+  // Accidents ouverts (Déclaré ou En cours)
+  const { count: accidentsOuverts } = await supabase
+    .from("accidents")
+    .select("*", { count: "exact", head: true })
+    .in("statut", ["DECLARE", "EN_COURS_TRAITEMENT"]);
+
+  // Amendes dues (non payées)
+  const { data: amendesNonPayees } = await supabase
+    .from("infractions")
+    .select("montant_fcfa")
+    .eq("statut", "NON_PAYEE");
+  const totalAmendesDues = (amendesNonPayees ?? []).reduce(
+    (acc, i) => acc + Number(i.montant_fcfa ?? 0),
+    0,
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -141,7 +159,7 @@ export default async function DashboardPage({
       </div>
 
       {/* Compteurs */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard
           title="Chauffeurs actifs"
           value={chauffeursActifs ?? 0}
@@ -183,6 +201,20 @@ export default async function DashboardPage({
           subtitle={`Coût mois : ${coutPannesMois.toLocaleString("fr-FR")} FCFA`}
           icon={<Wrench className="size-4 text-primary" />}
           href="/pannes"
+        />
+        <KpiCard
+          title="Accidents ouverts"
+          value={accidentsOuverts ?? 0}
+          subtitle="Déclarés ou en traitement"
+          icon={<ShieldAlert className="size-4 text-rose-600" />}
+          href="/accidents"
+        />
+        <KpiCard
+          title="Amendes dues"
+          value={totalAmendesDues.toLocaleString("fr-FR")}
+          subtitle="FCFA non payés"
+          icon={<Gavel className="size-4 text-amber-700" />}
+          href="/infractions"
         />
       </div>
 
@@ -362,7 +394,7 @@ function KpiCard({
   highlight,
 }: {
   title: string;
-  value: number;
+  value: number | string;
   subtitle: string;
   icon: React.ReactNode;
   href?: string;

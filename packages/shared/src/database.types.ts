@@ -14,6 +14,169 @@ export type Database = {
   }
   public: {
     Tables: {
+      accident_photos: {
+        Row: {
+          accident_id: string
+          created_at: string
+          id: string
+          photo_nom: string | null
+          photo_url: string
+          tenant_id: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          accident_id: string
+          created_at?: string
+          id?: string
+          photo_nom?: string | null
+          photo_url: string
+          tenant_id: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          accident_id?: string
+          created_at?: string
+          id?: string
+          photo_nom?: string | null
+          photo_url?: string
+          tenant_id?: string
+          uploaded_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accident_photos_accident_id_fkey"
+            columns: ["accident_id"]
+            isOneToOne: false
+            referencedRelation: "accidents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accident_photos_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accident_photos_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      accidents: {
+        Row: {
+          assurance_ref: string | null
+          chauffeur_id: string | null
+          circonstances: string
+          constat_nom: string | null
+          constat_url: string | null
+          created_at: string
+          created_by: string | null
+          date_accident: string
+          date_declaration_assurance: string | null
+          franchise_fcfa: number | null
+          id: string
+          lieu_accident: string | null
+          materiel_roulant_id: string
+          notes: string | null
+          panne_id: string | null
+          quittance_nom: string | null
+          quittance_url: string | null
+          remboursement_fcfa: number | null
+          statut: Database["public"]["Enums"]["accident_statut"]
+          tenant_id: string
+          tiers_implique: boolean
+          updated_at: string
+        }
+        Insert: {
+          assurance_ref?: string | null
+          chauffeur_id?: string | null
+          circonstances: string
+          constat_nom?: string | null
+          constat_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_accident: string
+          date_declaration_assurance?: string | null
+          franchise_fcfa?: number | null
+          id?: string
+          lieu_accident?: string | null
+          materiel_roulant_id: string
+          notes?: string | null
+          panne_id?: string | null
+          quittance_nom?: string | null
+          quittance_url?: string | null
+          remboursement_fcfa?: number | null
+          statut?: Database["public"]["Enums"]["accident_statut"]
+          tenant_id: string
+          tiers_implique?: boolean
+          updated_at?: string
+        }
+        Update: {
+          assurance_ref?: string | null
+          chauffeur_id?: string | null
+          circonstances?: string
+          constat_nom?: string | null
+          constat_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          date_accident?: string
+          date_declaration_assurance?: string | null
+          franchise_fcfa?: number | null
+          id?: string
+          lieu_accident?: string | null
+          materiel_roulant_id?: string
+          notes?: string | null
+          panne_id?: string | null
+          quittance_nom?: string | null
+          quittance_url?: string | null
+          remboursement_fcfa?: number | null
+          statut?: Database["public"]["Enums"]["accident_statut"]
+          tenant_id?: string
+          tiers_implique?: boolean
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "accidents_chauffeur_id_fkey"
+            columns: ["chauffeur_id"]
+            isOneToOne: false
+            referencedRelation: "chauffeurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accidents_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accidents_materiel_roulant_id_fkey"
+            columns: ["materiel_roulant_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accidents_panne_id_fkey"
+            columns: ["panne_id"]
+            isOneToOne: false
+            referencedRelation: "pannes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "accidents_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affectations: {
         Row: {
           chauffeur_id: string | null
@@ -539,6 +702,107 @@ export type Database = {
           },
         ]
       }
+      infractions: {
+        Row: {
+          chauffeur_id: string
+          created_at: string
+          created_by: string | null
+          date_infraction: string
+          date_limite_paiement: string | null
+          date_paiement: string | null
+          description: string | null
+          id: string
+          imputation: Database["public"]["Enums"]["infraction_imputation"]
+          lieu_infraction: string | null
+          materiel_roulant_id: string | null
+          montant_fcfa: number
+          notes: string | null
+          pv_nom: string | null
+          pv_url: string | null
+          recu_nom: string | null
+          recu_url: string | null
+          statut: Database["public"]["Enums"]["infraction_statut"]
+          tenant_id: string
+          type_infraction: string
+          updated_at: string
+        }
+        Insert: {
+          chauffeur_id: string
+          created_at?: string
+          created_by?: string | null
+          date_infraction: string
+          date_limite_paiement?: string | null
+          date_paiement?: string | null
+          description?: string | null
+          id?: string
+          imputation?: Database["public"]["Enums"]["infraction_imputation"]
+          lieu_infraction?: string | null
+          materiel_roulant_id?: string | null
+          montant_fcfa: number
+          notes?: string | null
+          pv_nom?: string | null
+          pv_url?: string | null
+          recu_nom?: string | null
+          recu_url?: string | null
+          statut?: Database["public"]["Enums"]["infraction_statut"]
+          tenant_id: string
+          type_infraction: string
+          updated_at?: string
+        }
+        Update: {
+          chauffeur_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_infraction?: string
+          date_limite_paiement?: string | null
+          date_paiement?: string | null
+          description?: string | null
+          id?: string
+          imputation?: Database["public"]["Enums"]["infraction_imputation"]
+          lieu_infraction?: string | null
+          materiel_roulant_id?: string | null
+          montant_fcfa?: number
+          notes?: string | null
+          pv_nom?: string | null
+          pv_url?: string | null
+          recu_nom?: string | null
+          recu_url?: string | null
+          statut?: Database["public"]["Enums"]["infraction_statut"]
+          tenant_id?: string
+          type_infraction?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "infractions_chauffeur_id_fkey"
+            columns: ["chauffeur_id"]
+            isOneToOne: false
+            referencedRelation: "chauffeurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "infractions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "infractions_materiel_roulant_id_fkey"
+            columns: ["materiel_roulant_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "infractions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       materiel_roulant: {
         Row: {
           annee: number | null
@@ -950,6 +1214,7 @@ export type Database = {
       unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
+      accident_statut: "DECLARE" | "EN_COURS_TRAITEMENT" | "CLOTURE"
       affectation_statut: "PLANIFIEE" | "EN_COURS" | "TERMINEE" | "ANNULEE"
       chauffeur_statut: "ACTIF" | "EN_CONGE" | "SUSPENDU" | "INACTIF"
       conteneur_statut: "EN_ATTENTE" | "EN_COURS" | "LIVRE" | "ANNULE"
@@ -969,6 +1234,8 @@ export type Database = {
         | "CARTE_TRANSPORT"
         | "AUTRE"
       flux_import_statut: "TERMINE" | "PARTIEL" | "ECHEC"
+      infraction_imputation: "ENTREPRISE" | "CHAUFFEUR"
+      infraction_statut: "NON_PAYEE" | "PAYEE" | "CONTESTEE"
       materiel_etat:
         | "EN_SERVICE"
         | "EN_PANNE"
@@ -1122,6 +1389,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      accident_statut: ["DECLARE", "EN_COURS_TRAITEMENT", "CLOTURE"],
       affectation_statut: ["PLANIFIEE", "EN_COURS", "TERMINEE", "ANNULEE"],
       chauffeur_statut: ["ACTIF", "EN_CONGE", "SUSPENDU", "INACTIF"],
       conteneur_statut: ["EN_ATTENTE", "EN_COURS", "LIVRE", "ANNULE"],
@@ -1142,6 +1410,8 @@ export const Constants = {
         "AUTRE",
       ],
       flux_import_statut: ["TERMINE", "PARTIEL", "ECHEC"],
+      infraction_imputation: ["ENTREPRISE", "CHAUFFEUR"],
+      infraction_statut: ["NON_PAYEE", "PAYEE", "CONTESTEE"],
       materiel_etat: [
         "EN_SERVICE",
         "EN_PANNE",

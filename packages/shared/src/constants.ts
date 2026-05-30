@@ -180,6 +180,30 @@ export type PanneStatut = (typeof PANNE_STATUTS)[number];
 /** Statuts considérés comme « ouverts » (le matériel reste indisponible). */
 export const PANNE_STATUTS_OUVERTS = ["DECLAREE", "EN_REPARATION"] as const;
 
+// =============================================================================
+// Ressources d'Exploitation — Accidents & Infractions (§5)
+// =============================================================================
+
+export const ACCIDENT_STATUTS = [
+  "DECLARE",
+  "EN_COURS_TRAITEMENT",
+  "CLOTURE",
+] as const;
+export type AccidentStatut = (typeof ACCIDENT_STATUTS)[number];
+
+export const INFRACTION_STATUTS = [
+  "NON_PAYEE",
+  "PAYEE",
+  "CONTESTEE",
+] as const;
+export type InfractionStatut = (typeof INFRACTION_STATUTS)[number];
+
+export const INFRACTION_IMPUTATIONS = [
+  "ENTREPRISE",
+  "CHAUFFEUR",
+] as const;
+export type InfractionImputation = (typeof INFRACTION_IMPUTATIONS)[number];
+
 // Alias legacy (compat)
 export const STATUTS_CONTENEUR = CONTENEUR_STATUTS;
 export type StatutConteneur = ConteneurStatut;

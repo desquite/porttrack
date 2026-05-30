@@ -4,4 +4,6 @@ export * from "./conteneur";
 export * from "./affectation";
 export * from "./flux";
 export * from "./panne";
+export * from "./accident";
+export * from "./infraction";
 export * from "./tenant";
