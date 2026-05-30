@@ -204,6 +204,37 @@ export const INFRACTION_IMPUTATIONS = [
 ] as const;
 export type InfractionImputation = (typeof INFRACTION_IMPUTATIONS)[number];
 
+// =============================================================================
+// Planning — Équipes & Absences (§7.2 / §7.4)
+// =============================================================================
+
+export const ABSENCE_TYPES = [
+  "CONGE_PLANIFIE",
+  "ABSENCE_IMPREVUE",
+  "MALADIE",
+  "FORMATION",
+  "AUTRE",
+] as const;
+export type AbsenceType = (typeof ABSENCE_TYPES)[number];
+
+/**
+ * Jours de la semaine — conforme Date.prototype.getDay() côté JS :
+ * 0 = dimanche, 1 = lundi, …, 6 = samedi.
+ */
+export const WEEKDAYS = [
+  { value: 1, label: "Lun", labelLong: "Lundi" },
+  { value: 2, label: "Mar", labelLong: "Mardi" },
+  { value: 3, label: "Mer", labelLong: "Mercredi" },
+  { value: 4, label: "Jeu", labelLong: "Jeudi" },
+  { value: 5, label: "Ven", labelLong: "Vendredi" },
+  { value: 6, label: "Sam", labelLong: "Samedi" },
+  { value: 0, label: "Dim", labelLong: "Dimanche" },
+] as const;
+
+/** Code spécial planning : valeur affichée dans la cellule pour une absence. */
+export const PLANNING_CODE_ABSENCE = "A";
+export const PLANNING_CODE_CONGE   = "C";
+
 // Alias legacy (compat)
 export const STATUTS_CONTENEUR = CONTENEUR_STATUTS;
 export type StatutConteneur = ConteneurStatut;

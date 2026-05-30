@@ -27,6 +27,8 @@ type Props = {
   isSuperAdmin: boolean;
   tenants: { id: string; nom_entreprise: string }[];
   defaultTenantId: string | null;
+  /** Équipes disponibles pour le sélecteur (cahier v7 §7.2). */
+  equipes?: { id: string; nom: string; code: string }[];
   /** Valeurs pré-remplies (mode update) — issues du chauffeur chargé en DB */
   defaultValues?: Partial<Chauffeur>;
   /** ID du chauffeur à updater — requis si mode === "update" */
@@ -47,6 +49,7 @@ export function ChauffeurForm({
   isSuperAdmin,
   tenants,
   defaultTenantId,
+  equipes = [],
   defaultValues,
   chauffeurId,
 }: Props) {
@@ -369,6 +372,20 @@ export function ChauffeurForm({
                 <option key={s} value={s}>
                   {STATUT_LABEL[s]}
                 </option>
+              ))}
+            </select>
+          </Field>
+
+          <Field label="Équipe par défaut" name="equipe_id_defaut" error={getError("equipe_id_defaut")} hint="Détermine la cellule par défaut du planning hebdomadaire">
+            <select
+              id="equipe_id_defaut"
+              name="equipe_id_defaut"
+              defaultValue={getValue("equipe_id_defaut") || defaultValues?.equipe_id_defaut || ""}
+              className={selectClass("equipe_id_defaut")}
+            >
+              <option value="">— Aucune —</option>
+              {equipes.map((e) => (
+                <option key={e.id} value={e.id}>{e.code} — {e.nom}</option>
               ))}
             </select>
           </Field>

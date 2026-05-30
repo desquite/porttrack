@@ -85,6 +85,14 @@ export default async function EditChauffeurPage({
     .filter((i) => i.statut === "NON_PAYEE")
     .reduce((acc, i) => acc + Number(i.montant_fcfa ?? 0), 0);
 
+  // Équipes pour le sélecteur « Équipe par défaut »
+  const { data: equipesRaw } = await supabase
+    .from("equipes")
+    .select("id, nom, code")
+    .eq("actif", true)
+    .order("ordre", { ascending: true });
+  const equipes = equipesRaw ?? [];
+
   // 3. Si SUPER_ADMIN, charge la liste des tenants (utile pour le nom affiché)
   let tenantName: string | null = null;
   if (chauffeur.tenant_id) {
@@ -153,6 +161,7 @@ export default async function EditChauffeurPage({
             isSuperAdmin={isSuperAdmin}
             tenants={[]}
             defaultTenantId={chauffeur.tenant_id}
+            equipes={equipes}
             defaultValues={chauffeur}
           />
         </CardContent>

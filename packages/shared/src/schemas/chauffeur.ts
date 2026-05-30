@@ -34,6 +34,16 @@ const optionalDate = z
       .nullable(),
   );
 
+/** UUID optionnel (chaîne vide → null) */
+const optionalUuid = z.preprocess(
+  (val) => {
+    if (typeof val !== "string") return val;
+    const trimmed = val.trim();
+    return trimmed === "" ? null : trimmed;
+  },
+  z.string().uuid("Référence invalide").nullable(),
+);
+
 /** Date ISO obligatoire */
 const requiredDate = z
   .string()
@@ -103,6 +113,7 @@ export const chauffeurCreateSchema = z
     // -- Emploi --
     date_embauche: optionalDate,
     statut: z.enum(CHAUFFEUR_STATUTS).default("ACTIF"),
+    equipe_id_defaut: optionalUuid,
 
     // -- Divers --
     notes: optionalString(2000),

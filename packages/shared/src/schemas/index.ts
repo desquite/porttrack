@@ -6,4 +6,6 @@ export * from "./flux";
 export * from "./panne";
 export * from "./accident";
 export * from "./infraction";
+export * from "./equipe";
+export * from "./absence";
 export * from "./tenant";

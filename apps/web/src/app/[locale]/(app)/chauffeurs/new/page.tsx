@@ -56,6 +56,14 @@ export default async function NewChauffeurPage({
       "Ton compte n'est rattaché à aucune entreprise. Contacte ton manager pour t'attribuer un tenant.";
   }
 
+  // Charge les équipes actives du tenant (RLS filtre) — pour le sélecteur « Équipe par défaut »
+  const { data: equipesRaw } = await supabase
+    .from("equipes")
+    .select("id, nom, code")
+    .eq("actif", true)
+    .order("ordre", { ascending: true });
+  const equipes = equipesRaw ?? [];
+
   return (
     <div className="space-y-6">
       {/* Breadcrumb + titre */}
@@ -92,6 +100,7 @@ export default async function NewChauffeurPage({
               isSuperAdmin={isSuperAdmin}
               tenants={tenants}
               defaultTenantId={defaultTenantId}
+              equipes={equipes}
             />
           </CardContent>
         </Card>

@@ -14,6 +14,73 @@ export type Database = {
   }
   public: {
     Tables: {
+      absences: {
+        Row: {
+          chauffeur_id: string
+          created_at: string
+          created_by: string | null
+          date_debut: string
+          date_fin: string
+          id: string
+          justificatif_nom: string | null
+          justificatif_url: string | null
+          motif: string | null
+          tenant_id: string
+          type: Database["public"]["Enums"]["absence_type"]
+          updated_at: string
+        }
+        Insert: {
+          chauffeur_id: string
+          created_at?: string
+          created_by?: string | null
+          date_debut: string
+          date_fin: string
+          id?: string
+          justificatif_nom?: string | null
+          justificatif_url?: string | null
+          motif?: string | null
+          tenant_id: string
+          type: Database["public"]["Enums"]["absence_type"]
+          updated_at?: string
+        }
+        Update: {
+          chauffeur_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_debut?: string
+          date_fin?: string
+          id?: string
+          justificatif_nom?: string | null
+          justificatif_url?: string | null
+          motif?: string | null
+          tenant_id?: string
+          type?: Database["public"]["Enums"]["absence_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "absences_chauffeur_id_fkey"
+            columns: ["chauffeur_id"]
+            isOneToOne: false
+            referencedRelation: "chauffeurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "absences_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "absences_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       accident_photos: {
         Row: {
           accident_id: string
@@ -289,6 +356,7 @@ export type Database = {
           date_embauche: string | null
           date_naissance: string | null
           email: string | null
+          equipe_id_defaut: string | null
           id: string
           nom: string
           notes: string | null
@@ -316,6 +384,7 @@ export type Database = {
           date_embauche?: string | null
           date_naissance?: string | null
           email?: string | null
+          equipe_id_defaut?: string | null
           id?: string
           nom: string
           notes?: string | null
@@ -343,6 +412,7 @@ export type Database = {
           date_embauche?: string | null
           date_naissance?: string | null
           email?: string | null
+          equipe_id_defaut?: string | null
           id?: string
           nom?: string
           notes?: string | null
@@ -368,6 +438,13 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chauffeurs_equipe_id_defaut_fkey"
+            columns: ["equipe_id_defaut"]
+            isOneToOne: false
+            referencedRelation: "equipes"
             referencedColumns: ["id"]
           },
           {
@@ -593,6 +670,72 @@ export type Database = {
             columns: ["uploaded_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      equipes: {
+        Row: {
+          actif: boolean
+          code: string
+          couleur: string
+          created_at: string
+          created_by: string | null
+          heure_debut: string | null
+          heure_fin: string | null
+          id: string
+          jours_travailles: number[]
+          nom: string
+          notes: string | null
+          ordre: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          code: string
+          couleur?: string
+          created_at?: string
+          created_by?: string | null
+          heure_debut?: string | null
+          heure_fin?: string | null
+          id?: string
+          jours_travailles?: number[]
+          nom: string
+          notes?: string | null
+          ordre?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          code?: string
+          couleur?: string
+          created_at?: string
+          created_by?: string | null
+          heure_debut?: string | null
+          heure_fin?: string | null
+          id?: string
+          jours_travailles?: number[]
+          nom?: string
+          notes?: string | null
+          ordre?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "equipes_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "equipes_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -1214,6 +1357,12 @@ export type Database = {
       unaccent: { Args: { "": string }; Returns: string }
     }
     Enums: {
+      absence_type:
+        | "CONGE_PLANIFIE"
+        | "ABSENCE_IMPREVUE"
+        | "MALADIE"
+        | "FORMATION"
+        | "AUTRE"
       accident_statut: "DECLARE" | "EN_COURS_TRAITEMENT" | "CLOTURE"
       affectation_statut: "PLANIFIEE" | "EN_COURS" | "TERMINEE" | "ANNULEE"
       chauffeur_statut: "ACTIF" | "EN_CONGE" | "SUSPENDU" | "INACTIF"
@@ -1389,6 +1538,13 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      absence_type: [
+        "CONGE_PLANIFIE",
+        "ABSENCE_IMPREVUE",
+        "MALADIE",
+        "FORMATION",
+        "AUTRE",
+      ],
       accident_statut: ["DECLARE", "EN_COURS_TRAITEMENT", "CLOTURE"],
       affectation_statut: ["PLANIFIEE", "EN_COURS", "TERMINEE", "ANNULEE"],
       chauffeur_statut: ["ACTIF", "EN_CONGE", "SUSPENDU", "INACTIF"],
