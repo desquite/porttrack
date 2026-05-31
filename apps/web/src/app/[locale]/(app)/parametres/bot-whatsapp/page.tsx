@@ -22,6 +22,7 @@ const COMMANDES = [
   { code: "CS", label: "Carte de stationnement" },
   { code: "PT", label: "Patente" },
   { code: "DOCS", label: "Tous les documents" },
+  { code: "SUIVI", label: "Suivi d'un conteneur (n° conteneur)" },
 ];
 
 const STATUT_LABEL: Record<string, string> = {

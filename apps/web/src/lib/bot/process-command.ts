@@ -49,20 +49,21 @@ export function normalizePhone(raw: string): string | null {
   return cleaned.startsWith("+") ? cleaned : `+${cleaned}`;
 }
 
-/** Parse « CG AA-1234-CI » → { code, immatriculation }. */
+/** Parse « CG AA-1234-CI » ou « SUIVI MSCU1234567 » → { code, immatriculation }. */
 export function parseCommand(text: string): { code: string; immatriculation: string } | null {
   const t = (text ?? "").trim().toUpperCase().replace(/\s+/g, " ");
-  const m = t.match(/^(CG|AS|VT|CT|CS|PT|DOCS)\s+([A-Z0-9-]{3,20})$/);
+  const m = t.match(/^(CG|AS|VT|CT|CS|PT|DOCS|SUIVI)\s+([A-Z0-9-]{3,20})$/);
   if (!m) return null;
   return { code: m[1], immatriculation: m[2] };
 }
 
 const HELP_TEXT =
   "PORTTRACK — commande non reconnue.\n" +
-  "Format : CODE IMMATRICULATION\n" +
+  "Documents : CODE IMMATRICULATION\n" +
   "Codes : CG (carte grise), AS (assurance), VT (visite technique), " +
   "CT (carte transport), CS (carte stationnement), PT (patente), DOCS (tous).\n" +
-  "Exemple : CG AA-1234-CI";
+  "Suivi conteneur : SUIVI NUMERO\n" +
+  "Exemples : CG AA-1234-CI · SUIVI MSCU1234567";
 
 /**
  * Traite une commande entrante et journalise la consultation.
@@ -100,6 +101,11 @@ export async function processBotCommand(
     return { statut: "COMMANDE_INVALIDE", outbound: [{ kind: "text", text: HELP_TEXT }] };
   }
   const { code, immatriculation } = parsed;
+
+  // Commande SUIVI <numéro conteneur> → fiche de suivi (cahier §7.5 étendu)
+  if (code === "SUIVI") {
+    return handleConteneur(admin, tenantId, numero, textRaw, immatriculation);
+  }
 
   // 3) Résolution du matériel par immatriculation (dans le tenant)
   const { data: materiel } = await admin
@@ -172,6 +178,107 @@ export async function processBotCommand(
   });
 
   return { statut: "REPONDU", outbound };
+}
+
+// =============================================================================
+// Suivi conteneur (commande SUIVI <numéro>)
+// =============================================================================
+
+const CONTENEUR_STATUT_LABEL: Record<string, string> = {
+  EN_ATTENTE: "En attente",
+  EN_COURS: "En cours",
+  LIVRE: "Livré",
+  ANNULE: "Annulé",
+};
+
+function fmtDate(d: string | null | undefined): string | null {
+  if (!d) return null;
+  const date = new Date(d);
+  return Number.isNaN(date.getTime()) ? null : date.toLocaleDateString("fr-FR");
+}
+
+async function handleConteneur(
+  admin: Admin,
+  tenantId: string,
+  numero: string,
+  commandeBrute: string,
+  numeroConteneur: string,
+): Promise<ProcessResult> {
+  const { data: c } = await admin
+    .from("conteneurs")
+    .select("id, numero, numero_bl, client, statut, type_visite, destination_id, destination_libre, type_conteneur_id, date_badt, date_livraison_prevue, date_livraison_reelle")
+    .eq("tenant_id", tenantId)
+    .ilike("numero", numeroConteneur)
+    .maybeSingle();
+
+  if (!c) {
+    await journal(admin, {
+      tenant_id: tenantId, numero, commande_brute: commandeBrute, code: "SUIVI",
+      immatriculation: numeroConteneur, statut: "MATERIEL_INTROUVABLE", details: "conteneur introuvable",
+    });
+    return {
+      statut: "MATERIEL_INTROUVABLE",
+      outbound: [{ kind: "text", text: `PORTTRACK — aucun conteneur « ${numeroConteneur} » trouvé.` }],
+    };
+  }
+
+  // Destination : libellé libre sinon nom du port/ville
+  let dest: string | null = c.destination_libre ?? null;
+  if (!dest && c.destination_id) {
+    const { data: p } = await admin.from("port_codes").select("nom_lieu").eq("id", c.destination_id).maybeSingle();
+    dest = p?.nom_lieu ?? null;
+  }
+  // Type conteneur (ex. 40HC)
+  let typeLabel: string | null = null;
+  if (c.type_conteneur_id) {
+    const { data: t } = await admin.from("types_conteneur").select("code_trade").eq("id", c.type_conteneur_id).maybeSingle();
+    typeLabel = t?.code_trade ?? null;
+  }
+  // Affectation la plus récente (chauffeur + camion)
+  const { data: aff } = await admin
+    .from("affectations")
+    .select("chauffeur:chauffeurs ( nom, prenoms ), tracteur:materiel_roulant ( immatriculation, chrono )")
+    .eq("conteneur_id", c.id)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const a = aff as any;
+  const chauffeurNom = a?.chauffeur ? `${a.chauffeur.nom} ${a.chauffeur.prenoms}`.trim() : null;
+  const tracteur = a?.tracteur
+    ? (a.tracteur.chrono ? `${a.tracteur.chrono} (${a.tracteur.immatriculation})` : a.tracteur.immatriculation)
+    : null;
+  // EIR archivés
+  const { count: eirCount } = await admin
+    .from("eir_archives")
+    .select("*", { count: "exact", head: true })
+    .eq("conteneur_id", c.id);
+
+  const livre = c.statut === "LIVRE";
+  const lines: string[] = [
+    "PORTTRACK – Suivi conteneur",
+    `📦 ${c.numero}${typeLabel ? ` (${typeLabel})` : ""}`,
+    livre && c.date_livraison_reelle
+      ? `Statut : ✅ Livré le ${fmtDate(c.date_livraison_reelle)}`
+      : `Statut : ${CONTENEUR_STATUT_LABEL[c.statut] ?? c.statut}`,
+  ];
+  if (c.client) lines.push(`Client : ${c.client}`);
+  if (c.numero_bl) lines.push(`BL : ${c.numero_bl}`);
+  if (dest) lines.push(`Destination : ${dest}`);
+  if (c.type_visite) lines.push(`Visite douane : ${c.type_visite}`);
+  const badt = fmtDate(c.date_badt);
+  if (badt) lines.push(`BADT : ${badt}`);
+  if (chauffeurNom) lines.push(`Chauffeur : ${chauffeurNom}`);
+  if (tracteur) lines.push(`Camion : ${tracteur}`);
+  const prevue = fmtDate(c.date_livraison_prevue);
+  if (!livre && prevue) lines.push(`Livraison prévue : ${prevue}`);
+  lines.push(`EIR : ${eirCount && eirCount > 0 ? `${eirCount} document(s) archivé(s)` : "non archivé"}`);
+
+  await journal(admin, {
+    tenant_id: tenantId, numero, commande_brute: commandeBrute, code: "SUIVI",
+    immatriculation: c.numero, statut: "REPONDU", details: "suivi conteneur",
+  });
+  return { statut: "REPONDU", outbound: [{ kind: "text", text: lines.join("\n") }] };
 }
 
 // =============================================================================
