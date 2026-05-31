@@ -217,15 +217,23 @@ export function AppShell({
                     <GroupIcon className="size-4" />
                     {group.label}
                   </span>
-                  <ChevronDown className={cn("size-4 transition-transform", isOpen && "rotate-180")} />
+                  <ChevronDown className={cn("size-4 transition-transform duration-[250ms]", isOpen && "rotate-180")} />
                 </button>
-                {isOpen && (
-                  <div className="ml-4 mt-1 space-y-1 border-l border-border/60 pl-2">
-                    {group.items.map((it) => (
-                      <NavRow key={it.href} item={it} active={isActive(it.href)} onNavigate={closeMobile} />
-                    ))}
+                {/* Sous-menu animé : glissement (grid-rows 0fr→1fr) + fondu */}
+                <div
+                  className={cn(
+                    "grid transition-all duration-[250ms] ease-out",
+                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                  )}
+                >
+                  <div className="overflow-hidden">
+                    <div className="ml-4 mt-1 space-y-1 border-l border-border/60 pl-2">
+                      {group.items.map((it) => (
+                        <NavRow key={it.href} item={it} active={isActive(it.href)} onNavigate={closeMobile} />
+                      ))}
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             );
           })}
