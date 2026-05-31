@@ -7,7 +7,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { loadDriverContext } from "./_components/load-driver";
+import { loadDriverContext, firstName } from "./_components/load-driver";
 
 const FR_LONG = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
@@ -57,7 +57,7 @@ export default async function DriverHomePage({
     <div className="space-y-5">
       <div>
         <p className="text-sm capitalize text-muted-foreground">{FR_LONG.format(new Date(today + "T12:00:00"))}</p>
-        <h1 className="text-2xl font-bold tracking-tight">Bonjour {chauffeur.prenoms}</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Bonjour {firstName(chauffeur.prenoms)}</h1>
       </div>
 
       {/* Désignation du jour */}

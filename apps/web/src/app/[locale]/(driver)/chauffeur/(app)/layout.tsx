@@ -3,7 +3,7 @@ import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import { Anchor } from "lucide-react";
 
-import { loadDriverContext, truckLabel } from "./_components/load-driver";
+import { loadDriverContext, truckLabel, shortName } from "./_components/load-driver";
 import { DriverHeaderMenu } from "./_components/driver-header-menu";
 import { DriverBottomNav } from "./_components/driver-bottom-nav";
 
@@ -21,7 +21,7 @@ export default async function DriverAppLayout({
   // Pas connecté OU compte non lié à un chauffeur → page de connexion
   if (!user || !chauffeur) redirect("/chauffeur/connexion");
 
-  const name = `${chauffeur.prenoms} ${chauffeur.nom}`.trim();
+  const name = shortName(chauffeur.prenoms, chauffeur.nom);
   const truck = truckLabel(designation);
 
   return (

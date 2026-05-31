@@ -46,11 +46,12 @@ export function DriverLoginForm() {
     setPending(true);
     const e164 = toE164(phone);
     const { error } = await supabase.auth.verifyOtp({ phone: e164, token: code.trim(), type: "sms" });
-    setPending(false);
     if (error) {
+      setPending(false);
       setError("Code incorrect ou expiré.");
       return;
     }
+    // Succès : on garde le spinner actif pendant la redirection vers l'app.
     router.replace("/chauffeur");
     router.refresh();
   }

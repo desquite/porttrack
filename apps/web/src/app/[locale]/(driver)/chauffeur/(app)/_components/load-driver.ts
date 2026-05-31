@@ -39,3 +39,13 @@ export function truckLabel(designation: any): string | null {
   if (!mr) return null;
   return mr.chrono ?? mr.immatriculation ?? null;
 }
+
+/** Premier prénom seulement (le champ prenoms peut en contenir plusieurs). */
+export function firstName(prenoms: string | null | undefined): string {
+  return (prenoms ?? "").trim().split(/\s+/)[0] ?? "";
+}
+
+/** Nom court à afficher : 1 prénom + nom (jamais un 3e mot). */
+export function shortName(prenoms: string | null | undefined, nom: string | null | undefined): string {
+  return `${firstName(prenoms)} ${nom ?? ""}`.trim();
+}
