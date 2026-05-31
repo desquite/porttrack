@@ -300,8 +300,12 @@ async function downloadAccidentDoc(accidentId: string, field: "constat" | "quitt
   redirect(signed.signedUrl);
 }
 
-export const downloadConstatAction = (accidentId: string) => downloadAccidentDoc(accidentId, "constat");
-export const downloadQuittanceAction = (accidentId: string) => downloadAccidentDoc(accidentId, "quittance");
+export async function downloadConstatAction(accidentId: string): Promise<void> {
+  return downloadAccidentDoc(accidentId, "constat");
+}
+export async function downloadQuittanceAction(accidentId: string): Promise<void> {
+  return downloadAccidentDoc(accidentId, "quittance");
+}
 
 // =============================================================================
 // Photos de dégâts (multi-upload)

@@ -236,10 +236,12 @@ async function uploadInfractionDoc(
   redirect(`/infractions/${infractionId}?uploaded=${field}`);
 }
 
-export const uploadPvAction = (id: string, tenantId: string, fd: FormData) =>
-  uploadInfractionDoc(id, tenantId, fd, "pv");
-export const uploadRecuAction = (id: string, tenantId: string, fd: FormData) =>
-  uploadInfractionDoc(id, tenantId, fd, "recu");
+export async function uploadPvAction(id: string, tenantId: string, fd: FormData): Promise<void> {
+  return uploadInfractionDoc(id, tenantId, fd, "pv");
+}
+export async function uploadRecuAction(id: string, tenantId: string, fd: FormData): Promise<void> {
+  return uploadInfractionDoc(id, tenantId, fd, "recu");
+}
 
 async function downloadInfractionDoc(infractionId: string, field: "pv" | "recu"): Promise<void> {
   const supabase = await createClient();
@@ -261,8 +263,12 @@ async function downloadInfractionDoc(infractionId: string, field: "pv" | "recu")
   redirect(signed.signedUrl);
 }
 
-export const downloadPvAction = (id: string) => downloadInfractionDoc(id, "pv");
-export const downloadRecuAction = (id: string) => downloadInfractionDoc(id, "recu");
+export async function downloadPvAction(id: string): Promise<void> {
+  return downloadInfractionDoc(id, "pv");
+}
+export async function downloadRecuAction(id: string): Promise<void> {
+  return downloadInfractionDoc(id, "recu");
+}
 
 // =============================================================================
 // Suppression
