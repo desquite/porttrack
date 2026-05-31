@@ -41,6 +41,9 @@ export function AddNumeroForm({ tenantId }: { tenantId: string }) {
           </Button>
         </div>
       </div>
+      <p className="text-[11px] text-muted-foreground">
+        Peu importe le format (07…, 7…, +225…, ancien 8 chiffres) : la reconnaissance se fait sur les 8 derniers chiffres.
+      </p>
     </form>
   );
 }

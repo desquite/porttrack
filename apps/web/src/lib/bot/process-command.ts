@@ -75,12 +75,15 @@ export async function processBotCommand(
 ): Promise<ProcessResult> {
   const numero = normalizePhone(fromRaw) ?? fromRaw;
 
-  // 1) Autorisation : le numéro doit être enregistré et actif
+  // 1) Autorisation : on matche sur les 8 derniers chiffres (cœur abonné CI),
+  //    pour tolérer les formats 8/10 chiffres, avec/sans 0, avec/sans 225.
+  const core = numero.replace(/\D/g, "").slice(-8);
   const { data: allow } = await admin
     .from("bot_whatsapp_numeros")
     .select("tenant_id")
-    .eq("numero", numero)
+    .eq("numero_core", core)
     .eq("actif", true)
+    .limit(1)
     .maybeSingle();
 
   if (!allow) {

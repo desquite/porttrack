@@ -412,6 +412,7 @@ export type Database = {
           id: string
           label: string | null
           numero: string
+          numero_core: string | null
           tenant_id: string
           updated_at: string
         }
@@ -422,6 +423,7 @@ export type Database = {
           id?: string
           label?: string | null
           numero: string
+          numero_core?: string | null
           tenant_id: string
           updated_at?: string
         }
@@ -432,6 +434,7 @@ export type Database = {
           id?: string
           label?: string | null
           numero?: string
+          numero_core?: string | null
           tenant_id?: string
           updated_at?: string
         }
