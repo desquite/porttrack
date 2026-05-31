@@ -13,10 +13,13 @@ const FR_LONG = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeri
 
 export default async function DriverHomePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ locale: string }>;
+  searchParams: Promise<{ checklist?: string }>;
 }) {
   const { locale } = await params;
+  const sp = await searchParams;
   setRequestLocale(locale);
 
   const { chauffeur, designation } = await loadDriverContext();
@@ -59,6 +62,12 @@ export default async function DriverHomePage({
         <p className="text-sm capitalize text-muted-foreground">{FR_LONG.format(new Date(today + "T12:00:00"))}</p>
         <h1 className="text-2xl font-bold tracking-tight">Bonjour {firstName(chauffeur.prenoms)}</h1>
       </div>
+
+      {sp.checklist === "ok" && (
+        <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
+          <CheckCircle2 className="size-4" />Check-list enregistrée. Bonne route !
+        </div>
+      )}
 
       {/* Désignation du jour */}
       {d ? (
