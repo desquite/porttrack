@@ -458,6 +458,7 @@ export type Database = {
       chauffeurs: {
         Row: {
           adresse: string | null
+          auth_user_id: string | null
           categories_permis: string[] | null
           created_at: string
           created_by: string | null
@@ -486,6 +487,7 @@ export type Database = {
         }
         Insert: {
           adresse?: string | null
+          auth_user_id?: string | null
           categories_permis?: string[] | null
           created_at?: string
           created_by?: string | null
@@ -514,6 +516,7 @@ export type Database = {
         }
         Update: {
           adresse?: string | null
+          auth_user_id?: string | null
           categories_permis?: string[] | null
           created_at?: string
           created_by?: string | null
@@ -1935,6 +1938,9 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      current_chauffeur_equipe: { Args: never; Returns: string }
+      current_chauffeur_id: { Args: never; Returns: string }
+      current_chauffeur_tenant: { Args: never; Returns: string }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       immutable_unaccent: { Args: { input: string }; Returns: string }
       is_manager_of: { Args: { p_tenant_id: string }; Returns: boolean }
