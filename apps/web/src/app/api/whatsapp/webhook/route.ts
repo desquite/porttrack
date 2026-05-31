@@ -37,14 +37,11 @@ export async function POST(request: NextRequest) {
   // du provider et (plus tard) vérifier la signature HMAC du webhook.
   const rawBody = await request.text();
 
-  // --- Diagnostic temporaire : on logge headers + payload pour caler le
-  //     parsing WasenderAPI et le format du WEBHOOK SECRET. À retirer une fois
-  //     la signature verrouillée. Visible dans les logs Vercel (Functions). ---
+  // --- Diagnostic temporaire : on logge SEULEMENT le payload pour caler le
+  //     parsing. À retirer une fois le bot validé. Visible dans les logs
+  //     Vercel (Functions / Logs). ---
   if (process.env.WHATSAPP_WEBHOOK_DEBUG === "1") {
-    const headers: Record<string, string> = {};
-    request.headers.forEach((v, k) => { headers[k] = v; });
-    console.log("[whatsapp webhook] headers:", JSON.stringify(headers));
-    console.log("[whatsapp webhook] body:", rawBody.slice(0, 2000));
+    console.log("[whatsapp webhook] body:", rawBody.slice(0, 3000));
   }
 
   // --- Vérification du secret WasenderAPI (header brut) ---
@@ -144,9 +141,22 @@ function extractIncoming(body: unknown): { from: string; text: string } | null {
     if (!m || typeof m !== "object") continue;
     const key = m.key ?? {};
     if (key.fromMe === true) continue;                  // anti-boucle : nos envois
-    const jid: string | undefined = key.remoteJid ?? m.remoteJid ?? m.from ?? m.sender ?? m.chatId;
+
+    // WhatsApp « LID addressing » : key.remoteJid peut être un identifiant
+    // interne (…@lid), PAS le numéro. Le vrai numéro est dans senderPn /
+    // cleanedSenderPn. On les prend en priorité.
+    const jid: string | undefined =
+      key.cleanedSenderPn ??
+      key.senderPn ??
+      m.senderPn ??
+      (typeof key.remoteJid === "string" && !/@lid$/i.test(key.remoteJid) ? key.remoteJid : undefined) ??
+      m.from ?? m.sender ?? m.chatId;
     if (!jid || /@g\.us$/i.test(jid)) continue;          // ignore groupes
-    const text = textFromBaileys(m.message) ?? (typeof m.text === "string" ? m.text : null) ?? (typeof m.body === "string" ? m.body : null);
+    const text =
+      textFromBaileys(m.message) ??
+      (typeof m.messageBody === "string" ? m.messageBody : null) ??
+      (typeof m.text === "string" ? m.text : null) ??
+      (typeof m.body === "string" ? m.body : null);
     if (text) return { from: jidToNumber(jid), text };
   }
 
