@@ -2,16 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Truck, LogOut, ChevronDown } from "lucide-react";
+import { Truck, LogOut, ChevronDown, Loader2 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 
 export function DriverHeaderMenu({ name, truck }: { name: string; truck: string | null }) {
   const [open, setOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
   const router = useRouter();
   const initials = name.split(/\s+/).map((s) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 
   async function logout() {
+    setLoggingOut(true); // on garde le spinner jusqu'à la redirection
     const supabase = createClient();
     await supabase.auth.signOut();
     router.replace("/chauffeur/connexion");
@@ -45,10 +47,11 @@ export function DriverHeaderMenu({ name, truck }: { name: string; truck: string 
             <button
               type="button"
               onClick={logout}
-              className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
+              disabled={loggingOut}
+              className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent disabled:opacity-70"
             >
-              <LogOut className="size-4" />
-              Se déconnecter
+              {loggingOut ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
+              {loggingOut ? "Déconnexion…" : "Se déconnecter"}
             </button>
           </div>
         </>

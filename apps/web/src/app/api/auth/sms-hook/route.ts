@@ -70,9 +70,10 @@ export async function POST(request: NextRequest) {
 
   // 4) Envoi du code par WhatsApp au numéro ENREGISTRÉ du chauffeur (canal
   //    de livraison éprouvé par les désignations V3b), pas au numéro brut.
+  //    Le code est en PREMIER (lisible direct dans la notif / autofill).
   const message =
-    `PORTTRACK – Code de connexion : ${otp}\n` +
-    `Valable quelques minutes. Ne le partage avec personne.`;
+    `${otp}\n\n` +
+    `Code de connexion PORTTRACK. Valable quelques minutes, ne le partage avec personne.`;
   const result = await sendWhatsapp(match.telephone, message);
 
   if (!result.ok) {

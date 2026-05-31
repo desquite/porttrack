@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useFormStatus } from "react-dom";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -27,6 +28,7 @@ import {
   ClipboardCheck,
   History,
   FileArchive,
+  Loader2,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -125,6 +127,21 @@ function NavRow({ item, active, onNavigate }: { item: NavLink; active: boolean; 
   );
   if (item.comingSoon) return <div aria-disabled>{inner}</div>;
   return <Link href={item.href} onClick={onNavigate}>{inner}</Link>;
+}
+
+/** Bouton de déconnexion avec spinner pendant la soumission du form (server action). */
+function SignOutButton() {
+  const { pending } = useFormStatus();
+  return (
+    <button
+      type="submit"
+      disabled={pending}
+      className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-foreground hover:bg-accent disabled:opacity-70"
+    >
+      {pending ? <Loader2 className="size-4 animate-spin" /> : <LogOut className="size-4" />}
+      {pending ? "Déconnexion…" : "Se déconnecter"}
+    </button>
+  );
 }
 
 type AppShellProps = {
@@ -325,13 +342,7 @@ export function AppShell({
                   </div>
                   <div className="my-1 border-t" />
                   <form action={signOutAction}>
-                    <button
-                      type="submit"
-                      className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm text-foreground hover:bg-accent"
-                    >
-                      <LogOut className="size-4" />
-                      Se déconnecter
-                    </button>
+                    <SignOutButton />
                   </form>
                 </div>
               </>
