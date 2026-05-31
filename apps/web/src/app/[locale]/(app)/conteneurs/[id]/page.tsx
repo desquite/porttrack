@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
-import { ArrowLeft, CheckCircle2, AlertTriangle, ShieldAlert, History, Lock } from "lucide-react";
+import { ArrowLeft, CheckCircle2, AlertTriangle, ShieldAlert, History, Lock, PackageCheck, FileArchive, FileText } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { TRACKED_FIELDS } from "@porttrack/shared";
@@ -14,11 +14,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { formatDateFR } from "@/lib/utils/dates";
 import { ConteneurForm } from "../_components/conteneur-form";
 import { DeleteConteneurButton } from "../_components/delete-conteneur-button";
 import { loadConteneurRefs } from "../_components/load-refs";
 import { TrackedModificationForm, type TrackedFieldOption } from "../../historique/_components/tracked-modification-form";
 import { ModificationsHistory } from "../../historique/_components/modifications-history";
+import { ConfirmDeliveryForm } from "../../eir/_components/confirm-delivery-form";
+import { downloadEirAction } from "../../eir/actions";
 
 /** Convertit une valeur DB en valeur d'input + valeur d'affichage pour un champ tracé. */
 function buildTrackedFields(conteneur: Record<string, unknown>): TrackedFieldOption[] {
@@ -45,10 +48,10 @@ export default async function EditConteneurPage({
   searchParams,
 }: {
   params: Promise<{ locale: string; id: string }>;
-  searchParams: Promise<{ updated?: string; error?: string; modtracee?: string }>;
+  searchParams: Promise<{ updated?: string; error?: string; modtracee?: string; livree?: string }>;
 }) {
   const { locale, id } = await params;
-  const { updated, error, modtracee } = await searchParams;
+  const { updated, error, modtracee, livree } = await searchParams;
   setRequestLocale(locale);
 
   const supabase = await createClient();
@@ -74,6 +77,29 @@ export default async function EditConteneurPage({
   const canDelete = isSuperAdmin || profile?.role === "MANAGER";
 
   const refs = await loadConteneurRefs();
+
+  // EIR (cahier §10) : affectation active pour pré-remplir chauffeur/camion +
+  // EIR déjà archivés pour ce conteneur.
+  const dejaLivre = conteneur.statut === "LIVRE" || conteneur.statut === "ANNULE";
+  const [{ data: activeAff }, { data: eirArchives }] = await Promise.all([
+    supabase
+      .from("affectations")
+      .select(`id, chauffeur:chauffeurs ( nom, prenoms ), tracteur:materiel_roulant ( immatriculation )`)
+      .eq("conteneur_id", conteneur.id)
+      .in("statut", ["PLANIFIEE", "EN_COURS"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("eir_archives")
+      .select("id, date_livraison, fichier_nom, chauffeur_nom, tracteur_immat, uploaded_by_email")
+      .eq("conteneur_id", conteneur.id)
+      .order("date_livraison", { ascending: false }),
+  ]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const aff = activeAff as any;
+  const affChauffeurNom = aff?.chauffeur ? `${aff.chauffeur.nom} ${aff.chauffeur.prenoms}`.trim() : null;
+  const affTracteurImmat = aff?.tracteur?.immatriculation ?? null;
 
   return (
     <div className="space-y-6">
@@ -111,6 +137,70 @@ export default async function EditConteneurPage({
             Le changement a été journalisé et un email envoyé au(x) manager(s).
           </AlertDescription>
         </Alert>
+      )}
+      {livree && (
+        <Alert className="border-emerald-300 bg-emerald-50/60 text-emerald-900">
+          <PackageCheck className="size-4" />
+          <AlertTitle>Livraison confirmée</AlertTitle>
+          <AlertDescription>L&apos;EIR a été archivé et le conteneur passé en « Livré ».</AlertDescription>
+        </Alert>
+      )}
+
+      {/* Confirmation de livraison avec EIR (cahier §10) */}
+      {!dejaLivre && (
+        <Card className="border-emerald-200">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <PackageCheck className="size-4 text-emerald-700" />
+              Confirmer la livraison
+            </CardTitle>
+            <CardDescription>
+              L&apos;upload de l&apos;EIR est obligatoire avant de clôturer. Le conteneur passera alors en « Livré ».
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ConfirmDeliveryForm
+              tenantId={conteneur.tenant_id}
+              conteneurId={conteneur.id}
+              affectationId={aff?.id ?? null}
+              chauffeurNom={affChauffeurNom}
+              tracteurImmat={affTracteurImmat}
+            />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* EIR archivés pour ce conteneur */}
+      {eirArchives && eirArchives.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <FileArchive className="size-4 text-primary" />
+              EIR archivés
+              <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                {eirArchives.length}
+              </span>
+            </CardTitle>
+            <CardDescription>Conservation 5 ans — suppression réservée au Super Admin (cahier §9.4).</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="divide-y rounded-md border">
+              {eirArchives.map((e) => (
+                <li key={e.id} className="flex flex-wrap items-center gap-3 p-3 text-sm">
+                  <FileArchive className="size-4 text-muted-foreground" />
+                  <span className="font-medium">Livré le {formatDateFR(e.date_livraison)}</span>
+                  {e.chauffeur_nom && <span className="text-xs text-muted-foreground">{e.chauffeur_nom}</span>}
+                  {e.tracteur_immat && <span className="text-xs text-muted-foreground">{e.tracteur_immat}</span>}
+                  <form action={downloadEirAction.bind(null, e.id)} className="ml-auto">
+                    <Button type="submit" variant="outline" size="sm">
+                      <FileText className="mr-2 size-3.5" />{e.fichier_nom ?? "EIR"}
+                    </Button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
       )}
       {error && (
         <Alert variant="destructive">

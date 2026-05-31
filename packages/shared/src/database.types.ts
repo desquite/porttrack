@@ -997,6 +997,100 @@ export type Database = {
           },
         ]
       }
+      eir_archives: {
+        Row: {
+          affectation_id: string | null
+          chauffeur_id: string | null
+          chauffeur_nom: string | null
+          conteneur_id: string
+          created_at: string
+          date_livraison: string
+          fichier_nom: string | null
+          fichier_url: string
+          id: string
+          tenant_id: string
+          tracteur_id: string | null
+          tracteur_immat: string | null
+          uploaded_by: string | null
+          uploaded_by_email: string | null
+        }
+        Insert: {
+          affectation_id?: string | null
+          chauffeur_id?: string | null
+          chauffeur_nom?: string | null
+          conteneur_id: string
+          created_at?: string
+          date_livraison?: string
+          fichier_nom?: string | null
+          fichier_url: string
+          id?: string
+          tenant_id: string
+          tracteur_id?: string | null
+          tracteur_immat?: string | null
+          uploaded_by?: string | null
+          uploaded_by_email?: string | null
+        }
+        Update: {
+          affectation_id?: string | null
+          chauffeur_id?: string | null
+          chauffeur_nom?: string | null
+          conteneur_id?: string
+          created_at?: string
+          date_livraison?: string
+          fichier_nom?: string | null
+          fichier_url?: string
+          id?: string
+          tenant_id?: string
+          tracteur_id?: string | null
+          tracteur_immat?: string | null
+          uploaded_by?: string | null
+          uploaded_by_email?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "eir_archives_affectation_id_fkey"
+            columns: ["affectation_id"]
+            isOneToOne: false
+            referencedRelation: "affectations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eir_archives_chauffeur_id_fkey"
+            columns: ["chauffeur_id"]
+            isOneToOne: false
+            referencedRelation: "chauffeurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eir_archives_conteneur_id_fkey"
+            columns: ["conteneur_id"]
+            isOneToOne: false
+            referencedRelation: "conteneurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eir_archives_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eir_archives_tracteur_id_fkey"
+            columns: ["tracteur_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eir_archives_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       equipes: {
         Row: {
           actif: boolean
