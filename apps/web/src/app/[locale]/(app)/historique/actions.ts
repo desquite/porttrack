@@ -107,15 +107,27 @@ export async function createTrackedModificationAction(
   if (readErr || !current) {
     return { status: "error", formError: "Enregistrement introuvable ou droits insuffisants.", values };
   }
-  const valeurAvant = formatForHistory(
+  // Valeurs BRUTES (ce qu'on applique réellement à la colonne) — pour un
+  // select c'est l'UUID, pour le reste la valeur formatée.
+  const valeurAvantBrute = formatForHistory(
     current[d.champ] === null || current[d.champ] === undefined ? null : String(current[d.champ]),
     field.type,
   );
-  const valeurApres = formatForHistory(d.valeur_apres, field.type);
+  const valeurApresBrute = formatForHistory(d.valeur_apres, field.type);
 
-  if (valeurAvant === valeurApres) {
+  if (valeurAvantBrute === valeurApresBrute) {
     return { status: "error", formError: "La nouvelle valeur est identique à l'actuelle.", values };
   }
+
+  // Valeurs AFFICHÉES dans l'historique — pour les selects, on stocke le
+  // libellé humain (ex. nom du chauffeur) transmis par le formulaire plutôt
+  // que l'UUID. Pour les autres types, identique à la valeur brute.
+  const avantLabel = typeof values.valeur_avant_label === "string" && values.valeur_avant_label.trim() !== ""
+    ? values.valeur_avant_label.trim() : null;
+  const apresLabel = typeof values.valeur_apres_label === "string" && values.valeur_apres_label.trim() !== ""
+    ? values.valeur_apres_label.trim() : null;
+  const valeurAvantHist = field.type === "select" ? avantLabel : valeurAvantBrute;
+  const valeurApresHist = field.type === "select" ? apresLabel : valeurApresBrute;
 
   // 4) Upload du justificatif
   const ext = f.name.split(".").pop()?.toLowerCase() ?? "bin";
@@ -128,8 +140,9 @@ export async function createTrackedModificationAction(
     return { status: "error", formError: `Upload du justificatif : ${upErr.message}`, values };
   }
 
-  // 5) Application de la modification sur la table cible (colonne whitelistée)
-  const patch: Record<string, string | null> = { [d.champ]: valeurApres };
+  // 5) Application de la modification sur la table cible (colonne whitelistée).
+  //    On applique TOUJOURS la valeur brute (UUID pour un select, texte sinon).
+  const patch: Record<string, string | null> = { [d.champ]: valeurApresBrute };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { error: updErr } = await (supabase as any)
     .from(d.table_cible)
@@ -147,8 +160,8 @@ export async function createTrackedModificationAction(
     enregistrement_id: d.enregistrement_id,
     champ: d.champ,
     champ_label: field.label,
-    valeur_avant: valeurAvant,
-    valeur_apres: valeurApres,
+    valeur_avant: valeurAvantHist,
+    valeur_apres: valeurApresHist,
     motif: d.motif,
     justificatif_url: objectPath,
     justificatif_nom: f.name,
@@ -165,8 +178,8 @@ export async function createTrackedModificationAction(
   // 7) Notification email aux managers du tenant (best-effort, ne bloque pas)
   await notifyManagers(d.tenant_id, {
     champLabel: field.label,
-    avant: valeurAvant,
-    apres: valeurApres,
+    avant: valeurAvantHist,
+    apres: valeurApresHist,
     motif: d.motif,
     auteur: user.email ?? "un utilisateur",
     table: d.table_cible,

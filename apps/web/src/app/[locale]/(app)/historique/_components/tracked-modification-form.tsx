@@ -13,11 +13,13 @@ import { createTrackedModificationAction, type ModificationFormState } from "../
 export type TrackedFieldOption = {
   champ: string;
   label: string;
-  type: "text" | "datetime" | "date";
-  /** Valeur actuelle, déjà formatée pour l'input (datetime-local: YYYY-MM-DDTHH:mm). */
+  type: "text" | "datetime" | "date" | "select";
+  /** Valeur actuelle, formatée pour l'input (datetime-local: YYYY-MM-DDTHH:mm ; select: value). */
   currentInput: string;
-  /** Valeur actuelle affichée à l'humain. */
+  /** Valeur actuelle affichée à l'humain (et figée dans l'historique pour les selects). */
   currentDisplay: string;
+  /** Options pour les champs de type select (value = ce qu'on stocke ; label = humain). */
+  options?: { value: string; label: string }[];
 };
 
 type Props = {
@@ -32,6 +34,7 @@ const initialState: ModificationFormState = { status: "idle" };
 export function TrackedModificationForm({ tenantId, tableCible, recordId, fields }: Props) {
   const [state, formAction, pending] = useActionState(createTrackedModificationAction, initialState);
   const [champ, setChamp] = useState<string>(fields[0]?.champ ?? "");
+  const [newValue, setNewValue] = useState<string>(fields[0]?.currentInput ?? "");
   const [hasFile, setHasFile] = useState(false);
 
   const selected = fields.find((f) => f.champ === champ) ?? fields[0];
@@ -41,15 +44,33 @@ export function TrackedModificationForm({ tenantId, tableCible, recordId, fields
     return (state.fieldErrors?.[name as keyof typeof state.fieldErrors] as string[] | undefined)?.[0] ?? null;
   };
 
-  if (fields.length === 0) {
+  function onChampChange(nextChamp: string) {
+    setChamp(nextChamp);
+    const f = fields.find((x) => x.champ === nextChamp);
+    setNewValue(f?.currentInput ?? "");
+  }
+
+  if (fields.length === 0 || !selected) {
     return <p className="text-sm text-muted-foreground">Aucun champ traçable pour cet enregistrement.</p>;
   }
+
+  // Pour un select, on transmet aussi les libellés humains pour l'historique.
+  const isSelect = selected.type === "select";
+  const newValueLabel = isSelect
+    ? (selected.options?.find((o) => o.value === newValue)?.label ?? "")
+    : "";
 
   return (
     <form action={formAction} className="space-y-5">
       <input type="hidden" name="tenant_id" value={tenantId} />
       <input type="hidden" name="table_cible" value={tableCible} />
       <input type="hidden" name="enregistrement_id" value={recordId} />
+      {isSelect && (
+        <>
+          <input type="hidden" name="valeur_avant_label" value={selected.currentDisplay} />
+          <input type="hidden" name="valeur_apres_label" value={newValueLabel} />
+        </>
+      )}
 
       {state.status === "error" && state.formError && (
         <Alert variant="destructive">
@@ -65,7 +86,7 @@ export function TrackedModificationForm({ tenantId, tableCible, recordId, fields
             id="champ"
             name="champ"
             value={champ}
-            onChange={(e) => setChamp(e.target.value)}
+            onChange={(e) => onChampChange(e.target.value)}
             className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
           >
             {fields.map((f) => <option key={f.champ} value={f.champ}>{f.label}</option>)}
@@ -75,43 +96,39 @@ export function TrackedModificationForm({ tenantId, tableCible, recordId, fields
         <div className="space-y-1.5">
           <Label className="text-xs">Valeur actuelle</Label>
           <div className="flex h-9 items-center rounded-md border border-dashed border-input bg-muted/40 px-3 text-sm text-muted-foreground">
-            {selected?.currentDisplay || "(vide)"}
+            {selected.currentDisplay || "(vide)"}
           </div>
         </div>
       </div>
 
       <div className="space-y-1.5">
         <Label htmlFor="valeur_apres" className="text-xs">Nouvelle valeur</Label>
-        {selected?.type === "datetime" ? (
-          <Input
-            key={selected.champ}
+        {isSelect ? (
+          <select
             id="valeur_apres"
             name="valeur_apres"
-            type="datetime-local"
-            defaultValue={selected.currentInput}
-            className={cn(getError("valeur_apres") && "border-rose-500")}
-          />
-        ) : selected?.type === "date" ? (
-          <Input
-            key={selected.champ}
-            id="valeur_apres"
-            name="valeur_apres"
-            type="date"
-            defaultValue={selected.currentInput}
-            className={cn(getError("valeur_apres") && "border-rose-500")}
-          />
+            value={newValue}
+            onChange={(e) => setNewValue(e.target.value)}
+            className={cn(
+              "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
+              getError("valeur_apres") && "border-rose-500",
+            )}
+          >
+            <option value="">— Aucun —</option>
+            {selected.options?.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
         ) : (
           <Input
-            key={selected?.champ}
             id="valeur_apres"
             name="valeur_apres"
-            type="text"
-            defaultValue={selected?.currentInput}
+            type={selected.type === "datetime" ? "datetime-local" : selected.type === "date" ? "date" : "text"}
+            value={newValue}
+            onChange={(e) => setNewValue(e.target.value)}
             placeholder="Laisser vide pour effacer la valeur"
             className={cn(getError("valeur_apres") && "border-rose-500")}
           />
         )}
-        <p className="text-[11px] text-muted-foreground">Laisse le champ vide pour effacer la valeur actuelle.</p>
+        <p className="text-[11px] text-muted-foreground">Laisse le champ vide / « Aucun » pour effacer la valeur actuelle.</p>
       </div>
 
       <div className="space-y-1.5">
@@ -121,7 +138,7 @@ export function TrackedModificationForm({ tenantId, tableCible, recordId, fields
           name="motif"
           rows={2}
           required
-          placeholder="Ex : prorogation de délai confirmée par l'aconier"
+          placeholder="Ex : remplacement d'urgence suite à panne du camion initial"
           className={cn(
             "flex w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
             getError("motif") && "border-rose-500",

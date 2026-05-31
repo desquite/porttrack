@@ -281,7 +281,7 @@ export type ChecklistDefaultItemCode = (typeof CHECKLIST_DEFAULT_ITEMS_CODES)[nu
  * Type de widget d'édition pour un champ tracé. Détermine comment le
  * formulaire de modification rend la saisie de la nouvelle valeur.
  */
-export type TrackedFieldType = "text" | "datetime" | "date";
+export type TrackedFieldType = "text" | "datetime" | "date" | "select";
 
 export type TrackedField = {
   /** Nom technique de la colonne en base (whitelisté côté action). */
@@ -305,6 +305,10 @@ export const TRACKED_FIELDS = {
     { champ: "type_visite",       label: "Type de visite douane",    type: "text" },
     { champ: "mode_livraison",    label: "Mode de livraison",        type: "text" },
     { champ: "date_badt",         label: "Date BADT",                type: "datetime" },
+  ],
+  affectations: [
+    { champ: "chauffeur_id", label: "Chauffeur affecté",         type: "select" },
+    { champ: "tracteur_id",  label: "Camion (tracteur) affecté", type: "select" },
   ],
 } as const satisfies Record<string, readonly TrackedField[]>;
 
