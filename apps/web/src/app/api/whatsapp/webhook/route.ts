@@ -33,16 +33,7 @@ export async function GET(request: NextRequest) {
 
 // -------- Réception d'un message entrant --------
 export async function POST(request: NextRequest) {
-  // On lit le corps en TEXTE d'abord : utile pour journaliser le format exact
-  // du provider et (plus tard) vérifier la signature HMAC du webhook.
   const rawBody = await request.text();
-
-  // --- Diagnostic temporaire : on logge SEULEMENT le payload pour caler le
-  //     parsing. À retirer une fois le bot validé. Visible dans les logs
-  //     Vercel (Functions / Logs). ---
-  if (process.env.WHATSAPP_WEBHOOK_DEBUG === "1") {
-    console.log("[whatsapp webhook] body:", rawBody.slice(0, 3000));
-  }
 
   // --- Vérification du secret WasenderAPI (header brut) ---
   // WasenderAPI envoie le secret du webhook dans `x-webhook-secret`
