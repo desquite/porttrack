@@ -6,8 +6,9 @@ import { randomUUID } from "node:crypto";
 import {
   checklistDepartCreateSchema,
   checklistDepartUpdateSchema,
+  CHECKLIST_ITEM_ETATS,
   type ChecklistDepartCreateInput,
-  type ChecklistDepartUpdateInput,
+  type ChecklistItemEtat,
 } from "@porttrack/shared";
 import { createClient } from "@/lib/supabase/server";
 
@@ -44,44 +45,28 @@ function readFormValues(formData: FormData): Record<string, string> {
   return out;
 }
 
-function parseCreate(values: Record<string, string>) {
-  const parsed = checklistDepartCreateSchema.safeParse(values);
-  if (parsed.success) return { ok: true as const, data: parsed.data };
-  const fieldErrors: Partial<Record<keyof ChecklistDepartCreateInput, string[]>> = {};
-  for (const issue of parsed.error.issues) {
-    const field = issue.path[0] as keyof ChecklistDepartCreateInput | undefined;
-    if (!field) continue;
-    (fieldErrors[field] ??= []).push(issue.message);
-  }
-  return {
-    ok: false as const,
-    state: {
-      status: "error" as const,
-      formError: "Corrige les champs en rouge.",
-      fieldErrors,
-      values,
-    },
-  };
-}
+const ITEM_KEY_RE = /^item-([0-9a-f-]{36})$/i;
 
-function parseUpdate(values: Record<string, string>) {
-  const parsed = checklistDepartUpdateSchema.safeParse(values);
-  if (parsed.success) return { ok: true as const, data: parsed.data };
-  const fieldErrors: Partial<Record<keyof ChecklistDepartUpdateInput, string[]>> = {};
-  for (const issue of parsed.error.issues) {
-    const field = issue.path[0] as keyof ChecklistDepartUpdateInput | undefined;
-    if (!field) continue;
-    (fieldErrors[field] ??= []).push(issue.message);
+/**
+ * Extrait les réponses items du FormData. Le format attendu côté formulaire
+ * est `item-<uuid>` = "OK" | "ANOMALIE".
+ *
+ * Retourne un tableau de paires { itemConfigId, etat }.
+ */
+function extractItemResponses(values: Record<string, string>):
+  | { ok: true; responses: Array<{ itemConfigId: string; etat: ChecklistItemEtat }> }
+  | { ok: false; error: string } {
+  const out: Array<{ itemConfigId: string; etat: ChecklistItemEtat }> = [];
+  for (const [key, raw] of Object.entries(values)) {
+    const m = key.match(ITEM_KEY_RE);
+    if (!m) continue;
+    const itemConfigId = m[1];
+    if (!(CHECKLIST_ITEM_ETATS as readonly string[]).includes(raw)) {
+      return { ok: false, error: `État invalide pour l'item ${itemConfigId} : ${raw}` };
+    }
+    out.push({ itemConfigId, etat: raw as ChecklistItemEtat });
   }
-  return {
-    ok: false as const,
-    state: {
-      status: "error" as const,
-      formError: "Corrige les champs en rouge.",
-      fieldErrors: fieldErrors as Partial<Record<keyof ChecklistDepartCreateInput, string[]>>,
-      values,
-    },
-  };
+  return { ok: true, responses: out };
 }
 
 function sanitizeFilename(name: string): string {
@@ -115,14 +100,30 @@ export async function createChecklistAction(
   formData: FormData,
 ): Promise<ChecklistFormState> {
   const values = readFormValues(formData);
-  const parsed = parseCreate(values);
-  if (!parsed.ok) return parsed.state;
+  const parsed = checklistDepartCreateSchema.safeParse(values);
+  if (!parsed.success) {
+    const fieldErrors: Partial<Record<keyof ChecklistDepartCreateInput, string[]>> = {};
+    for (const issue of parsed.error.issues) {
+      const field = issue.path[0] as keyof ChecklistDepartCreateInput | undefined;
+      if (!field) continue;
+      (fieldErrors[field] ??= []).push(issue.message);
+    }
+    return { status: "error", formError: "Corrige les champs en rouge.", fieldErrors, values };
+  }
+
+  const items = extractItemResponses(values);
+  if (!items.ok) return { status: "error", formError: items.error, values };
+  if (items.responses.length === 0) {
+    return { status: "error", formError: "Aucun item configuré pour cette entreprise — demande au manager de les ajouter.", values };
+  }
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { status: "error", formError: "Session expirée.", values };
 
   const d = parsed.data;
+
+  // 1) Création de la check-list
   const { data: created, error } = await supabase
     .from("checklists_depart")
     .insert({
@@ -131,12 +132,6 @@ export async function createChecklistAction(
       chauffeur_id: d.chauffeur_id,
       materiel_roulant_id: d.materiel_roulant_id,
       date_depart: d.date_depart,
-      item_huile: d.item_huile,
-      item_pneus: d.item_pneus,
-      item_feux: d.item_feux,
-      item_freins: d.item_freins,
-      item_retros: d.item_retros,
-      item_documents: d.item_documents,
       remarque: d.remarque,
       created_by: user.id,
     })
@@ -146,6 +141,22 @@ export async function createChecklistAction(
   if (error || !created) {
     console.error("[createChecklistAction]", error);
     return mapDbErr(error ?? { message: "inconnue" }, values);
+  }
+
+  // 2) Création des réponses items (le trigger recalcule statut_global)
+  const responsesRows = items.responses.map((r) => ({
+    tenant_id: d.tenant_id,
+    checklist_id: created.id,
+    item_config_id: r.itemConfigId,
+    etat: r.etat,
+  }));
+  const { error: rerr } = await supabase.from("checklist_responses").insert(responsesRows);
+  if (rerr) {
+    // Compensation : la check-list seule a été créée, on la supprime pour éviter
+    // un état incohérent (pas de réponses → statut FAITE par défaut faussé).
+    await supabase.from("checklists_depart").delete().eq("id", created.id);
+    console.error("[createChecklistAction:responses]", rerr);
+    return mapDbErr(rerr, values);
   }
 
   revalidatePath("/checklists");
@@ -164,31 +175,52 @@ export async function updateChecklistAction(
   formData: FormData,
 ): Promise<ChecklistFormState> {
   const values = readFormValues(formData);
-  const parsed = parseUpdate(values);
-  if (!parsed.ok) return parsed.state;
+  const parsed = checklistDepartUpdateSchema.safeParse(values);
+  if (!parsed.success) {
+    return {
+      status: "error",
+      formError: "Remarque invalide.",
+      values,
+    };
+  }
+
+  const items = extractItemResponses(values);
+  if (!items.ok) return { status: "error", formError: items.error, values };
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { status: "error", formError: "Session expirée.", values };
 
-  const d = parsed.data;
-  const { data: updated, error } = await supabase
+  // Récupère le tenant_id de la check-list (utile pour insérer de nouvelles réponses)
+  const { data: cl } = await supabase
     .from("checklists_depart")
-    .update({
-      item_huile: d.item_huile,
-      item_pneus: d.item_pneus,
-      item_feux: d.item_feux,
-      item_freins: d.item_freins,
-      item_retros: d.item_retros,
-      item_documents: d.item_documents,
-      remarque: d.remarque,
-    })
+    .select("tenant_id")
     .eq("id", checklistId)
-    .select("id")
     .maybeSingle();
+  if (!cl) return { status: "error", formError: "Check-list introuvable ou droits insuffisants.", values };
 
-  if (error) return mapDbErr(error, values);
-  if (!updated) return { status: "error", formError: "Check-list introuvable ou droits insuffisants.", values };
+  // 1) Update remarque (le trigger sur remarque recalcule statut)
+  const { error: uerr } = await supabase
+    .from("checklists_depart")
+    .update({ remarque: parsed.data.remarque })
+    .eq("id", checklistId);
+  if (uerr) return mapDbErr(uerr, values);
+
+  // 2) Upsert des réponses item par item
+  for (const r of items.responses) {
+    const { error: rerr } = await supabase
+      .from("checklist_responses")
+      .upsert(
+        {
+          tenant_id: cl.tenant_id,
+          checklist_id: checklistId,
+          item_config_id: r.itemConfigId,
+          etat: r.etat,
+        },
+        { onConflict: "checklist_id,item_config_id" },
+      );
+    if (rerr) return mapDbErr(rerr, values);
+  }
 
   revalidatePath("/checklists");
   revalidatePath(`/checklists/${checklistId}`);

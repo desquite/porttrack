@@ -456,6 +456,57 @@ export type Database = {
           },
         ]
       }
+      checklist_items_config: {
+        Row: {
+          actif: boolean
+          code: string
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          ordre: number
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          code: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          ordre?: number
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          ordre?: number
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_items_config_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_items_config_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklist_photos: {
         Row: {
           checklist_id: string
@@ -508,6 +559,58 @@ export type Database = {
           },
         ]
       }
+      checklist_responses: {
+        Row: {
+          checklist_id: string
+          created_at: string
+          etat: Database["public"]["Enums"]["checklist_item_etat"]
+          id: string
+          item_config_id: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          checklist_id: string
+          created_at?: string
+          etat?: Database["public"]["Enums"]["checklist_item_etat"]
+          id?: string
+          item_config_id: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          checklist_id?: string
+          created_at?: string
+          etat?: Database["public"]["Enums"]["checklist_item_etat"]
+          id?: string
+          item_config_id?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "checklist_responses_checklist_id_fkey"
+            columns: ["checklist_id"]
+            isOneToOne: false
+            referencedRelation: "checklists_depart"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_responses_item_config_id_fkey"
+            columns: ["item_config_id"]
+            isOneToOne: false
+            referencedRelation: "checklist_items_config"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "checklist_responses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       checklists_depart: {
         Row: {
           chauffeur_id: string
@@ -517,15 +620,9 @@ export type Database = {
           designation_id: string
           heure_validation: string
           id: string
-          item_documents: Database["public"]["Enums"]["checklist_item_etat"]
-          item_feux: Database["public"]["Enums"]["checklist_item_etat"]
-          item_freins: Database["public"]["Enums"]["checklist_item_etat"]
-          item_huile: Database["public"]["Enums"]["checklist_item_etat"]
-          item_pneus: Database["public"]["Enums"]["checklist_item_etat"]
-          item_retros: Database["public"]["Enums"]["checklist_item_etat"]
           materiel_roulant_id: string
           remarque: string | null
-          statut_global: string | null
+          statut_global: string
           tenant_id: string
           updated_at: string
         }
@@ -537,15 +634,9 @@ export type Database = {
           designation_id: string
           heure_validation?: string
           id?: string
-          item_documents?: Database["public"]["Enums"]["checklist_item_etat"]
-          item_feux?: Database["public"]["Enums"]["checklist_item_etat"]
-          item_freins?: Database["public"]["Enums"]["checklist_item_etat"]
-          item_huile?: Database["public"]["Enums"]["checklist_item_etat"]
-          item_pneus?: Database["public"]["Enums"]["checklist_item_etat"]
-          item_retros?: Database["public"]["Enums"]["checklist_item_etat"]
           materiel_roulant_id: string
           remarque?: string | null
-          statut_global?: string | null
+          statut_global?: string
           tenant_id: string
           updated_at?: string
         }
@@ -557,15 +648,9 @@ export type Database = {
           designation_id?: string
           heure_validation?: string
           id?: string
-          item_documents?: Database["public"]["Enums"]["checklist_item_etat"]
-          item_feux?: Database["public"]["Enums"]["checklist_item_etat"]
-          item_freins?: Database["public"]["Enums"]["checklist_item_etat"]
-          item_huile?: Database["public"]["Enums"]["checklist_item_etat"]
-          item_pneus?: Database["public"]["Enums"]["checklist_item_etat"]
-          item_retros?: Database["public"]["Enums"]["checklist_item_etat"]
           materiel_roulant_id?: string
           remarque?: string | null
-          statut_global?: string | null
+          statut_global?: string
           tenant_id?: string
           updated_at?: string
         }
@@ -1588,6 +1673,14 @@ export type Database = {
       is_super_admin: { Args: never; Returns: boolean }
       jwt_tenant_id: { Args: never; Returns: string }
       jwt_user_role: { Args: never; Returns: string }
+      recompute_checklist_statut: {
+        Args: { p_checklist_id: string }
+        Returns: undefined
+      }
+      seed_checklist_items_for_tenant: {
+        Args: { p_tenant_id: string }
+        Returns: undefined
+      }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
       storage_tenant_from_path: { Args: { file_name: string }; Returns: string }

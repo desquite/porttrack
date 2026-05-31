@@ -254,23 +254,24 @@ export type DesignationWhatsappStatut = (typeof DESIGNATION_WHATSAPP_STATUTS)[nu
 export const CHECKLIST_ITEM_ETATS = ["OK", "ANOMALIE"] as const;
 export type ChecklistItemEtat = (typeof CHECKLIST_ITEM_ETATS)[number];
 
-/**
- * Les 6 items figés de la check-list de départ (cahier v7 §7.3).
- * L'ordre est volontairement celui du cahier — il sert d'ordre d'affichage.
- */
-export const CHECKLIST_ITEMS = [
-  { key: "item_huile",     label: "Niveau d'huile" },
-  { key: "item_pneus",     label: "État visuel des pneus" },
-  { key: "item_feux",      label: "Feux avant et arrière" },
-  { key: "item_freins",    label: "Freins" },
-  { key: "item_retros",    label: "Rétroviseurs" },
-  { key: "item_documents", label: "Documents à bord (permis, carte grise…)" },
-] as const;
-export type ChecklistItemKey = (typeof CHECKLIST_ITEMS)[number]["key"];
-
 /** Statut global d'une check-list (FAITE / REMARQUE en DB, NON_FAITE = absence de ligne). */
 export const CHECKLIST_STATUTS_GLOBAUX = ["FAITE", "REMARQUE", "NON_FAITE"] as const;
 export type ChecklistStatutGlobal = (typeof CHECKLIST_STATUTS_GLOBAUX)[number];
+
+/**
+ * Items par défaut (cahier v7 §7.3) — seedés automatiquement à la création
+ * de chaque tenant via la fonction Postgres `seed_checklist_items_for_tenant`.
+ * Ces codes sont stables ; les libellés peuvent être renommés côté UI.
+ */
+export const CHECKLIST_DEFAULT_ITEMS_CODES = [
+  "huile",
+  "pneus",
+  "feux",
+  "freins",
+  "retros",
+  "documents",
+] as const;
+export type ChecklistDefaultItemCode = (typeof CHECKLIST_DEFAULT_ITEMS_CODES)[number];
 
 // Alias legacy (compat)
 export const STATUTS_CONTENEUR = CONTENEUR_STATUTS;

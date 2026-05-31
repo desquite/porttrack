@@ -6,6 +6,7 @@ import {
   ChevronRight,
   Settings,
   Plus,
+  ClipboardCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -266,6 +267,27 @@ export default async function ParametresPage({
             : undefined
         }
       />
+
+      {/* Section Items de check-list — accès direct au CRUD configuration */}
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ClipboardCheck className="size-4 text-primary" />
+              Items de check-list de départ
+            </CardTitle>
+            <CardDescription>
+              Personnalise les items affichés aux chauffeurs (huile, pneus, freins, etc.).
+              Par défaut, les 6 items du cahier §7.3 sont configurés.
+            </CardDescription>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/parametres/checklist-items">
+              Gérer<ChevronRight className="ml-1 size-3.5" />
+            </Link>
+          </Button>
+        </CardHeader>
+      </Card>
     </div>
   );
 }

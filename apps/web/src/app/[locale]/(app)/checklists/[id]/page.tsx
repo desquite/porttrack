@@ -12,16 +12,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatDateFR } from "@/lib/utils/dates";
-import { CHECKLIST_ITEMS, type ChecklistItemKey } from "@porttrack/shared";
-import { ChecklistForm } from "../_components/checklist-form";
+import { ChecklistForm, type ChecklistFormItem } from "../_components/checklist-form";
 import { DeleteChecklistButton } from "../_components/delete-checklist-button";
 import {
   addChecklistPhotoAction,
   deleteChecklistPhotoAction,
   downloadChecklistPhotoAction,
 } from "../actions";
-
-type ItemEtat = "OK" | "ANOMALIE";
 
 export default async function ChecklistDetailPage({
   params,
@@ -47,11 +44,42 @@ export default async function ChecklistDetailPage({
     .maybeSingle();
   if (!cl) notFound();
 
-  const { data: photos } = await supabase
-    .from("checklist_photos")
-    .select("id, photo_url, photo_nom, created_at")
-    .eq("checklist_id", id)
-    .order("created_at", { ascending: true });
+  const [
+    { data: photos },
+    { data: itemsConfig },
+    { data: responses },
+  ] = await Promise.all([
+    supabase
+      .from("checklist_photos")
+      .select("id, photo_url, photo_nom, created_at")
+      .eq("checklist_id", id)
+      .order("created_at", { ascending: true }),
+    supabase
+      .from("checklist_items_config")
+      .select("id, label, ordre, actif")
+      .eq("tenant_id", cl.tenant_id)
+      .order("ordre", { ascending: true })
+      .order("label", { ascending: true }),
+    supabase
+      .from("checklist_responses")
+      .select("item_config_id, etat")
+      .eq("checklist_id", id),
+  ]);
+
+  // Map des réponses par item_config_id
+  const responsesMap = new Map<string, "OK" | "ANOMALIE">();
+  for (const r of responses ?? []) responsesMap.set(r.item_config_id, r.etat);
+
+  // Items à afficher : on garde TOUS les items qui ont une réponse, même si
+  // soft-deleted (actif=false), pour rester fidèle à l'historique. On ajoute
+  // les items actifs sans réponse pour permettre l'ajout (passe par défaut OK).
+  const itemRows = (itemsConfig ?? []).filter((it) => it.actif || responsesMap.has(it.id));
+
+  const items: ChecklistFormItem[] = itemRows.map((it) => ({
+    id: it.id,
+    label: it.label + (it.actif ? "" : " (retiré)"),
+    defaultEtat: responsesMap.get(it.id) ?? "OK",
+  }));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ch = (cl as any).chauffeur as { id: string; nom: string; prenoms: string; telephone: string | null } | null;
@@ -67,15 +95,6 @@ export default async function ChecklistDetailPage({
 
   const heure = new Date(cl.heure_validation).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
   const mrLabel = mr ? (mr.chrono ? `${mr.chrono} (${mr.immatriculation})` : mr.immatriculation) : "—";
-
-  const defaults: Record<ChecklistItemKey, ItemEtat> = {
-    item_huile: cl.item_huile,
-    item_pneus: cl.item_pneus,
-    item_feux: cl.item_feux,
-    item_freins: cl.item_freins,
-    item_retros: cl.item_retros,
-    item_documents: cl.item_documents,
-  };
 
   return (
     <div className="space-y-6">
@@ -162,14 +181,17 @@ export default async function ChecklistDetailPage({
       {/* Édition des items */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Items de la check-list</CardTitle>
+          <CardTitle className="text-base">
+            Items de la check-list
+            <span className="ml-2 text-xs font-normal text-muted-foreground">({items.length})</span>
+          </CardTitle>
           <CardDescription>Modifie l&apos;état d&apos;un item ou la remarque puis enregistre.</CardDescription>
         </CardHeader>
         <CardContent>
           <ChecklistForm
             mode="update"
             checklistId={cl.id}
-            defaults={defaults}
+            items={items}
             defaultRemarque={cl.remarque ?? ""}
           />
         </CardContent>
@@ -241,11 +263,10 @@ export default async function ChecklistDetailPage({
         </CardHeader>
         <CardContent>
           <ul className="grid gap-1.5 text-sm sm:grid-cols-2">
-            {CHECKLIST_ITEMS.map((item) => {
-              const etat = defaults[item.key];
-              const ok = etat === "OK";
+            {items.map((item) => {
+              const ok = item.defaultEtat === "OK";
               return (
-                <li key={item.key} className="flex items-center gap-2">
+                <li key={item.id} className="flex items-center gap-2">
                   {ok
                     ? <CheckCircle2 className="size-3.5 text-emerald-600" />
                     : <AlertTriangle className="size-3.5 text-amber-600" />}

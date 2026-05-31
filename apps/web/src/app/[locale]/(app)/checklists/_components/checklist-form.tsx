@@ -1,16 +1,20 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { Loader2, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { CHECKLIST_ITEMS, type ChecklistItemKey } from "@porttrack/shared";
 import { createChecklistAction, updateChecklistAction, type ChecklistFormState } from "../actions";
 
-type ItemValues = Record<ChecklistItemKey, "OK" | "ANOMALIE">;
+export type ChecklistFormItem = {
+  id: string;       // uuid de checklist_items_config
+  label: string;
+  defaultEtat?: "OK" | "ANOMALIE";
+};
 
 type CreateProps = {
   mode: "create";
@@ -19,14 +23,14 @@ type CreateProps = {
   chauffeurId: string;
   materielId: string;
   dateDepart: string;
-  defaults?: Partial<ItemValues>;
+  items: ChecklistFormItem[];
   defaultRemarque?: string;
 };
 
 type UpdateProps = {
   mode: "update";
   checklistId: string;
-  defaults: ItemValues;
+  items: ChecklistFormItem[];
   defaultRemarque?: string;
 };
 
@@ -49,11 +53,6 @@ export function ChecklistForm(props: Props) {
     return (state.fieldErrors?.[name as keyof typeof state.fieldErrors] as string[] | undefined)?.[0] ?? null;
   };
 
-  const defaultItem = (key: ChecklistItemKey): string => {
-    if (props.mode === "update") return props.defaults[key];
-    return props.defaults?.[key] ?? "OK";
-  };
-
   return (
     <form action={formAction} className="space-y-6">
       {props.mode === "create" && (
@@ -73,17 +72,32 @@ export function ChecklistForm(props: Props) {
         </Alert>
       )}
 
-      <div className="space-y-3">
-        {CHECKLIST_ITEMS.map((item) => (
-          <ItemRow
-            key={item.key}
-            name={item.key}
-            label={item.label}
-            defaultValue={getValue(item.key, defaultItem(item.key))}
-            error={getError(item.key)}
-          />
-        ))}
-      </div>
+      {props.items.length === 0 ? (
+        <Alert>
+          <AlertTitle>Aucun item configuré</AlertTitle>
+          <AlertDescription>
+            La liste des items de check-list est vide pour ton entreprise.
+            Demande à un manager d&apos;en ajouter dans
+            {" "}<Link href="/parametres/checklist-items" className="underline">Paramètres → Items de check-list</Link>.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <div className="space-y-3">
+          {props.items.map((item) => {
+            const name = `item-${item.id}`;
+            const current = getValue(name, item.defaultEtat ?? "OK");
+            return (
+              <ItemRow
+                key={item.id}
+                name={name}
+                label={item.label}
+                defaultValue={current}
+                error={getError(name)}
+              />
+            );
+          })}
+        </div>
+      )}
 
       <div className="space-y-1.5">
         <Label htmlFor="remarque" className="text-xs">Remarque libre</Label>
@@ -102,7 +116,7 @@ export function ChecklistForm(props: Props) {
       </div>
 
       <div className="flex flex-col-reverse gap-3 border-t pt-6 sm:flex-row sm:justify-end">
-        <Button type="submit" disabled={pending}>
+        <Button type="submit" disabled={pending || props.items.length === 0}>
           {pending ? <><Loader2 className="mr-2 size-4 animate-spin" />Enregistrement…</> :
             <><Save className="mr-2 size-4" />{props.mode === "create" ? "Valider la check-list" : "Mettre à jour"}</>}
         </Button>

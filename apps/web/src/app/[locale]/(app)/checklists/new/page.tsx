@@ -6,7 +6,7 @@ import { ArrowLeft, ClipboardCheck, User, Truck } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { ChecklistForm } from "../_components/checklist-form";
+import { ChecklistForm, type ChecklistFormItem } from "../_components/checklist-form";
 
 export default async function NewChecklistPage({
   params,
@@ -37,7 +37,7 @@ export default async function NewChecklistPage({
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) notFound();
 
-  // On charge la désignation cible + on vérifie qu'aucune check-list n'existe déjà.
+  // Désignation cible
   const { data: d } = await supabase
     .from("designations")
     .select(`
@@ -51,6 +51,7 @@ export default async function NewChecklistPage({
 
   if (!d) notFound();
 
+  // Si une check-list existe déjà, on redirige vers le détail
   const { data: existing } = await supabase
     .from("checklists_depart")
     .select("id")
@@ -59,6 +60,21 @@ export default async function NewChecklistPage({
   if (existing) {
     redirect(`/checklists/${existing.id}`);
   }
+
+  // Items configurés et actifs pour ce tenant
+  const { data: itemsConfig } = await supabase
+    .from("checklist_items_config")
+    .select("id, label, ordre")
+    .eq("tenant_id", d.tenant_id)
+    .eq("actif", true)
+    .order("ordre", { ascending: true })
+    .order("label", { ascending: true });
+
+  const items: ChecklistFormItem[] = (itemsConfig ?? []).map((it) => ({
+    id: it.id,
+    label: it.label,
+    defaultEtat: "OK",
+  }));
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const ch = (d as any).chauffeur as { id: string; nom: string; prenoms: string } | null;
@@ -109,7 +125,9 @@ export default async function NewChecklistPage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">État des 6 items</CardTitle>
+          <CardTitle className="text-base">
+            État des items <span className="text-xs font-normal text-muted-foreground">({items.length} configurés)</span>
+          </CardTitle>
           <CardDescription>Coche <strong>Anomalie</strong> uniquement si un défaut est constaté.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -120,6 +138,7 @@ export default async function NewChecklistPage({
             chauffeurId={d.chauffeur_id}
             materielId={d.materiel_roulant_id}
             dateDepart={d.date_designation}
+            items={items}
           />
         </CardContent>
       </Card>
