@@ -7,6 +7,7 @@ import {
   Settings,
   Plus,
   ClipboardCheck,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -283,6 +284,26 @@ export default async function ParametresPage({
           </div>
           <Button asChild variant="outline" size="sm">
             <Link href="/parametres/checklist-items">
+              Gérer<ChevronRight className="ml-1 size-3.5" />
+            </Link>
+          </Button>
+        </CardHeader>
+      </Card>
+
+      {/* Section Bot WhatsApp — consultation documents */}
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <MessageSquare className="size-4 text-primary" />
+              Bot WhatsApp de consultation
+            </CardTitle>
+            <CardDescription>
+              Numéros autorisés à interroger le bot (CG/AS/VT…) et journal des consultations (cahier §7.5).
+            </CardDescription>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/parametres/bot-whatsapp">
               Gérer<ChevronRight className="ml-1 size-3.5" />
             </Link>
           </Button>

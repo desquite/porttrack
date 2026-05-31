@@ -347,6 +347,111 @@ export type Database = {
           },
         ]
       }
+      bot_consultations: {
+        Row: {
+          code: string | null
+          commande_brute: string
+          created_at: string
+          details: string | null
+          document_type: string | null
+          id: string
+          immatriculation: string | null
+          materiel_id: string | null
+          numero_demandeur: string
+          statut: Database["public"]["Enums"]["bot_consultation_statut"]
+          tenant_id: string | null
+        }
+        Insert: {
+          code?: string | null
+          commande_brute: string
+          created_at?: string
+          details?: string | null
+          document_type?: string | null
+          id?: string
+          immatriculation?: string | null
+          materiel_id?: string | null
+          numero_demandeur: string
+          statut: Database["public"]["Enums"]["bot_consultation_statut"]
+          tenant_id?: string | null
+        }
+        Update: {
+          code?: string | null
+          commande_brute?: string
+          created_at?: string
+          details?: string | null
+          document_type?: string | null
+          id?: string
+          immatriculation?: string | null
+          materiel_id?: string | null
+          numero_demandeur?: string
+          statut?: Database["public"]["Enums"]["bot_consultation_statut"]
+          tenant_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_consultations_materiel_id_fkey"
+            columns: ["materiel_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_consultations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_whatsapp_numeros: {
+        Row: {
+          actif: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string | null
+          numero: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          actif?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          numero: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          actif?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string | null
+          numero?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_whatsapp_numeros_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_whatsapp_numeros_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       chauffeurs: {
         Row: {
           adresse: string | null
@@ -1859,6 +1964,12 @@ export type Database = {
         | "AUTRE"
       accident_statut: "DECLARE" | "EN_COURS_TRAITEMENT" | "CLOTURE"
       affectation_statut: "PLANIFIEE" | "EN_COURS" | "TERMINEE" | "ANNULEE"
+      bot_consultation_statut:
+        | "REPONDU"
+        | "NON_AUTORISE"
+        | "COMMANDE_INVALIDE"
+        | "MATERIEL_INTROUVABLE"
+        | "DOC_INTROUVABLE"
       chauffeur_statut: "ACTIF" | "EN_CONGE" | "SUSPENDU" | "INACTIF"
       checklist_item_etat: "OK" | "ANOMALIE"
       conteneur_statut: "EN_ATTENTE" | "EN_COURS" | "LIVRE" | "ANNULE"
@@ -2043,6 +2154,13 @@ export const Constants = {
       ],
       accident_statut: ["DECLARE", "EN_COURS_TRAITEMENT", "CLOTURE"],
       affectation_statut: ["PLANIFIEE", "EN_COURS", "TERMINEE", "ANNULEE"],
+      bot_consultation_statut: [
+        "REPONDU",
+        "NON_AUTORISE",
+        "COMMANDE_INVALIDE",
+        "MATERIEL_INTROUVABLE",
+        "DOC_INTROUVABLE",
+      ],
       chauffeur_statut: ["ACTIF", "EN_CONGE", "SUSPENDU", "INACTIF"],
       checklist_item_etat: ["OK", "ANOMALIE"],
       conteneur_statut: ["EN_ATTENTE", "EN_COURS", "LIVRE", "ANNULE"],

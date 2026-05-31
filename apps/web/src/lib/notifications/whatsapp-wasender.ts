@@ -70,6 +70,53 @@ export async function sendWhatsapp(
 }
 
 /**
+ * Envoi d'un média (document/image) via WasenderAPI. Le bot WhatsApp de
+ * consultation (§7.5) renvoie la photo du document. WasenderAPI accepte une
+ * URL de média ; on envoie une URL signée Supabase (valable quelques minutes).
+ *
+ * Si l'envoi média n'est pas supporté/échoue, l'appelant peut retomber sur un
+ * message texte contenant le lien.
+ */
+export async function sendWhatsappMedia(
+  to: string,
+  mediaUrl: string,
+  caption: string,
+): Promise<ChannelResult> {
+  const apiKey = process.env.WASENDER_API_KEY;
+  const sessionId = process.env.WASENDER_SESSION_ID;
+  const url =
+    process.env.WASENDER_API_URL ?? "https://wasenderapi.com/api/send-message";
+
+  if (!apiKey || !sessionId) {
+    return { channel: "whatsapp", ok: false, skipped: true, error: "WASENDER non configuré" };
+  }
+  const normalized = normalizePhone(to);
+  if (!normalized) {
+    return { channel: "whatsapp", ok: false, error: `Numéro invalide: ${to}` };
+  }
+
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      // WasenderAPI : `imageUrl` / `documentUrl` selon le type. On envoie en
+      // image (les scans sont des photos/PDF) avec une légende.
+      body: JSON.stringify({ sessionId, to: normalized, text: caption, imageUrl: mediaUrl, documentUrl: mediaUrl }),
+    });
+    if (!res.ok) {
+      const detail = await res.text().catch(() => "");
+      return { channel: "whatsapp", ok: false, error: `WasenderAPI ${res.status}: ${detail.slice(0, 200)}` };
+    }
+    return { channel: "whatsapp", ok: true };
+  } catch (e: unknown) {
+    return { channel: "whatsapp", ok: false, error: e instanceof Error ? e.message : "Erreur réseau WasenderAPI" };
+  }
+}
+
+/**
  * Nettoie un numéro pour WasenderAPI : retire espaces/parenthèses/tirets,
  * garde le + initial. Retourne null si trop court pour être valide.
  */
