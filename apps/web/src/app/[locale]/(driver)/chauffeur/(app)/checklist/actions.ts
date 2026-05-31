@@ -96,23 +96,27 @@ export async function submitDriverChecklist(
     return { status: "error", formError: `Erreur : ${rerr.message}` };
   }
 
-  // 3) Photo optionnelle (via admin — RLS Storage bloque le chauffeur)
-  const file = formData.get("photo");
-  if (file instanceof File && file.size > 0 && file.size <= MAX_FILE && ALLOWED_MIME.includes(file.type)) {
+  // 3) Photos optionnelles (multiple, via admin — RLS Storage bloque le chauffeur)
+  const files = formData.getAll("photo").filter(
+    (f): f is File => f instanceof File && f.size > 0 && f.size <= MAX_FILE && ALLOWED_MIME.includes(f.type),
+  );
+  if (files.length > 0) {
     const admin = createAdminClient();
-    const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-    const path = `${chauffeur.tenant_id}/checklists/${created.id}/photo-${randomUUID()}.${ext}`;
-    const { error: upErr } = await admin.storage
-      .from("documents")
-      .upload(path, file, { contentType: file.type, upsert: false });
-    if (!upErr) {
-      await admin.from("checklist_photos").insert({
-        checklist_id: created.id,
-        tenant_id: chauffeur.tenant_id,
-        photo_url: path,
-        photo_nom: file.name,
-        uploaded_by: null,
-      });
+    for (const file of files) {
+      const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
+      const path = `${chauffeur.tenant_id}/checklists/${created.id}/photo-${randomUUID()}.${ext}`;
+      const { error: upErr } = await admin.storage
+        .from("documents")
+        .upload(path, file, { contentType: file.type, upsert: false });
+      if (!upErr) {
+        await admin.from("checklist_photos").insert({
+          checklist_id: created.id,
+          tenant_id: chauffeur.tenant_id,
+          photo_url: path,
+          photo_nom: file.name,
+          uploaded_by: null,
+        });
+      }
     }
   }
 
