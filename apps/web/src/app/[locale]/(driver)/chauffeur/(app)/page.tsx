@@ -1,10 +1,11 @@
 import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import {
-  Truck, ClipboardCheck, AlertTriangle, CheckCircle2, Package, MapPin, MinusCircle, ChevronRight,
+  Truck, ClipboardCheck, AlertTriangle, CheckCircle2, Package, MapPin, MinusCircle, ChevronRight, PackageCheck,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { loadDriverContext, firstName } from "./_components/load-driver";
@@ -16,7 +17,7 @@ export default async function DriverHomePage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ checklist?: string }>;
+  searchParams: Promise<{ checklist?: string; livraison?: string }>;
 }) {
   const { locale } = await params;
   const sp = await searchParams;
@@ -66,6 +67,11 @@ export default async function DriverHomePage({
       {sp.checklist === "ok" && (
         <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
           <CheckCircle2 className="size-4" />Check-list enregistrée. Bonne route !
+        </div>
+      )}
+      {sp.livraison === "ok" && (
+        <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
+          <PackageCheck className="size-4" />Livraison confirmée et EIR archivé. ✅
         </div>
       )}
 
@@ -121,18 +127,25 @@ export default async function DriverHomePage({
             {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
             {conteneurs.map((c: any) => (
               <Card key={c.id}>
-                <CardContent className="flex items-center gap-3 p-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-medium">{c.numero}</span>
-                      <Badge variant="secondary" className="text-[10px]">{c.statut === "EN_COURS" ? "En cours" : "Planifié"}</Badge>
-                    </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
-                      {c.client && <span>{c.client}</span>}
-                      {c.destination_libre && <span className="flex items-center gap-1"><MapPin className="size-3" />{c.destination_libre}</span>}
-                      {c.date_badt && <span className="flex items-center gap-1 text-amber-700"><AlertTriangle className="size-3" />BADT {new Date(c.date_badt).toLocaleDateString("fr-FR")}</span>}
+                <CardContent className="space-y-3 p-3">
+                  <div className="flex items-center gap-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono font-medium">{c.numero}</span>
+                        <Badge variant="secondary" className="text-[10px]">{c.statut === "EN_COURS" ? "En cours" : "Planifié"}</Badge>
+                      </div>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+                        {c.client && <span>{c.client}</span>}
+                        {c.destination_libre && <span className="flex items-center gap-1"><MapPin className="size-3" />{c.destination_libre}</span>}
+                        {c.date_badt && <span className="flex items-center gap-1 text-amber-700"><AlertTriangle className="size-3" />BADT {new Date(c.date_badt).toLocaleDateString("fr-FR")}</span>}
+                      </div>
                     </div>
                   </div>
+                  <Button asChild className="h-11 w-full">
+                    <Link href={`/chauffeur/livraison?conteneur=${c.id}`}>
+                      <PackageCheck className="mr-2 size-4" />Livrer
+                    </Link>
+                  </Button>
                 </CardContent>
               </Card>
             ))}

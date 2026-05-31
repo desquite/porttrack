@@ -1119,6 +1119,12 @@ export type Database = {
           fichier_nom: string | null
           fichier_url: string
           id: string
+          lieu_livraison: string | null
+          mode_livraison:
+            | Database["public"]["Enums"]["eir_mode_livraison"]
+            | null
+          remorque_id: string | null
+          remorque_immat: string | null
           tenant_id: string
           tracteur_id: string | null
           tracteur_immat: string | null
@@ -1135,6 +1141,12 @@ export type Database = {
           fichier_nom?: string | null
           fichier_url: string
           id?: string
+          lieu_livraison?: string | null
+          mode_livraison?:
+            | Database["public"]["Enums"]["eir_mode_livraison"]
+            | null
+          remorque_id?: string | null
+          remorque_immat?: string | null
           tenant_id: string
           tracteur_id?: string | null
           tracteur_immat?: string | null
@@ -1151,6 +1163,12 @@ export type Database = {
           fichier_nom?: string | null
           fichier_url?: string
           id?: string
+          lieu_livraison?: string | null
+          mode_livraison?:
+            | Database["public"]["Enums"]["eir_mode_livraison"]
+            | null
+          remorque_id?: string | null
+          remorque_immat?: string | null
           tenant_id?: string
           tracteur_id?: string | null
           tracteur_immat?: string | null
@@ -1177,6 +1195,13 @@ export type Database = {
             columns: ["conteneur_id"]
             isOneToOne: false
             referencedRelation: "conteneurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "eir_archives_remorque_id_fkey"
+            columns: ["remorque_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
             referencedColumns: ["id"]
           },
           {
@@ -1998,6 +2023,10 @@ export type Database = {
         | "PATENTE_TRANSPORT"
         | "CARTE_TRANSPORT"
         | "AUTRE"
+      eir_mode_livraison:
+        | "REMORQUE_COUPEE"
+        | "CLIENT_DECHARGE"
+        | "AUTO_CHARGEUR"
       flux_import_statut: "TERMINE" | "PARTIEL" | "ECHEC"
       infraction_imputation: "ENTREPRISE" | "CHAUFFEUR"
       infraction_statut: "NON_PAYEE" | "PAYEE" | "CONTESTEE"
@@ -2189,6 +2218,11 @@ export const Constants = {
         "PATENTE_TRANSPORT",
         "CARTE_TRANSPORT",
         "AUTRE",
+      ],
+      eir_mode_livraison: [
+        "REMORQUE_COUPEE",
+        "CLIENT_DECHARGE",
+        "AUTO_CHARGEUR",
       ],
       flux_import_statut: ["TERMINE", "PARTIEL", "ECHEC"],
       infraction_imputation: ["ENTREPRISE", "CHAUFFEUR"],
