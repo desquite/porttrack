@@ -47,6 +47,18 @@ export async function POST(request: NextRequest) {
     console.log("[whatsapp webhook] body:", rawBody.slice(0, 2000));
   }
 
+  // --- Vérification du secret WasenderAPI (header brut) ---
+  // WasenderAPI envoie le secret du webhook dans `x-webhook-secret`
+  // (= `x-webhook-signature`). Si WASENDER_WEBHOOK_SECRET est configuré, on
+  // exige la correspondance. Sinon (pas encore configuré) on laisse passer.
+  const expectedSecret = process.env.WASENDER_WEBHOOK_SECRET;
+  if (expectedSecret) {
+    const got = request.headers.get("x-webhook-secret") ?? request.headers.get("x-webhook-signature");
+    if (got !== expectedSecret) {
+      return NextResponse.json({ ok: false, error: "bad signature" }, { status: 401 });
+    }
+  }
+
   let body: unknown = null;
   try {
     body = JSON.parse(rawBody);
@@ -87,29 +99,62 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/** Nettoie un JID WhatsApp (2250700000000@s.whatsapp.net) → numéro brut. */
+function jidToNumber(jid: string): string {
+  return String(jid).replace(/@(s\.whatsapp\.net|c\.us|g\.us)$/i, "").split(":")[0];
+}
+
+/** Extrait le texte d'un objet message Baileys (conversation / extendedText / caption). */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function textFromBaileys(message: any): string | null {
+  if (!message) return null;
+  const t =
+    message.conversation ??
+    message.extendedTextMessage?.text ??
+    message.imageMessage?.caption ??
+    message.documentMessage?.caption ??
+    null;
+  return typeof t === "string" && t.trim() ? t : null;
+}
+
 /**
- * Extrait { from, text } de plusieurs formats de payload possibles :
+ * Extrait { from, text } des formats supportés :
  *   - Meta Cloud API : entry[].changes[].value.messages[].{from,text.body}
- *   - WasenderAPI / générique : {from, message|text|body} ou {data:{...}}
+ *   - WasenderAPI (Baileys messages.received) : data.messages(.[]).{key.remoteJid, message.conversation}
+ *   - Générique plat : {from, message|text|body}
+ * Ignore les messages sortants (fromMe) et les groupes (@g.us).
  */
 function extractIncoming(body: unknown): { from: string; text: string } | null {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const b = body as any;
   if (!b || typeof b !== "object") return null;
 
-  // Meta Cloud API
+  // 1) Meta Cloud API
   const metaMsg = b?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
   if (metaMsg?.from) {
     const text = metaMsg?.text?.body ?? metaMsg?.button?.text ?? "";
     if (typeof text === "string" && text.trim()) return { from: String(metaMsg.from), text };
   }
 
-  // WasenderAPI / générique (plusieurs variantes observées)
-  const d = b.data ?? b;
-  const from = d.from ?? d.sender ?? d.phone ?? d.number ?? d?.key?.remoteJid;
-  const text = d.message ?? d.text ?? d.body ?? d?.message?.conversation ?? d?.text?.body;
-  if (from && typeof text === "string" && text.trim()) {
-    return { from: String(from).replace(/@s\.whatsapp\.net$/, ""), text };
+  // 2) WasenderAPI / Baileys — data.messages peut être un objet OU un tableau
+  const data = b.data ?? b;
+  const rawMessages = data.messages ?? data.message ?? data;
+  const list = Array.isArray(rawMessages) ? rawMessages : [rawMessages];
+  for (const m of list) {
+    if (!m || typeof m !== "object") continue;
+    const key = m.key ?? {};
+    if (key.fromMe === true) continue;                  // anti-boucle : nos envois
+    const jid: string | undefined = key.remoteJid ?? m.remoteJid ?? m.from ?? m.sender ?? m.chatId;
+    if (!jid || /@g\.us$/i.test(jid)) continue;          // ignore groupes
+    const text = textFromBaileys(m.message) ?? (typeof m.text === "string" ? m.text : null) ?? (typeof m.body === "string" ? m.body : null);
+    if (text) return { from: jidToNumber(jid), text };
+  }
+
+  // 3) Générique plat
+  const from = data.from ?? data.sender ?? data.phone ?? data.number;
+  const flatText = typeof data.message === "string" ? data.message : (data.text ?? data.body);
+  if (from && typeof flatText === "string" && flatText.trim()) {
+    return { from: jidToNumber(String(from)), text: flatText };
   }
   return null;
 }
