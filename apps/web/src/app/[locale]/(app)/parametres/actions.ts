@@ -264,7 +264,7 @@ export async function createTenantAction(
       );
     }
 
-    const { error: createUserErr } = await admin.auth.admin.createUser({
+    const { data: createdUser, error: createUserErr } = await admin.auth.admin.createUser({
       email: parsed.data.manager_email,
       email_confirm: true,
       app_metadata: { tenant_id: tenant.id, role: "MANAGER" },
@@ -280,6 +280,22 @@ export async function createTenantAction(
           `Entreprise créée. Échec invitation manager : ${createUserErr.message}`,
         )}&userMsgType=error`,
       );
+    }
+
+    // IMPORTANT : admin.createUser pose app_metadata, mais le trigger
+    // handle_new_user crée la ligne public.users AVANT/indépendamment et la
+    // laisse en role=CUSTOM / tenant_id=null (race connue — cf. memory).
+    // On FORCE donc la ligne public.users de façon déterministe, sinon le
+    // manager voit « Aucune entreprise rattachée » (bug observé sur
+    // TRANSPORT DU SUD). Même correctif que inviteUserAction (c426f24).
+    if (createdUser?.user?.id) {
+      const { error: forceErr } = await admin
+        .from("users")
+        .update({ tenant_id: tenant.id, role: "MANAGER" })
+        .eq("id", createdUser.user.id);
+      if (forceErr) {
+        console.error("[createTenantAction] force public.users:", forceErr);
+      }
     }
 
     // Magic link bonus
