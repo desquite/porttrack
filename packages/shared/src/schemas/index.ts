@@ -10,4 +10,5 @@ export * from "./equipe";
 export * from "./absence";
 export * from "./designation";
 export * from "./checklist-depart";
+export * from "./modification-tracee";
 export * from "./tenant";

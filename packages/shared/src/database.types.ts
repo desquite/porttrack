@@ -1362,6 +1362,72 @@ export type Database = {
           },
         ]
       }
+      modifications_historique: {
+        Row: {
+          champ: string
+          champ_label: string
+          created_at: string
+          enregistrement_id: string
+          id: string
+          justificatif_nom: string | null
+          justificatif_url: string
+          motif: string
+          table_cible: string
+          tenant_id: string
+          user_email: string | null
+          user_id: string | null
+          valeur_apres: string | null
+          valeur_avant: string | null
+        }
+        Insert: {
+          champ: string
+          champ_label: string
+          created_at?: string
+          enregistrement_id: string
+          id?: string
+          justificatif_nom?: string | null
+          justificatif_url: string
+          motif: string
+          table_cible: string
+          tenant_id: string
+          user_email?: string | null
+          user_id?: string | null
+          valeur_apres?: string | null
+          valeur_avant?: string | null
+        }
+        Update: {
+          champ?: string
+          champ_label?: string
+          created_at?: string
+          enregistrement_id?: string
+          id?: string
+          justificatif_nom?: string | null
+          justificatif_url?: string
+          motif?: string
+          table_cible?: string
+          tenant_id?: string
+          user_email?: string | null
+          user_id?: string | null
+          valeur_apres?: string | null
+          valeur_avant?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modifications_historique_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "modifications_historique_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       pannes: {
         Row: {
           cout_estime_fcfa: number | null

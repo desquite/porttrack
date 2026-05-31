@@ -273,6 +273,62 @@ export const CHECKLIST_DEFAULT_ITEMS_CODES = [
 ] as const;
 export type ChecklistDefaultItemCode = (typeof CHECKLIST_DEFAULT_ITEMS_CODES)[number];
 
+// =============================================================================
+// Traçabilité — champs sensibles soumis à modification justifiée (§9)
+// =============================================================================
+
+/**
+ * Type de widget d'édition pour un champ tracé. Détermine comment le
+ * formulaire de modification rend la saisie de la nouvelle valeur.
+ */
+export type TrackedFieldType = "text" | "datetime" | "date";
+
+export type TrackedField = {
+  /** Nom technique de la colonne en base (whitelisté côté action). */
+  champ: string;
+  /** Libellé humain affiché à l'utilisateur et figé dans l'historique. */
+  label: string;
+  type: TrackedFieldType;
+};
+
+/**
+ * Registre EXTENSIBLE des champs dont la modification exige un justificatif
+ * (cahier §8.2). Pour tracer un nouveau champ : ajouter une entrée ici.
+ * La clé est le nom de table (`table_cible`).
+ *
+ * ⚠️ La colonne doit exister sur la table cible — l'action whiteliste
+ * strictement à partir de ce registre pour éviter toute injection de colonne.
+ */
+export const TRACKED_FIELDS = {
+  conteneurs: [
+    { champ: "destination_libre", label: "Lieu / zone de livraison", type: "text" },
+    { champ: "type_visite",       label: "Type de visite douane",    type: "text" },
+    { champ: "mode_livraison",    label: "Mode de livraison",        type: "text" },
+    { champ: "date_badt",         label: "Date BADT",                type: "datetime" },
+  ],
+} as const satisfies Record<string, readonly TrackedField[]>;
+
+export type TrackedTable = keyof typeof TRACKED_FIELDS;
+
+/** Liste des tables qui ont au moins un champ tracé. */
+export const TRACKED_TABLES = Object.keys(TRACKED_FIELDS) as TrackedTable[];
+
+/** Retourne la définition d'un champ tracé, ou undefined si non tracé. */
+export function getTrackedField(table: string, champ: string): TrackedField | undefined {
+  const fields = (TRACKED_FIELDS as Record<string, readonly TrackedField[]>)[table];
+  return fields?.find((f) => f.champ === champ);
+}
+
+/** Formats de justificatif acceptés (cahier §8.4 RÈGLE 2). */
+export const JUSTIFICATIF_MIME = [
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+] as const;
+export const JUSTIFICATIF_MAX_SIZE = 10 * 1024 * 1024; // 10 Mo
+
 // Alias legacy (compat)
 export const STATUTS_CONTENEUR = CONTENEUR_STATUTS;
 export type StatutConteneur = ConteneurStatut;

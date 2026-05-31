@@ -25,6 +25,7 @@ import {
   CalendarClock,
   Megaphone,
   ClipboardCheck,
+  History,
 } from "lucide-react";
 
 import { cn } from "@/lib/utils";
@@ -53,6 +54,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Infractions",     href: "/infractions", icon: Gavel },
   { label: "Conteneurs",      href: "/conteneurs", icon: Package },
   { label: "Flux & affectations", href: "/affectations", icon: ClipboardList },
+  { label: "Traçabilité",     href: "/historique", icon: History },
   { label: "Facturation",     href: "/facturation", icon: Receipt, comingSoon: true },
   { label: "Paramètres",      href: "/parametres", icon: Settings },
 ];
