@@ -234,12 +234,12 @@ export function AppShell({
                     <GroupIcon className="size-4" />
                     {group.label}
                   </span>
-                  <ChevronDown className={cn("size-4 transition-transform duration-[250ms]", isOpen && "rotate-180")} />
+                  <ChevronDown className={cn("size-4 transition-transform duration-[400ms] ease-in-out", isOpen && "rotate-180")} />
                 </button>
                 {/* Sous-menu animé : glissement (grid-rows 0fr→1fr) + fondu */}
                 <div
                   className={cn(
-                    "grid transition-all duration-[250ms] ease-out",
+                    "grid transition-all duration-[400ms] ease-in-out",
                     isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
                   )}
                 >
