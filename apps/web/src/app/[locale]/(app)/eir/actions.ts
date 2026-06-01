@@ -29,6 +29,8 @@ export async function confirmDeliveryWithEirAction(
   const tenantId = String(formData.get("tenant_id") ?? "");
   const conteneurId = String(formData.get("conteneur_id") ?? "");
   const affectationId = String(formData.get("affectation_id") ?? "") || null;
+  const mode = String(formData.get("mode_livraison") ?? "");
+  const remorqueId = String(formData.get("remorque_id") ?? "") || null;
   const dateLivraisonRaw = String(formData.get("date_livraison") ?? "");
   const dateLivraison = /^\d{4}-\d{2}-\d{2}$/.test(dateLivraisonRaw)
     ? dateLivraisonRaw
@@ -36,6 +38,12 @@ export async function confirmDeliveryWithEirAction(
 
   if (!tenantId || !conteneurId) {
     return { status: "error", formError: "Référence du conteneur manquante." };
+  }
+  if (!["REMORQUE_COUPEE", "CLIENT_DECHARGE", "AUTO_CHARGEUR"].includes(mode)) {
+    return { status: "error", formError: "Choisis le mode de livraison." };
+  }
+  if (mode !== "AUTO_CHARGEUR" && !remorqueId) {
+    return { status: "error", formError: "Indique la remorque utilisée." };
   }
 
   // EIR obligatoire (§9.2 : l'upload est exigé avant toute clôture)
@@ -81,6 +89,23 @@ export async function confirmDeliveryWithEirAction(
     }
   }
 
+  // Snapshot remorque (sauf auto-chargeur) + lieu de livraison figé
+  let remorqueImmat: string | null = null;
+  if (remorqueId) {
+    const { data: r } = await supabase.from("materiel_roulant").select("immatriculation, chrono").eq("id", remorqueId).maybeSingle();
+    remorqueImmat = r ? (r.chrono ?? r.immatriculation) : null;
+  }
+  const { data: cont } = await supabase
+    .from("conteneurs")
+    .select("destination_libre, destination_id")
+    .eq("id", conteneurId)
+    .maybeSingle();
+  let lieuLivraison: string | null = cont?.destination_libre ?? null;
+  if (!lieuLivraison && cont?.destination_id) {
+    const { data: p } = await supabase.from("port_codes").select("nom_lieu").eq("id", cont.destination_id).maybeSingle();
+    lieuLivraison = p?.nom_lieu ?? null;
+  }
+
   // 1) Upload de l'EIR
   const ext = f.name.split(".").pop()?.toLowerCase() ?? "bin";
   const base = sanitizeFilename(f.name.replace(/\.[^.]+$/, ""));
@@ -101,6 +126,10 @@ export async function confirmDeliveryWithEirAction(
     chauffeur_nom: chauffeurNom,
     tracteur_id: tracteurId,
     tracteur_immat: tracteurImmat,
+    remorque_id: remorqueId,
+    remorque_immat: remorqueImmat,
+    mode_livraison: mode as "REMORQUE_COUPEE" | "CLIENT_DECHARGE" | "AUTO_CHARGEUR",
+    lieu_livraison: lieuLivraison,
     fichier_url: objectPath,
     fichier_nom: f.name,
     date_livraison: dateLivraison,

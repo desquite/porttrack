@@ -4,7 +4,7 @@ import { setRequestLocale } from "next-intl/server";
 import { ArrowLeft, CheckCircle2, AlertTriangle, ShieldAlert, History, Lock, PackageCheck, FileArchive, FileText } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
-import { TRACKED_FIELDS } from "@porttrack/shared";
+import { TRACKED_FIELDS, MATERIEL_TYPES } from "@porttrack/shared";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -22,6 +22,12 @@ import { TrackedModificationForm, type TrackedFieldOption } from "../../historiq
 import { ModificationsHistory } from "../../historique/_components/modifications-history";
 import { ConfirmDeliveryForm } from "../../eir/_components/confirm-delivery-form";
 import { downloadEirAction } from "../../eir/actions";
+
+const EIR_MODE_LABEL: Record<string, string> = {
+  REMORQUE_COUPEE: "Remorque coupée",
+  CLIENT_DECHARGE: "Client a déchargé",
+  AUTO_CHARGEUR: "Auto-chargeur",
+};
 
 /** Convertit une valeur DB en valeur d'input + valeur d'affichage pour un champ tracé. */
 function buildTrackedFields(conteneur: Record<string, unknown>): TrackedFieldOption[] {
@@ -84,7 +90,7 @@ export default async function EditConteneurPage({
   const [{ data: activeAff }, { data: eirArchives }] = await Promise.all([
     supabase
       .from("affectations")
-      .select(`id, chauffeur:chauffeurs ( nom, prenoms ), tracteur:materiel_roulant ( immatriculation )`)
+      .select(`id, remorque_id, chauffeur:chauffeurs ( nom, prenoms ), tracteur:materiel_roulant ( immatriculation )`)
       .eq("conteneur_id", conteneur.id)
       .in("statut", ["PLANIFIEE", "EN_COURS"])
       .order("created_at", { ascending: false })
@@ -92,7 +98,7 @@ export default async function EditConteneurPage({
       .maybeSingle(),
     supabase
       .from("eir_archives")
-      .select("id, date_livraison, fichier_nom, chauffeur_nom, tracteur_immat, uploaded_by_email")
+      .select("id, date_livraison, fichier_nom, chauffeur_nom, tracteur_immat, remorque_immat, mode_livraison, uploaded_by_email")
       .eq("conteneur_id", conteneur.id)
       .order("date_livraison", { ascending: false }),
   ]);
@@ -100,6 +106,21 @@ export default async function EditConteneurPage({
   const aff = activeAff as any;
   const affChauffeurNom = aff?.chauffeur ? `${aff.chauffeur.nom} ${aff.chauffeur.prenoms}`.trim() : null;
   const affTracteurImmat = aff?.tracteur?.immatriculation ?? null;
+
+  // Remorques / châssis en service (pour le sélecteur de livraison)
+  const remorqueTypes = MATERIEL_TYPES.filter((t) => t !== "TRACTEUR");
+  const { data: remorquesData } = dejaLivre
+    ? { data: [] }
+    : await supabase
+        .from("materiel_roulant")
+        .select("id, immatriculation, chrono, type, etat")
+        .eq("etat", "EN_SERVICE")
+        .in("type", remorqueTypes)
+        .order("immatriculation", { ascending: true });
+  const remorques = (remorquesData ?? []).map((m) => ({
+    id: m.id,
+    label: m.chrono ? `${m.chrono} (${m.immatriculation})` : m.immatriculation,
+  }));
 
   return (
     <div className="space-y-6">
@@ -165,6 +186,8 @@ export default async function EditConteneurPage({
               affectationId={aff?.id ?? null}
               chauffeurNom={affChauffeurNom}
               tracteurImmat={affTracteurImmat}
+              remorques={remorques}
+              defaultRemorqueId={aff?.remorque_id ?? null}
             />
           </CardContent>
         </Card>
@@ -191,6 +214,8 @@ export default async function EditConteneurPage({
                   <span className="font-medium">Livré le {formatDateFR(e.date_livraison)}</span>
                   {e.chauffeur_nom && <span className="text-xs text-muted-foreground">{e.chauffeur_nom}</span>}
                   {e.tracteur_immat && <span className="text-xs text-muted-foreground">{e.tracteur_immat}</span>}
+                  {e.mode_livraison && <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{EIR_MODE_LABEL[e.mode_livraison] ?? e.mode_livraison}</span>}
+                  {e.remorque_immat && <span className="text-xs text-muted-foreground">+ {e.remorque_immat}</span>}
                   <form action={downloadEirAction.bind(null, e.id)} className="ml-auto">
                     <Button type="submit" variant="outline" size="sm">
                       <FileText className="mr-2 size-3.5" />{e.fichier_nom ?? "EIR"}
