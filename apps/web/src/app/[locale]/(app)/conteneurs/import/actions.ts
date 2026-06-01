@@ -146,6 +146,7 @@ interface ConteneurInsert {
   marchandise: string | null;
   mode_livraison: string | null;
   transporteur: string | null;
+  aconier: string | null;
   poids_kg: number | null;
   plomb: string | null;
   navire_voyage: string | null;
@@ -318,6 +319,7 @@ export async function importFluxAction(
       marchandise: clamp(cellToString(std.marchandise), 500),
       mode_livraison: clamp(cellToString(std.mode_livraison), 100),
       transporteur: clamp(cellToString(std.transporteur), 200),
+      aconier: clamp(cellToString(std.aconier), 200),
       poids_kg: poidsKg,
       plomb: clamp(cellToString(std.plomb), 50),
       navire_voyage: clamp(cellToString(std.navire_voyage), 150),

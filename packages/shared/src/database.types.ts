@@ -805,6 +805,7 @@ export type Database = {
       }
       conteneurs: {
         Row: {
+          aconier: string | null
           client: string | null
           created_at: string
           created_by: string | null
@@ -837,6 +838,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          aconier?: string | null
           client?: string | null
           created_at?: string
           created_by?: string | null
@@ -869,6 +871,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          aconier?: string | null
           client?: string | null
           created_at?: string
           created_by?: string | null

@@ -58,6 +58,7 @@ export type FluxFieldKey =
   | "date_badt"
   | "situation"
   | "transporteur"
+  | "aconier"
   | "plomb"
   | "num_declaration"
   | "type_visite"
@@ -85,6 +86,7 @@ export const FLUX_FIELDS: readonly FluxFieldDef[] = [
   { key: "date_badt",       label: "Date BADT",           description: "Date limite de retrait (jalon critique)", required: false },
   { key: "situation",       label: "Situation / statut",  description: "Vide = En attente",                       required: false },
   { key: "transporteur",    label: "Transporteur affecté", description: "Transporteur noté par l'aconier",        required: false },
+  { key: "aconier",         label: "Aconier",             description: "Compagnie de manutention (colonne NOM : MEDLOG, AGL, MAERSK…)", required: false, recommended: true },
   { key: "plomb",           label: "Plomb / scellé",      description: "Numéro de plomb",                         required: false },
   { key: "num_declaration", label: "N° déclaration",      description: "Numéro de déclaration en douane",         required: false },
   { key: "type_visite",     label: "Type de visite",      description: "Circuit douanier (SCANNER, VISITE…)",     required: false },
@@ -111,6 +113,7 @@ export const MEDLOG_HEADER_ALIASES: Record<FluxFieldKey, string[]> = {
   date_badt:       ["BADT", "DATE BADT", "DATE LIMITE", "DATE LIMITE RETRAIT", "BON A DELIVRER", "BON A DELIVRER TERMINAL", "BON A DELIVRER LE TERMINAL", "BAD"],
   situation:       ["SITUATION", "STATUT", "ETAT", "STATUS"],
   transporteur:    ["AFFECT TRSPRT", "AFFECT TRANSPORT", "AFFECTATION TRANSPORT", "TRANSPORTEUR", "CARRIER"],
+  aconier:         ["NOM", "ACONIER", "ACCONIER", "ARMATEUR", "COMPAGNIE", "MANUTENTIONNAIRE", "SHIPPING LINE"],
   plomb:           ["PLOMB", "SCELLE", "PLOMB SCELLE", "SEAL", "SEAL NO"],
   num_declaration: ["N DECLARATION", "NUMERO DECLARATION", "DECLARATION", "DECLARATION DOUANE", "DECLARATION NO"],
   type_visite:     ["TYPE DE VISITE", "TYPE VISITE", "VISITE", "CIRCUIT", "CIRCUIT DOUANIER"],
