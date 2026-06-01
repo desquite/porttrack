@@ -234,21 +234,19 @@ export function AppShell({
                     <GroupIcon className="size-4" />
                     {group.label}
                   </span>
-                  <ChevronDown className={cn("size-4 transition-transform duration-[400ms] ease-in-out", isOpen && "rotate-180")} />
+                  <ChevronDown className={cn("size-4 transition-transform duration-[500ms] ease-in-out", isOpen && "rotate-180")} />
                 </button>
-                {/* Sous-menu animé : glissement (grid-rows 0fr→1fr) + fondu */}
+                {/* Sous-menu animé : max-height + fondu (technique max-height bulletproof, contrairement à grid-rows qui peut snap selon le navigateur) */}
                 <div
                   className={cn(
-                    "grid transition-all duration-[400ms] ease-in-out",
-                    isOpen ? "grid-rows-[1fr] opacity-100" : "grid-rows-[0fr] opacity-0",
+                    "overflow-hidden transition-all duration-[500ms] ease-in-out",
+                    isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0",
                   )}
                 >
-                  <div className="overflow-hidden">
-                    <div className="ml-4 mt-1 space-y-1 border-l border-border/60 pl-2">
-                      {group.items.map((it) => (
-                        <NavRow key={it.href} item={it} active={isActive(it.href)} onNavigate={closeMobile} />
-                      ))}
-                    </div>
+                  <div className="ml-4 mt-1 space-y-1 border-l border-border/60 pl-2">
+                    {group.items.map((it) => (
+                      <NavRow key={it.href} item={it} active={isActive(it.href)} onNavigate={closeMobile} />
+                    ))}
                   </div>
                 </div>
               </div>
