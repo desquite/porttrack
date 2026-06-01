@@ -222,6 +222,15 @@ export async function importFluxAction(
   const mapping = meta.mapping as FluxMapping;
   const nombreLignes = parsed.rows.length;
 
+  // L'aconier est OBLIGATOIRE : la colonne doit être mappée, sinon l'import
+  // entier est refusé (cahier : indispensable au bilan par aconier).
+  if (!mapping.numero) {
+    return { ...baseReport, erreurs: [{ ligne: 0, message: "La colonne « N° conteneur » doit être mappée." }] };
+  }
+  if (!mapping.aconier) {
+    return { ...baseReport, erreurs: [{ ligne: 0, message: "La colonne « Aconier » est obligatoire : associe-la (souvent « NOM ») avant d'importer." }] };
+  }
+
   // --- 3. Catalogues pour résolution (RLS : lecture autorisée à tout authentifié) ---
   const [{ data: types }, { data: ports }, { data: lines }] = await Promise.all([
     supabase.from("types_conteneur").select("id, code_trade").eq("actif", true),
@@ -265,6 +274,13 @@ export async function importFluxAction(
       return;
     }
     seenInBatch.add(numero);
+
+    // Aconier OBLIGATOIRE par ligne : pas d'aconier → ligne rejetée.
+    const aconierVal = clamp(cellToString(std.aconier), 200);
+    if (!aconierVal) {
+      erreurs.push({ ligne, message: `Aconier manquant pour ${numero} (ligne rejetée).` });
+      return;
+    }
 
     // Type conteneur
     let typeId: string | null = null;
@@ -319,7 +335,7 @@ export async function importFluxAction(
       marchandise: clamp(cellToString(std.marchandise), 500),
       mode_livraison: clamp(cellToString(std.mode_livraison), 100),
       transporteur: clamp(cellToString(std.transporteur), 200),
-      aconier: clamp(cellToString(std.aconier), 200),
+      aconier: aconierVal,
       poids_kg: poidsKg,
       plomb: clamp(cellToString(std.plomb), 50),
       navire_voyage: clamp(cellToString(std.navire_voyage), 150),

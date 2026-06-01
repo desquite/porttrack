@@ -284,6 +284,8 @@ function MappingStep({
   onImport: () => void;
 }) {
   const numeroMapped = !!mapping.numero;
+  const aconierMapped = !!mapping.aconier;
+  const canImport = numeroMapped && aconierMapped;
   const mappedFields = FLUX_FIELDS.filter((f) => mapping[f.key]);
 
   function setField(key: FluxFieldKey, header: string) {
@@ -336,6 +338,16 @@ function MappingStep({
           <AlertTitle>Colonne « N° conteneur » non mappée</AlertTitle>
           <AlertDescription>
             Le numéro de conteneur est obligatoire. Associe une colonne pour pouvoir importer.
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {!aconierMapped && (
+        <Alert variant="destructive">
+          <AlertTriangle className="size-4" />
+          <AlertTitle>Colonne « Aconier » non mappée</AlertTitle>
+          <AlertDescription>
+            L&apos;aconier est obligatoire. Associe la colonne qui contient l&apos;aconier (souvent « NOM ») pour pouvoir importer.
           </AlertDescription>
         </Alert>
       )}
@@ -413,7 +425,7 @@ function MappingStep({
           <ArrowLeft className="mr-2 size-4" />
           Retour
         </Button>
-        <Button onClick={onImport} disabled={!numeroMapped || busy}>
+        <Button onClick={onImport} disabled={!canImport || busy}>
           {busy ? (
             <>
               <Loader2 className="mr-2 size-4 animate-spin" />
