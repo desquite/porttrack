@@ -2043,10 +2043,13 @@ export type Database = {
       materiel_type:
         | "TRACTEUR"
         | "REMORQUE"
+        | "REMORQUE_20"
+        | "REMORQUE_40"
         | "SEMI_REMORQUE"
         | "PORTE_CONTENEUR_20"
         | "PORTE_CONTENEUR_40"
         | "PORTE_CONTENEUR_MIXTE"
+        | "AUTO_CHARGEUSE"
       panne_statut: "DECLAREE" | "EN_REPARATION" | "REPAREE" | "ANNULEE"
       plan_abonnement: "STARTER" | "BUSINESS" | "PREMIUM"
       port_kind: "PORT_MARITIME" | "VILLE_HINTERLAND" | "PORT_SEC"
@@ -2241,10 +2244,13 @@ export const Constants = {
       materiel_type: [
         "TRACTEUR",
         "REMORQUE",
+        "REMORQUE_20",
+        "REMORQUE_40",
         "SEMI_REMORQUE",
         "PORTE_CONTENEUR_20",
         "PORTE_CONTENEUR_40",
         "PORTE_CONTENEUR_MIXTE",
+        "AUTO_CHARGEUSE",
       ],
       panne_statut: ["DECLAREE", "EN_REPARATION", "REPAREE", "ANNULEE"],
       plan_abonnement: ["STARTER", "BUSINESS", "PREMIUM"],

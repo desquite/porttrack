@@ -36,10 +36,13 @@ type MaterielEtat = Database["public"]["Enums"]["materiel_etat"];
 const TYPE_LABEL: Record<MaterielType, string> = {
   TRACTEUR:              "Tracteur",
   REMORQUE:              "Remorque",
+  REMORQUE_20:           "Remorque 20'",
+  REMORQUE_40:           "Remorque 40'",
   SEMI_REMORQUE:         "Semi-remorque",
   PORTE_CONTENEUR_20:    "Porte-conteneur 20'",
   PORTE_CONTENEUR_40:    "Porte-conteneur 40'",
   PORTE_CONTENEUR_MIXTE: "Porte-conteneur mixte",
+  AUTO_CHARGEUSE:        "Auto-chargeuse (AC)",
 };
 
 const ETAT_VARIANT: Record<

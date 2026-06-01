@@ -35,10 +35,13 @@ type Props = {
 const TYPE_LABEL: Record<(typeof MATERIEL_TYPES)[number], string> = {
   TRACTEUR:              "Tracteur routier",
   REMORQUE:              "Remorque",
+  REMORQUE_20:           "Remorque 20'",
+  REMORQUE_40:           "Remorque 40'",
   SEMI_REMORQUE:         "Semi-remorque",
   PORTE_CONTENEUR_20:    "Porte-conteneur 20'",
   PORTE_CONTENEUR_40:    "Porte-conteneur 40'",
   PORTE_CONTENEUR_MIXTE: "Porte-conteneur mixte (20'/40')",
+  AUTO_CHARGEUSE:        "Auto-chargeuse (AC)",
 };
 
 const ETAT_LABEL: Record<(typeof MATERIEL_ETATS)[number], string> = {

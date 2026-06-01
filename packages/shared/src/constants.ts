@@ -77,10 +77,13 @@ export type CategoriePermis = (typeof CATEGORIES_PERMIS)[number];
 export const MATERIEL_TYPES = [
   "TRACTEUR",
   "REMORQUE",
+  "REMORQUE_20",
+  "REMORQUE_40",
   "SEMI_REMORQUE",
   "PORTE_CONTENEUR_20",
   "PORTE_CONTENEUR_40",
   "PORTE_CONTENEUR_MIXTE",
+  "AUTO_CHARGEUSE",
 ] as const;
 export type MaterielType = (typeof MATERIEL_TYPES)[number];
 
