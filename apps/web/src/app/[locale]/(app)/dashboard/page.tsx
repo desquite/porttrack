@@ -11,8 +11,6 @@ import {
   Wrench,
   ShieldAlert,
   Gavel,
-  ClipboardCheck,
-  MinusCircle,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
@@ -150,22 +148,6 @@ export default async function DashboardPage({
     0,
   );
 
-  // Check-lists de départ — du jour (cahier v7 §7.3)
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const [{ count: designationsAujourdhui }, { data: checklistsAujourdhui }] = await Promise.all([
-    supabase
-      .from("designations")
-      .select("*", { count: "exact", head: true })
-      .eq("date_designation", todayIso),
-    supabase
-      .from("checklists_depart")
-      .select("statut_global")
-      .eq("date_depart", todayIso),
-  ]);
-  const checklistsFaites    = (checklistsAujourdhui ?? []).filter((c) => c.statut_global === "FAITE").length;
-  const checklistsRemarque  = (checklistsAujourdhui ?? []).filter((c) => c.statut_global === "REMARQUE").length;
-  const checklistsNonFaites = Math.max(0, (designationsAujourdhui ?? 0) - (checklistsAujourdhui?.length ?? 0));
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -233,28 +215,6 @@ export default async function DashboardPage({
           subtitle="FCFA non payés"
           icon={<Gavel className="size-4 text-amber-700" />}
           href="/infractions"
-        />
-        <KpiCard
-          title="Check-lists faites"
-          value={checklistsFaites}
-          subtitle={`sur ${designationsAujourdhui ?? 0} désignations du jour`}
-          icon={<ClipboardCheck className="size-4 text-emerald-600" />}
-          href="/checklists"
-        />
-        <KpiCard
-          title="Avec remarque"
-          value={checklistsRemarque}
-          subtitle="Anomalies signalées aujourd'hui"
-          icon={<AlertTriangle className="size-4 text-amber-600" />}
-          href="/checklists"
-          highlight={checklistsRemarque > 0}
-        />
-        <KpiCard
-          title="Non faites"
-          value={checklistsNonFaites}
-          subtitle="Désignations sans check-list"
-          icon={<MinusCircle className="size-4 text-muted-foreground" />}
-          href="/checklists"
         />
       </div>
 
