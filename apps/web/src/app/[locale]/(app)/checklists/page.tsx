@@ -64,8 +64,7 @@ export default async function ChecklistsPage({
       materiel:materiel_roulant ( id, immatriculation, chrono ),
       equipe:equipes ( nom, code, couleur ),
       checklist:checklists_depart!checklists_depart_designation_id_fkey (
-        id, statut_global, heure_validation, remarque,
-        item_huile, item_pneus, item_feux, item_freins, item_retros, item_documents
+        id, statut_global, heure_validation, remarque
       )
     `)
     .eq("date_designation", date)
