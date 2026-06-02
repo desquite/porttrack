@@ -33,7 +33,7 @@ export default async function HistoriquePage({
 
   let query = supabase
     .from("modifications_historique")
-    .select("id, table_cible, enregistrement_id, champ_label, valeur_avant, valeur_apres, motif, user_email, created_at, justificatif_nom")
+    .select("id, table_cible, enregistrement_id, champ_label, valeur_avant, valeur_apres, motif, user_nom, user_email, created_at, justificatif_nom")
     .order("created_at", { ascending: false })
     .limit(200);
   if (sp.table && TABLE_LABELS[sp.table]) query = query.eq("table_cible", sp.table);
@@ -104,7 +104,16 @@ export default async function HistoriquePage({
                       </div>
                       <p className="text-xs italic text-muted-foreground">« {r.motif} »</p>
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-muted-foreground">
-                        <span>{r.user_email ?? "utilisateur inconnu"}</span>
+                        <span>
+                          {r.user_nom ? (
+                            <>
+                              <span className="font-medium text-foreground/80">{r.user_nom}</span>
+                              {r.user_email && <span> · {r.user_email}</span>}
+                            </>
+                          ) : (
+                            r.user_email ?? "utilisateur inconnu"
+                          )}
+                        </span>
                         <span>{new Date(r.created_at).toLocaleString("fr-FR")}</span>
                         <form action={downloadJustificatifAction.bind(null, r.id)}>
                           <Button type="submit" variant="ghost" size="sm" className="h-6 gap-1 px-1.5 text-[11px]">

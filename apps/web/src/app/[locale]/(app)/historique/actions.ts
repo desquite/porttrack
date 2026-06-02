@@ -97,6 +97,16 @@ export async function createTrackedModificationAction(
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { status: "error", formError: "Session expirée.", values };
 
+  // Nom affichable de l'auteur, figé dans l'historique (snapshot). On retombe
+  // sur l'email si le nom n'est pas renseigné.
+  const { data: authorProfile } = await supabase
+    .from("users")
+    .select("nom, prenoms")
+    .eq("id", user.id)
+    .maybeSingle();
+  const userNom =
+    [authorProfile?.prenoms, authorProfile?.nom].filter(Boolean).join(" ").trim() || null;
+
   // 3) Lecture de la valeur avant modification
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: current, error: readErr } = await (supabase as any)
@@ -167,6 +177,7 @@ export async function createTrackedModificationAction(
     justificatif_nom: f.name,
     user_id: user.id,
     user_email: user.email ?? null,
+    user_nom: userNom,
   });
   if (histErr) {
     // La modif est passée mais l'historique a échoué : on nettoie le fichier et
@@ -181,7 +192,7 @@ export async function createTrackedModificationAction(
     avant: valeurAvantHist,
     apres: valeurApresHist,
     motif: d.motif,
-    auteur: user.email ?? "un utilisateur",
+    auteur: userNom ?? user.email ?? "un utilisateur",
     table: d.table_cible,
   });
 

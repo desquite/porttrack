@@ -1609,6 +1609,7 @@ export type Database = {
           tenant_id: string
           user_email: string | null
           user_id: string | null
+          user_nom: string | null
           valeur_apres: string | null
           valeur_avant: string | null
         }
@@ -1625,6 +1626,7 @@ export type Database = {
           tenant_id: string
           user_email?: string | null
           user_id?: string | null
+          user_nom?: string | null
           valeur_apres?: string | null
           valeur_avant?: string | null
         }
@@ -1641,6 +1643,7 @@ export type Database = {
           tenant_id?: string
           user_email?: string | null
           user_id?: string | null
+          user_nom?: string | null
           valeur_apres?: string | null
           valeur_avant?: string | null
         }
