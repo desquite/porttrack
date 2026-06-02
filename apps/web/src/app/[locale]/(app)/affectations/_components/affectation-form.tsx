@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Combobox } from "@/components/ui/combobox";
 import { cn } from "@/lib/utils";
 import { AFFECTATION_STATUTS, type Database } from "@porttrack/shared";
 import {
@@ -28,7 +29,6 @@ type Props = {
   conteneurs: RefOption[];
   chauffeurs: RefOption[];
   tracteurs: RefOption[];
-  remorques: RefOption[];
 };
 
 const STATUT_LABEL: Record<(typeof AFFECTATION_STATUTS)[number], string> = {
@@ -50,7 +50,6 @@ export function AffectationForm({
   conteneurs,
   chauffeurs,
   tracteurs,
-  remorques,
 }: Props) {
   const boundAction =
     mode === "update" && affectationId
@@ -122,43 +121,50 @@ export function AffectationForm({
         <input type="hidden" name="tenant_id" value={defaultTenantId ?? ""} />
       )}
 
-      {/* Liens métier */}
-      <Section title="Conteneur & ressources" description="Sélectionne le conteneur à livrer et les ressources affectées.">
+      {/* Liens métier. La remorque/châssis n'est PLUS choisie ici : c'est le
+          chauffeur qui sélectionne l'équipement utilisé au moment de confirmer
+          la livraison (cf. PWA chauffeur / EIR). On préserve néanmoins la valeur
+          existante en édition via un input hidden pour ne pas l'effacer. */}
+      <input type="hidden" name="remorque_id" value={getValue("remorque_id")} />
+      <Section title="Conteneur & ressources" description="Sélectionne le conteneur à livrer, le chauffeur et le tracteur affectés.">
         <Grid cols={2}>
           <Field label="Conteneur" name="conteneur_id" required error={getError("conteneur_id")} className="md:col-span-2">
-            <select id="conteneur_id" name="conteneur_id" defaultValue={getValue("conteneur_id")} required className={selectClass("conteneur_id")}>
-              <option value="">— Sélectionner un conteneur —</option>
-              {conteneurs.map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
+            <Combobox
+              id="conteneur_id"
+              name="conteneur_id"
+              options={conteneurs}
+              defaultValue={getValue("conteneur_id")}
+              placeholder="— Sélectionner un conteneur —"
+              searchPlaceholder="Rechercher un conteneur (n°, BL, client…)"
+              required
+              invalid={!!getError("conteneur_id")}
+            />
           </Field>
 
           <Field label="Chauffeur" name="chauffeur_id" error={getError("chauffeur_id")}>
-            <select id="chauffeur_id" name="chauffeur_id" defaultValue={getValue("chauffeur_id")} className={selectClass("chauffeur_id")}>
-              <option value="">— Non assigné —</option>
-              {chauffeurs.map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
-              ))}
-            </select>
+            <Combobox
+              id="chauffeur_id"
+              name="chauffeur_id"
+              options={chauffeurs}
+              defaultValue={getValue("chauffeur_id")}
+              placeholder="— Non assigné —"
+              searchPlaceholder="Rechercher un chauffeur…"
+              emptyOptionLabel="— Non assigné —"
+              invalid={!!getError("chauffeur_id")}
+            />
           </Field>
 
           <Field label="Tracteur" name="tracteur_id" error={getError("tracteur_id")}>
-            <select id="tracteur_id" name="tracteur_id" defaultValue={getValue("tracteur_id")} className={selectClass("tracteur_id")}>
-              <option value="">— Non assigné —</option>
-              {tracteurs.map((t) => (
-                <option key={t.id} value={t.id}>{t.label}</option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Remorque / châssis" name="remorque_id" error={getError("remorque_id")}>
-            <select id="remorque_id" name="remorque_id" defaultValue={getValue("remorque_id")} className={selectClass("remorque_id")}>
-              <option value="">— Non assignée —</option>
-              {remorques.map((r) => (
-                <option key={r.id} value={r.id}>{r.label}</option>
-              ))}
-            </select>
+            <Combobox
+              id="tracteur_id"
+              name="tracteur_id"
+              options={tracteurs}
+              defaultValue={getValue("tracteur_id")}
+              placeholder="— Non assigné —"
+              searchPlaceholder="Rechercher un tracteur (immat., chrono…)"
+              emptyOptionLabel="— Non assigné —"
+              invalid={!!getError("tracteur_id")}
+            />
           </Field>
         </Grid>
       </Section>

@@ -97,7 +97,6 @@ export default async function NewAffectationPage({
               conteneurs={refs.conteneurs}
               chauffeurs={refs.chauffeurs}
               tracteurs={refs.tracteurs}
-              remorques={refs.remorques}
             />
           </CardContent>
         </Card>

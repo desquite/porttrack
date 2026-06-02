@@ -140,7 +140,6 @@ export default async function EditAffectationPage({
             conteneurs={refs.conteneurs}
             chauffeurs={refs.chauffeurs}
             tracteurs={refs.tracteurs}
-            remorques={refs.remorques}
           />
         </CardContent>
       </Card>
