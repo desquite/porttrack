@@ -73,12 +73,18 @@ export default async function ChecklistsPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rows = (designations ?? []) as any[];
 
+  // « Faites » = toutes les check-lists effectuées (avec OU sans anomalie).
+  // « Avec remarque » est un sous-ensemble (mis en avant), pas une catégorie
+  // exclusive. « Non faites » = désignations sans check-list.
   const counts = rows.reduce(
     (acc, r) => {
       const cl = Array.isArray(r.checklist) ? r.checklist[0] : r.checklist;
-      if (!cl) acc.NON_FAITE += 1;
-      else if (cl.statut_global === "REMARQUE") acc.REMARQUE += 1;
-      else acc.FAITE += 1;
+      if (!cl) {
+        acc.NON_FAITE += 1;
+      } else {
+        acc.FAITE += 1;
+        if (cl.statut_global === "REMARQUE") acc.REMARQUE += 1;
+      }
       return acc;
     },
     { FAITE: 0, REMARQUE: 0, NON_FAITE: 0 } as Record<StatutGlobal, number>,
