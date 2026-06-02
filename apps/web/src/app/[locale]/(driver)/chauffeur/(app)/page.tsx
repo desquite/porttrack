@@ -48,14 +48,19 @@ export default async function DriverHomePage({
     checklistId = cl?.id ?? null;
   }
 
-  // Conteneurs à livrer (affectés au chauffeur, non livrés)
+  // Conteneurs à livrer (affectés au chauffeur, non livrés).
+  // On filtre sur le statut de l'affectation ET on exclut tout conteneur déjà
+  // LIVRE — défense en profondeur si l'affectation n'a pas encore basculé.
   const { data: affectations } = await supabase
     .from("affectations")
     .select(`statut, conteneur:conteneurs ( id, numero, client, destination_libre, date_badt, statut )`)
     .eq("chauffeur_id", chauffeur.id)
     .in("statut", ["PLANIFIEE", "EN_COURS"]);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const conteneurs = (affectations ?? []).map((a: any) => a.conteneur).filter(Boolean);
+  const conteneurs = (affectations ?? [])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((a: any) => a.conteneur)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter((c: any) => c && c.statut !== "LIVRE");
 
   return (
     <div className="space-y-5">

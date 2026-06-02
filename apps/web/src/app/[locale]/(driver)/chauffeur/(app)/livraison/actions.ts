@@ -122,8 +122,23 @@ export async function confirmDriverDelivery(
   }
 
   // 3) Conteneur → LIVRE
-  await admin.from("conteneurs").update({ statut: "LIVRE", date_livraison_reelle: today }).eq("id", conteneurId);
+  const { error: contErr } = await admin
+    .from("conteneurs")
+    .update({ statut: "LIVRE", date_livraison_reelle: today })
+    .eq("id", conteneurId);
+  // EIR déjà archivé : on log mais on ne bloque pas (la livraison est faite).
+  if (contErr) console.error("[confirmDriverDelivery] maj conteneur LIVRE:", contErr);
+
+  // 4) Affectation → TERMINEE (sinon le conteneur reste dans « à livrer » côté
+  //    chauffeur — filtré sur le statut affectation — et dans « affectations
+  //    actives » côté bureau).
+  const { error: affErr } = await admin
+    .from("affectations")
+    .update({ statut: "TERMINEE", date_retour: new Date().toISOString() })
+    .eq("id", aff.id);
+  if (affErr) console.error("[confirmDriverDelivery] maj affectation TERMINEE:", affErr);
 
   revalidatePath("/chauffeur");
+  revalidatePath("/chauffeur/livraisons");
   redirect("/chauffeur?livraison=ok");
 }
