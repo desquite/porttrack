@@ -27,6 +27,10 @@ import { ChauffeursFilters } from "./_components/chauffeurs-filters";
 
 type Chauffeur = Database["public"]["Tables"]["chauffeurs"]["Row"];
 type ChauffeurStatut = Database["public"]["Enums"]["chauffeur_statut"];
+// Ligne chauffeur enrichie d'un sous-objet equipe (join Supabase)
+type ChauffeurAvecEquipe = Chauffeur & {
+  equipe: { id: string; nom: string; code: string; couleur: string | null } | null;
+};
 
 const STATUT_VARIANT: Record<ChauffeurStatut, "success" | "info" | "warning" | "secondary"> = {
   ACTIF:    "success",
@@ -80,7 +84,9 @@ export default async function ChauffeursPage({
 
   let query = supabase
     .from("chauffeurs")
-    .select("*", { count: "exact" })
+    // Join Supabase sur la FK equipe_id_defaut → on récupère le code/nom/couleur
+    // de l'équipe pour l'afficher sur la carte (cf. cahier v7 §7.2).
+    .select("*, equipe:equipes(id, nom, code, couleur)", { count: "exact" })
     .order("nom", { ascending: true })
     .range(from, to);
 
@@ -218,7 +224,7 @@ export default async function ChauffeursPage({
       ) : (
         <>
           <div className="grid gap-3">
-            {chauffeurs!.map((c) => (
+            {(chauffeurs as ChauffeurAvecEquipe[]).map((c) => (
               <ChauffeurCard key={c.id} chauffeur={c} />
             ))}
           </div>
@@ -239,7 +245,7 @@ export default async function ChauffeursPage({
 
 // ----------------------------------------------------------------------------
 
-function ChauffeurCard({ chauffeur: c }: { chauffeur: Chauffeur }) {
+function ChauffeurCard({ chauffeur: c }: { chauffeur: ChauffeurAvecEquipe }) {
   const permisStatus = classifyExpiry(c.permis_expiration);
   const visiteStatus = classifyExpiry(c.visite_medicale_expiration);
 
@@ -260,6 +266,21 @@ function ChauffeurCard({ chauffeur: c }: { chauffeur: Chauffeur }) {
               <Badge variant={STATUT_VARIANT[c.statut]} className="text-[10px]">
                 {STATUT_LABEL[c.statut]}
               </Badge>
+              {/* Équipe : pastille couleur + code/nom (cf. cahier v7 §7.2) */}
+              {c.equipe ? (
+                <span className="inline-flex items-center gap-1.5 rounded-md border px-1.5 py-0.5 text-[10px] font-medium text-foreground/80">
+                  <span
+                    aria-hidden
+                    className="inline-block size-2 rounded-full"
+                    style={{ backgroundColor: c.equipe.couleur ?? "#94a3b8" }}
+                  />
+                  {c.equipe.code} — {c.equipe.nom}
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-md border border-dashed px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                  Sans équipe
+                </span>
+              )}
             </div>
             <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
               <span className="flex items-center gap-1">
