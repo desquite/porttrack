@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { CONTENEUR_STATUTS, type Database } from "@porttrack/shared";
+import { ACONIERS, CONTENEUR_STATUTS, type Database } from "@porttrack/shared";
 import {
   createConteneurAction,
   updateConteneurAction,
@@ -187,7 +187,23 @@ export function ConteneurForm({
 
       {/* Acteurs */}
       <Section title="Acteurs">
-        <Grid cols={2}>
+        <Grid cols={3}>
+          <Field label="Aconier (manutention)" name="aconier" required error={getError("aconier")} hint="Société de manutention (≠ compagnie maritime)">
+            <Input
+              id="aconier"
+              name="aconier"
+              list="aconier-suggestions"
+              defaultValue={getValue("aconier")}
+              required
+              placeholder="MEDLOG TRANSPORT"
+              className={fieldClass("aconier")}
+            />
+            <datalist id="aconier-suggestions">
+              {ACONIERS.filter((a) => a !== "AUTRE").map((a) => (
+                <option key={a} value={a} />
+              ))}
+            </datalist>
+          </Field>
           <Field label="Client (importateur/exportateur)" name="client" error={getError("client")}>
             <Input id="client" name="client" defaultValue={getValue("client")} className={fieldClass("client")} />
           </Field>

@@ -87,6 +87,13 @@ export const conteneurCreateSchema = z.object({
   // -- Acteurs --
   client: optionalString(200),
   transitaire: optionalString(200),
+  // Aconier (société de manutention) OBLIGATOIRE : indispensable au bilan par
+  // aconier. Cohérent avec la contrainte côté import (colonne « NOM » requise).
+  aconier: z
+    .string({ required_error: "Aconier obligatoire" })
+    .trim()
+    .min(1, "Aconier obligatoire")
+    .max(200, "Maximum 200 caractères"),
 
   // -- Logistique --
   origine_id: optionalUuid,
