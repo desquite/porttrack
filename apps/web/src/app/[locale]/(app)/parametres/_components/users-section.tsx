@@ -94,6 +94,9 @@ export async function UsersSection({
                 key={u.id}
                 userId={u.id}
                 email={u.email}
+                prenoms={u.prenoms}
+                nom={u.nom}
+                telephone={u.telephone}
                 role={u.role}
                 actif={u.actif}
                 tenantId={tenantId}

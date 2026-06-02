@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import {
   Loader2,
   Mail,
+  Phone,
   UserPlus,
   Copy,
   Check,
@@ -45,11 +46,12 @@ export function InviteUserForm({ tenantId }: Props) {
   const [state, formAction, pending] = useActionState(boundAction, initialState);
   const [copied, setCopied] = useState(false);
 
-  const getError = (name: "email" | "role"): string | null => {
+  type FieldName = "email" | "role" | "prenoms" | "nom" | "telephone";
+  const getError = (name: FieldName): string | null => {
     if (state.status !== "error") return null;
-    return state.fieldErrors?.[name]?.[0] ?? null;
+    return state.fieldErrors?.[name as "email" | "role" | "prenoms" | "nom" | "telephone"]?.[0] ?? null;
   };
-  const getValue = (name: "email" | "role"): string => {
+  const getValue = (name: FieldName): string => {
     if (state.status === "error") return state.values?.[name] ?? "";
     return "";
   };
@@ -139,7 +141,45 @@ export function InviteUserForm({ tenantId }: Props) {
 
       {/* Formulaire d'invitation */}
       <form action={formAction} className="space-y-3">
-        <div className="grid gap-3 md:grid-cols-[1fr_220px_auto]">
+        {/* Identité */}
+        <div className="grid gap-3 md:grid-cols-2">
+          <div className="space-y-1">
+            <Label htmlFor="invite-prenoms" className="text-xs">
+              Prénoms <span className="text-rose-600">*</span>
+            </Label>
+            <Input
+              id="invite-prenoms"
+              name="prenoms"
+              required
+              defaultValue={getValue("prenoms")}
+              placeholder="Lucien"
+              className={cn(getError("prenoms") && "border-rose-500")}
+            />
+            {getError("prenoms") && (
+              <p className="text-[11px] text-rose-600">{getError("prenoms")}</p>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="invite-nom" className="text-xs">
+              Nom <span className="text-rose-600">*</span>
+            </Label>
+            <Input
+              id="invite-nom"
+              name="nom"
+              required
+              defaultValue={getValue("nom")}
+              placeholder="Adou"
+              className={cn(getError("nom") && "border-rose-500")}
+            />
+            {getError("nom") && (
+              <p className="text-[11px] text-rose-600">{getError("nom")}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Contact + rôle */}
+        <div className="grid gap-3 md:grid-cols-[1fr_1fr_220px_auto]">
           <div className="space-y-1">
             <Label htmlFor="invite-email" className="text-xs">
               Adresse email <span className="text-rose-600">*</span>
@@ -158,6 +198,26 @@ export function InviteUserForm({ tenantId }: Props) {
             </div>
             {getError("email") && (
               <p className="text-[11px] text-rose-600">{getError("email")}</p>
+            )}
+          </div>
+
+          <div className="space-y-1">
+            <Label htmlFor="invite-telephone" className="text-xs">
+              Téléphone
+            </Label>
+            <div className="relative">
+              <Phone className="absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                id="invite-telephone"
+                name="telephone"
+                type="tel"
+                defaultValue={getValue("telephone")}
+                placeholder="+225 07 11 22 33 44"
+                className={cn("pl-8", getError("telephone") && "border-rose-500")}
+              />
+            </div>
+            {getError("telephone") && (
+              <p className="text-[11px] text-rose-600">{getError("telephone")}</p>
             )}
           </div>
 
@@ -188,7 +248,7 @@ export function InviteUserForm({ tenantId }: Props) {
           </div>
 
           <div className="flex items-end">
-            <Button type="submit" disabled={pending}>
+            <Button type="submit" disabled={pending} className="w-full md:w-auto">
               {pending ? (
                 <>
                   <Loader2 className="mr-2 size-4 animate-spin" />

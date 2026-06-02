@@ -13,13 +13,22 @@ import type { NotificationMessage } from "@/lib/notifications/types";
 // État partagé pour le formulaire d'invitation
 // =============================================================================
 
+type InviteFieldErrorKey = "email" | "role" | "prenoms" | "nom" | "telephone";
+type InviteValues = {
+  email?: string;
+  role?: string;
+  prenoms?: string;
+  nom?: string;
+  telephone?: string;
+};
+
 export type InviteUserState =
   | { status: "idle" }
   | {
       status: "error";
       formError?: string;
-      fieldErrors?: Partial<Record<"email" | "role", string[]>>;
-      values?: { email?: string; role?: string };
+      fieldErrors?: Partial<Record<InviteFieldErrorKey, string[]>>;
+      values?: InviteValues;
     }
   | {
       status: "success";
@@ -28,6 +37,8 @@ export type InviteUserState =
       /** true si l'email d'invitation a bien été expédié via Resend */
       emailSent: boolean;
     };
+
+const PHONE_RE = /^[+0-9 ()-]{8,30}$/;
 
 // =============================================================================
 // Helpers : vérification droits du caller
@@ -78,11 +89,24 @@ export async function inviteUserAction(
 ): Promise<InviteUserState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
   const role = String(formData.get("role") ?? "").trim();
+  const prenoms = String(formData.get("prenoms") ?? "").trim();
+  const nom = String(formData.get("nom") ?? "").trim();
+  const telephone = String(formData.get("telephone") ?? "").trim();
+  const values: InviteValues = { email, role, prenoms, nom, telephone };
 
   // -------- Validation --------
   const fieldErrors: NonNullable<
     Extract<InviteUserState, { status: "error" }>["fieldErrors"]
   > = {};
+  if (!prenoms) {
+    fieldErrors.prenoms = ["Prénoms obligatoires"];
+  }
+  if (!nom) {
+    fieldErrors.nom = ["Nom obligatoire"];
+  }
+  if (telephone && !PHONE_RE.test(telephone)) {
+    fieldErrors.telephone = ["Numéro de téléphone invalide"];
+  }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     fieldErrors.email = ["Adresse email invalide"];
   }
@@ -100,7 +124,7 @@ export async function inviteUserAction(
       status: "error",
       formError: "Le formulaire contient des erreurs.",
       fieldErrors,
-      values: { email, role },
+      values,
     };
   }
 
@@ -109,7 +133,7 @@ export async function inviteUserAction(
     await ensureCanAdminTenant(tenantId);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : "Erreur de droits";
-    return { status: "error", formError: msg, values: { email, role } };
+    return { status: "error", formError: msg, values };
   }
 
   // -------- Création du user via service_role --------
@@ -127,7 +151,7 @@ export async function inviteUserAction(
       fieldErrors: {
         email: ["Un compte avec cet email existe déjà dans Supabase"],
       },
-      values: { email, role },
+      values,
     };
   }
 
@@ -145,7 +169,7 @@ export async function inviteUserAction(
     return {
       status: "error",
       formError: `Échec de création : ${createErr?.message ?? "erreur inconnue"}`,
-      values: { email, role },
+      values,
     };
   }
 
@@ -156,7 +180,13 @@ export async function inviteUserAction(
   // via service_role, ce qui est déterministe et insensible à ce timing.
   const { error: syncErr } = await admin
     .from("users")
-    .update({ tenant_id: tenantId, role: role as Role })
+    .update({
+      tenant_id: tenantId,
+      role: role as Role,
+      prenoms,
+      nom,
+      telephone: telephone || null,
+    })
     .eq("id", created.user.id);
 
   if (syncErr) {
@@ -164,7 +194,7 @@ export async function inviteUserAction(
     return {
       status: "error",
       formError: `Compte créé mais le rattachement à l'entreprise a échoué : ${syncErr.message}. Corrige le rôle/l'entreprise depuis la liste des utilisateurs.`,
-      values: { email, role },
+      values,
     };
   }
 
@@ -279,6 +309,57 @@ export async function updateUserRoleAction(
   redirect(
     `/parametres?tenant=${tenantId}&userMsg=${encodeURIComponent(
       "Rôle mis à jour",
+    )}&userMsgType=success`,
+  );
+}
+
+// =============================================================================
+// Action : mettre à jour l'identité d'un membre (prénoms / nom / téléphone)
+// =============================================================================
+// Permet de compléter les comptes créés avant la capture du nom, ou de
+// corriger une faute. Réservé aux administrateurs du tenant.
+
+export async function updateUserProfileAction(
+  userId: string,
+  tenantId: string,
+  formData: FormData,
+): Promise<void> {
+  const prenoms = String(formData.get("prenoms") ?? "").trim();
+  const nom = String(formData.get("nom") ?? "").trim();
+  const telephone = String(formData.get("telephone") ?? "").trim();
+
+  const fail = (msg: string) =>
+    redirect(
+      `/parametres?tenant=${tenantId}&userMsg=${encodeURIComponent(msg)}&userMsgType=error`,
+    );
+
+  if (!prenoms || !nom) fail("Le prénom et le nom sont obligatoires.");
+  if (telephone && !PHONE_RE.test(telephone)) fail("Numéro de téléphone invalide.");
+
+  try {
+    await ensureCanAdminTenant(tenantId);
+  } catch (e: unknown) {
+    fail(e instanceof Error ? e.message : "Erreur de droits");
+  }
+
+  const supabase = await createClient();
+  const { error, data } = await supabase
+    .from("users")
+    .update({ prenoms, nom, telephone: telephone || null })
+    .eq("id", userId)
+    .eq("tenant_id", tenantId)
+    .select("id")
+    .maybeSingle();
+
+  if (error || !data) {
+    console.error("[updateUserProfileAction]", error);
+    fail(error?.message ?? "Utilisateur introuvable");
+  }
+
+  revalidatePath("/parametres");
+  redirect(
+    `/parametres?tenant=${tenantId}&userMsg=${encodeURIComponent(
+      "Identité mise à jour",
     )}&userMsgType=success`,
   );
 }

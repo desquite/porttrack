@@ -147,6 +147,7 @@ function SignOutButton() {
 type AppShellProps = {
   children: React.ReactNode;
   userEmail: string;
+  userName?: string | null;
   userRole: string;
   tenantName: string | null;
 };
@@ -154,6 +155,7 @@ type AppShellProps = {
 export function AppShell({
   children,
   userEmail,
+  userName,
   userRole,
   tenantName,
 }: AppShellProps) {
@@ -168,6 +170,15 @@ export function AppShell({
   const cleanPath = stripLocale(pathname);
   const isActive = (href: string) => cleanPath === href || cleanPath.startsWith(href + "/");
   const closeMobile = () => setMobileOpen(false);
+
+  // Identité affichée : « Prénom Nom » si connu, sinon l'email. Initiales du nom
+  // quand on l'a (sinon 2 premières lettres de l'email).
+  const displayName = userName?.trim() || userEmail;
+  const initials = (
+    userName?.trim()
+      ? userName.trim().split(/\s+/).slice(0, 2).map((s) => s[0]).join("")
+      : userEmail.slice(0, 2)
+  ).toUpperCase();
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -314,9 +325,9 @@ export function AppShell({
               className="flex items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-accent"
             >
               <span className="flex size-7 items-center justify-center rounded-full bg-primary/15 text-xs font-medium text-primary">
-                {userEmail.slice(0, 2).toUpperCase()}
+                {initials}
               </span>
-              <span className="hidden sm:inline">{userEmail}</span>
+              <span className="hidden sm:inline">{displayName}</span>
               <ChevronDown className="size-4 text-muted-foreground" />
             </button>
 
@@ -331,7 +342,8 @@ export function AppShell({
                 <div className="absolute right-0 top-full z-40 mt-1 w-64 rounded-md border bg-popover p-1 shadow-md">
                   <div className="px-3 py-2 text-xs text-muted-foreground">
                     Connecté en tant que
-                    <div className="mt-0.5 font-medium text-foreground">{userEmail}</div>
+                    <div className="mt-0.5 font-medium text-foreground">{displayName}</div>
+                    {userName?.trim() && <div className="mt-0.5 truncate">{userEmail}</div>}
                     <div className="mt-1">
                       <Badge variant="secondary" className="text-[10px]">
                         {userRole}
