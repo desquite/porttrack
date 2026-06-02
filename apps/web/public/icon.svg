@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="PORTTRACK">
+  <!-- Fond : carré arrondi couleur primary (bleu marine PORTTRACK) -->
+  <rect width="192" height="192" rx="42" fill="#1d3557"/>
+  <!-- Ancre (icône Lucide « anchor ») centrée, en blanc -->
+  <g transform="translate(48 48) scale(4)" fill="none" stroke="#ffffff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="5" r="3"/>
+    <line x1="12" y1="22" x2="12" y2="8"/>
+    <path d="M5 12H2a10 10 0 0 0 20 0h-3"/>
+  </g>
+</svg>
