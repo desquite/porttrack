@@ -113,7 +113,14 @@ export const chauffeurCreateSchema = z
     // -- Emploi --
     date_embauche: optionalDate,
     statut: z.enum(CHAUFFEUR_STATUTS).default("ACTIF"),
-    equipe_id_defaut: optionalUuid,
+    // Rattachement à une équipe : OBLIGATOIRE (décision client juin 2026 — chaque
+    // chauffeur doit appartenir à une équipe pour figurer dans le planning et les
+    // désignations matinales).
+    equipe_id_defaut: z
+      .string({ required_error: "Équipe obligatoire" })
+      .trim()
+      .min(1, "Équipe obligatoire")
+      .uuid("Équipe invalide"),
 
     // -- Divers --
     notes: optionalString(2000),

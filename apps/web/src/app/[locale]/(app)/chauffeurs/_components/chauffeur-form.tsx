@@ -205,6 +205,44 @@ export function ChauffeurForm({
         </Grid>
       </Section>
 
+      {/* Rattachement à une équipe — OBLIGATOIRE (chaque chauffeur doit appartenir
+          à une équipe pour figurer dans le planning et les désignations matinales) */}
+      <Section title="Rattachement à une équipe">
+        {equipes.length === 0 ? (
+          <Alert variant="destructive">
+            <AlertTitle>Aucune équipe n'existe encore</AlertTitle>
+            <AlertDescription>
+              Pour créer un chauffeur, tu dois d'abord créer au moins une équipe.
+              {" "}
+              <a href="/equipes/new" className="font-medium underline underline-offset-2">
+                Créer une équipe →
+              </a>
+            </AlertDescription>
+          </Alert>
+        ) : (
+          <Field
+            label="Équipe"
+            name="equipe_id_defaut"
+            required
+            error={getError("equipe_id_defaut")}
+            hint="Détermine la cellule par défaut du planning hebdomadaire"
+          >
+            <select
+              id="equipe_id_defaut"
+              name="equipe_id_defaut"
+              defaultValue={getValue("equipe_id_defaut") || defaultValues?.equipe_id_defaut || ""}
+              required
+              className={selectClass("equipe_id_defaut")}
+            >
+              <option value="" disabled>— Sélectionner une équipe —</option>
+              {equipes.map((e) => (
+                <option key={e.id} value={e.id}>{e.code} — {e.nom}</option>
+              ))}
+            </select>
+          </Field>
+        )}
+      </Section>
+
       {/* Contact */}
       <Section title="Contact">
         <Grid cols={2}>
@@ -372,20 +410,6 @@ export function ChauffeurForm({
                 <option key={s} value={s}>
                   {STATUT_LABEL[s]}
                 </option>
-              ))}
-            </select>
-          </Field>
-
-          <Field label="Équipe par défaut" name="equipe_id_defaut" error={getError("equipe_id_defaut")} hint="Détermine la cellule par défaut du planning hebdomadaire">
-            <select
-              id="equipe_id_defaut"
-              name="equipe_id_defaut"
-              defaultValue={getValue("equipe_id_defaut") || defaultValues?.equipe_id_defaut || ""}
-              className={selectClass("equipe_id_defaut")}
-            >
-              <option value="">— Aucune —</option>
-              {equipes.map((e) => (
-                <option key={e.id} value={e.id}>{e.code} — {e.nom}</option>
               ))}
             </select>
           </Field>
