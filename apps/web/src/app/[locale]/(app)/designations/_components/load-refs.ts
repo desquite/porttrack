@@ -4,7 +4,9 @@ import type { DesignationRefOption } from "./designation-form";
 /**
  * Charge les chauffeurs et matériels « désignables » pour une date donnée :
  *   * Chauffeurs : statut ACTIF et pas en absence ce jour-là.
- *   * Matériels : état EN_SERVICE.
+ *   * Matériels : état EN_SERVICE ET type TRACTEUR uniquement (on désigne un
+ *     chauffeur sur un tracteur routier ; remorques/châssis/auto-chargeuses ne
+ *     se conduisent pas seuls).
  *
  * Si une désignation existe déjà pour ce jour, on inclut quand même le
  * chauffeur/matériel concerné (utile à l'édition côté form, ou pour repérer
@@ -24,8 +26,9 @@ export async function loadDesignationRefs(date: string): Promise<{
       .order("nom", { ascending: true }),
     supabase
       .from("materiel_roulant")
-      .select("id, immatriculation, chrono, marque, etat")
+      .select("id, immatriculation, chrono, marque, etat, type")
       .eq("etat", "EN_SERVICE")
+      .eq("type", "TRACTEUR")
       .order("immatriculation", { ascending: true }),
     supabase
       .from("absences")
