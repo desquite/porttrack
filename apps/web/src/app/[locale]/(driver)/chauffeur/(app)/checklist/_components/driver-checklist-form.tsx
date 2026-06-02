@@ -7,6 +7,7 @@ import { Loader2, Check, TriangleAlert, Camera, ClipboardCheck, X } from "lucide
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
+import { compressImage } from "@/lib/utils/image";
 import { submitDriverChecklist, type DriverChecklistState } from "../actions";
 
 export type ChecklistItem = { id: string; label: string };
@@ -20,15 +21,25 @@ export function DriverChecklistForm({ designationId, items }: { designationId: s
   const [answers, setAnswers] = useState<Record<string, "OK" | "ANOMALIE">>({});
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [remarque, setRemarque] = useState("");
+  const [preparing, setPreparing] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const allAnswered = items.length > 0 && items.every((it) => answers[it.id]);
   const hasAnomalie = Object.values(answers).includes("ANOMALIE");
 
-  function addPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+  async function addPhoto(e: React.ChangeEvent<HTMLInputElement>) {
     const f = e.target.files?.[0];
-    if (f) setPhotos((prev) => [...prev, { file: f, url: URL.createObjectURL(f) }]);
     e.target.value = ""; // reset pour pouvoir reprendre une autre photo
+    if (!f) return;
+    // Compression côté navigateur AVANT stockage : réduit ~6 Mo → ~200 Ko, ce qui
+    // évite la limite Vercel de 4,5 Mo et accélère drastiquement l'upload en 4G.
+    setPreparing(true);
+    try {
+      const optimized = await compressImage(f);
+      setPhotos((prev) => [...prev, { file: optimized, url: URL.createObjectURL(optimized) }]);
+    } finally {
+      setPreparing(false);
+    }
   }
   function removePhoto(i: number) {
     setPhotos((prev) => {
@@ -95,9 +106,10 @@ export function DriverChecklistForm({ designationId, items }: { designationId: s
         <button
           type="button"
           onClick={() => fileRef.current?.click()}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-md border border-dashed border-input text-sm font-medium text-muted-foreground"
+          disabled={preparing}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-md border border-dashed border-input text-sm font-medium text-muted-foreground disabled:opacity-60"
         >
-          <Camera className="size-5" />Ajouter une photo
+          {preparing ? <><Loader2 className="size-5 animate-spin" />Optimisation…</> : <><Camera className="size-5" />Ajouter une photo</>}
         </button>
 
         {photos.length > 0 && (
@@ -131,7 +143,7 @@ export function DriverChecklistForm({ designationId, items }: { designationId: s
         className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
       />
 
-      <Button type="button" onClick={handleSubmit} disabled={pending || !allAnswered} className="h-14 w-full text-base">
+      <Button type="button" onClick={handleSubmit} disabled={pending || preparing || !allAnswered} className="h-14 w-full text-base">
         {pending ? <><Loader2 className="mr-2 size-5 animate-spin" />Validation…</> :
           <><ClipboardCheck className="mr-2 size-5" />Valider ma check-list</>}
       </Button>

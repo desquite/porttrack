@@ -9,6 +9,11 @@ import { Badge } from "@/components/ui/badge";
 import { loadDriverContext, truckLabel } from "../_components/load-driver";
 import { DriverChecklistForm, type ChecklistItem } from "./_components/driver-checklist-form";
 
+// Marge de durée pour la fonction qui traite la soumission (upload des photos
+// vers Supabase Storage). Les photos sont compressées côté client, donc la
+// charge reste légère, mais on laisse de l'air sur réseau lent.
+export const maxDuration = 60;
+
 export default async function DriverChecklistPage({
   params,
   searchParams,
