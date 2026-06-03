@@ -100,7 +100,9 @@ function buildWhatsappMessage(args: {
 // Envoi du WhatsApp + mise à jour du statut
 // =============================================================================
 
-async function sendDesignationWhatsapp(designationId: string): Promise<void> {
+async function sendDesignationWhatsapp(
+  designationId: string,
+): Promise<"SENT" | "FAILED" | "SKIPPED"> {
   const supabase = await createClient();
 
   // On recharge toutes les infos nécessaires au message
@@ -115,7 +117,7 @@ async function sendDesignationWhatsapp(designationId: string): Promise<void> {
     .eq("id", designationId)
     .maybeSingle();
 
-  if (!d) return;
+  if (!d) return "FAILED";
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const dAny = d as any;
@@ -139,7 +141,7 @@ async function sendDesignationWhatsapp(designationId: string): Promise<void> {
         whatsapp_attempts: 1,
       })
       .eq("id", designationId);
-    return;
+    return "SKIPPED";
   }
 
   const message = buildWhatsappMessage({
@@ -155,7 +157,7 @@ async function sendDesignationWhatsapp(designationId: string): Promise<void> {
 
   const result = await sendWhatsapp(chauffeur.telephone, message);
 
-  const statut = result.ok ? "SENT" : result.skipped ? "SKIPPED" : "FAILED";
+  const statut: "SENT" | "FAILED" | "SKIPPED" = result.ok ? "SENT" : result.skipped ? "SKIPPED" : "FAILED";
   await supabase
     .from("designations")
     .update({
@@ -165,6 +167,152 @@ async function sendDesignationWhatsapp(designationId: string): Promise<void> {
       whatsapp_attempts: 1,
     })
     .eq("id", designationId);
+  return statut;
+}
+
+// =============================================================================
+// Écran de désignation 2 panneaux (cahier v8 §6.2) — brouillon + VALIDER TOUT
+// =============================================================================
+// Modèle : former une paire = créer une désignation BROUILLON (validee_at null,
+// auto-sauvée, AUCUN WhatsApp). « VALIDER TOUT » valide tous les brouillons du
+// jour et envoie le WhatsApp groupé. Verrouillage = dérivé de la date.
+
+export type PaireResult = { ok: true; id?: string } | { ok: false; error: string };
+export type ValiderToutResult =
+  | { ok: true; total: number; sent: number; failed: number; skipped: number }
+  | { ok: false; error: string };
+
+/** Date du jour à Abidjan (UTC+0) au format YYYY-MM-DD. */
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+/** Date passée = journée VERROUILLÉE (immuable). */
+function isLocked(dateStr: string): boolean {
+  return dateStr < todayIso();
+}
+/** Au-delà de J+30 = HORS DÉLAI. */
+function isHorsDelai(dateStr: string): boolean {
+  const horizon = new Date();
+  horizon.setDate(horizon.getDate() + 30);
+  return dateStr > horizon.toISOString().slice(0, 10);
+}
+
+/** Ajoute une paire chauffeur↔camion en BROUILLON (sans envoi WhatsApp). */
+export async function addPaireAction(
+  date: string,
+  chauffeurId: string,
+  materielId: string,
+): Promise<PaireResult> {
+  if (!date || !chauffeurId || !materielId) return { ok: false, error: "Paramètres manquants." };
+  if (isLocked(date)) return { ok: false, error: "Journée verrouillée (date passée)." };
+  if (isHorsDelai(date)) return { ok: false, error: "Date hors délai (au-delà de J+30)." };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Session expirée." };
+
+  const { data: profile } = await supabase
+    .from("users")
+    .select("tenant_id")
+    .eq("id", user.id)
+    .maybeSingle();
+  const tenantId = profile?.tenant_id;
+  if (!tenantId) return { ok: false, error: "Aucune entreprise rattachée à ton compte." };
+
+  // Snapshot de l'équipe par défaut du chauffeur (pour le message à la validation)
+  const { data: chauffeur } = await supabase
+    .from("chauffeurs")
+    .select("equipe_id_defaut")
+    .eq("id", chauffeurId)
+    .maybeSingle();
+
+  const { data: created, error } = await supabase
+    .from("designations")
+    .insert({
+      tenant_id: tenantId,
+      chauffeur_id: chauffeurId,
+      materiel_roulant_id: materielId,
+      date_designation: date,
+      equipe_id: chauffeur?.equipe_id_defaut ?? null,
+      created_by: user.id,
+      // validee_at null (brouillon) + whatsapp_statut PENDING par défaut → pas d'envoi
+    })
+    .select("id")
+    .single();
+
+  if (error || !created) {
+    if (error?.code === "23505") {
+      if (error.message.includes("chauffeur")) return { ok: false, error: "Ce chauffeur est déjà désigné ce jour-là." };
+      if (error.message.includes("materiel")) return { ok: false, error: "Ce camion est déjà attribué ce jour-là." };
+    }
+    if (error?.code === "42501" || error?.message.includes("row-level security")) {
+      return { ok: false, error: "Tu n'as pas les droits pour cette opération." };
+    }
+    return { ok: false, error: error?.message ?? "Erreur inconnue." };
+  }
+
+  revalidatePath("/designations");
+  return { ok: true, id: created.id };
+}
+
+/** Retire une paire — uniquement si encore BROUILLON et journée non verrouillée. */
+export async function removePaireAction(designationId: string): Promise<PaireResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Session expirée." };
+
+  const { data: row } = await supabase
+    .from("designations")
+    .select("validee_at, date_designation")
+    .eq("id", designationId)
+    .maybeSingle();
+  if (!row) return { ok: false, error: "Désignation introuvable." };
+  if (row.validee_at) return { ok: false, error: "Désignation déjà validée — impossible de la retirer ici." };
+  if (isLocked(row.date_designation)) return { ok: false, error: "Journée verrouillée (date passée)." };
+
+  const { error } = await supabase.from("designations").delete().eq("id", designationId);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/designations");
+  return { ok: true };
+}
+
+/** Valide TOUS les brouillons du jour + envoi WhatsApp groupé. */
+export async function validerToutAction(date: string): Promise<ValiderToutResult> {
+  if (!date) return { ok: false, error: "Date manquante." };
+  if (isLocked(date)) return { ok: false, error: "Journée verrouillée (date passée)." };
+
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Session expirée." };
+
+  // Brouillons du jour (RLS limite déjà au tenant courant)
+  const { data: drafts, error } = await supabase
+    .from("designations")
+    .select("id")
+    .eq("date_designation", date)
+    .is("validee_at", null);
+  if (error) return { ok: false, error: error.message };
+  if (!drafts || drafts.length === 0) {
+    return { ok: false, error: "Aucune désignation en brouillon à valider pour cette date." };
+  }
+
+  const now = new Date().toISOString();
+  let sent = 0, failed = 0, skipped = 0;
+  for (const row of drafts) {
+    // On valide d'abord (visible en aval), puis on envoie : le WhatsApp est
+    // best-effort, un échec n'annule pas la validation (renvoi possible ensuite).
+    await supabase.from("designations").update({ validee_at: now }).eq("id", row.id);
+    const statut = await sendDesignationWhatsapp(row.id);
+    if (statut === "SENT") sent += 1;
+    else if (statut === "FAILED") failed += 1;
+    else skipped += 1;
+  }
+
+  revalidatePath("/designations");
+  revalidatePath("/planning");
+  revalidatePath("/dashboard");
+  return { ok: true, total: drafts.length, sent, failed, skipped };
 }
 
 // =============================================================================
