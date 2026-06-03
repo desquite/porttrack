@@ -967,6 +967,7 @@ export type Database = {
           notes: string | null
           tenant_id: string
           updated_at: string
+          validee_at: string | null
           whatsapp_attempts: number
           whatsapp_error: string | null
           whatsapp_sent_at: string | null
@@ -983,6 +984,7 @@ export type Database = {
           notes?: string | null
           tenant_id: string
           updated_at?: string
+          validee_at?: string | null
           whatsapp_attempts?: number
           whatsapp_error?: string | null
           whatsapp_sent_at?: string | null
@@ -999,6 +1001,7 @@ export type Database = {
           notes?: string | null
           tenant_id?: string
           updated_at?: string
+          validee_at?: string | null
           whatsapp_attempts?: number
           whatsapp_error?: string | null
           whatsapp_sent_at?: string | null
