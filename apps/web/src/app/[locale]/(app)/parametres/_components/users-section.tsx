@@ -98,6 +98,7 @@ export async function UsersSection({
                 nom={u.nom}
                 telephone={u.telephone}
                 role={u.role}
+                permissions={u.permissions}
                 actif={u.actif}
                 tenantId={tenantId}
                 isSelf={u.id === currentUserId}

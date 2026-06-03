@@ -16,24 +16,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { ROLES, type Role } from "@porttrack/shared";
 import { inviteUserAction, type InviteUserState } from "../users-actions";
-
-// On exclut SUPER_ADMIN et CUSTOM des rôles invitables via UI :
-//   - SUPER_ADMIN : élévation réservée à SQL
-//   - CUSTOM : rôle "défaut" sans signification métier, peu utile à inviter
-const INVITABLE_ROLES: Role[] = ROLES.filter(
-  (r) => r !== "SUPER_ADMIN" && r !== "CUSTOM",
-);
-
-const ROLE_LABEL: Record<Role, string> = {
-  SUPER_ADMIN:  "Super Admin (PORTTRACK)",
-  MANAGER:      "Manager — admin de l'entreprise",
-  DISPATCHER:   "Dispatcher — gère flux & affectations",
-  COMPTABLE:    "Comptable — facturation & CA",
-  CHEF_GARAGE:  "Chef garage — pannes & réparations",
-  CUSTOM:       "Custom — permissions à la carte",
-};
+import { PermissionsPicker } from "./permissions-picker";
 
 const initialState: InviteUserState = { status: "idle" };
 
@@ -46,10 +30,10 @@ export function InviteUserForm({ tenantId }: Props) {
   const [state, formAction, pending] = useActionState(boundAction, initialState);
   const [copied, setCopied] = useState(false);
 
-  type FieldName = "email" | "role" | "prenoms" | "nom" | "telephone";
+  type FieldName = "email" | "prenoms" | "nom" | "telephone";
   const getError = (name: FieldName): string | null => {
     if (state.status !== "error") return null;
-    return state.fieldErrors?.[name as "email" | "role" | "prenoms" | "nom" | "telephone"]?.[0] ?? null;
+    return state.fieldErrors?.[name]?.[0] ?? null;
   };
   const getValue = (name: FieldName): string => {
     if (state.status === "error") return state.values?.[name] ?? "";
@@ -178,8 +162,8 @@ export function InviteUserForm({ tenantId }: Props) {
           </div>
         </div>
 
-        {/* Contact + rôle */}
-        <div className="grid gap-3 md:grid-cols-[1fr_1fr_220px_auto]">
+        {/* Contact */}
+        <div className="grid gap-3 md:grid-cols-2">
           <div className="space-y-1">
             <Label htmlFor="invite-email" className="text-xs">
               Adresse email <span className="text-rose-600">*</span>
@@ -220,48 +204,28 @@ export function InviteUserForm({ tenantId }: Props) {
               <p className="text-[11px] text-rose-600">{getError("telephone")}</p>
             )}
           </div>
+        </div>
 
-          <div className="space-y-1">
-            <Label htmlFor="invite-role" className="text-xs">
-              Rôle <span className="text-rose-600">*</span>
-            </Label>
-            <select
-              id="invite-role"
-              name="role"
-              required
-              defaultValue={getValue("role") || "DISPATCHER"}
-              className={cn(
-                "flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm",
-                "focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring",
-                getError("role") && "border-rose-500",
-              )}
-            >
-              {INVITABLE_ROLES.map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABEL[r]}
-                </option>
-              ))}
-            </select>
-            {getError("role") && (
-              <p className="text-[11px] text-rose-600">{getError("role")}</p>
+        {/* Droits d'accès */}
+        <div className="space-y-2 pt-1">
+          <Label className="text-xs">Droits d&apos;accès <span className="text-rose-600">*</span></Label>
+          <PermissionsPicker defaultIsManager={false} defaultPermissions={{}} />
+        </div>
+
+        <div className="flex justify-end pt-1">
+          <Button type="submit" disabled={pending}>
+            {pending ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Création…
+              </>
+            ) : (
+              <>
+                <UserPlus className="mr-2 size-4" />
+                Inviter
+              </>
             )}
-          </div>
-
-          <div className="flex items-end">
-            <Button type="submit" disabled={pending} className="w-full md:w-auto">
-              {pending ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  Création…
-                </>
-              ) : (
-                <>
-                  <UserPlus className="mr-2 size-4" />
-                  Inviter
-                </>
-              )}
-            </Button>
-          </div>
+          </Button>
         </div>
       </form>
     </div>

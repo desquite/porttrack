@@ -3,7 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
-import { ROLES, type Role } from "@porttrack/shared";
+import { ROLES, type Role, type Json, parsePermissions } from "@porttrack/shared";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/notifications/email-resend";
@@ -13,14 +13,27 @@ import type { NotificationMessage } from "@/lib/notifications/types";
 // État partagé pour le formulaire d'invitation
 // =============================================================================
 
-type InviteFieldErrorKey = "email" | "role" | "prenoms" | "nom" | "telephone";
+type InviteFieldErrorKey = "email" | "prenoms" | "nom" | "telephone";
 type InviteValues = {
   email?: string;
-  role?: string;
   prenoms?: string;
   nom?: string;
   telephone?: string;
 };
+
+/** Lit is_manager + permissions (JSON) depuis le PermissionsPicker. */
+function readAccess(formData: FormData): { role: Role; permissions: Json } {
+  const isManager = String(formData.get("is_manager") ?? "") === "1";
+  let permissions: Json = {};
+  if (!isManager) {
+    try {
+      permissions = parsePermissions(JSON.parse(String(formData.get("permissions") ?? "{}"))) as unknown as Json;
+    } catch {
+      permissions = {};
+    }
+  }
+  return { role: isManager ? "MANAGER" : "CUSTOM", permissions };
+}
 
 export type InviteUserState =
   | { status: "idle" }
@@ -88,11 +101,11 @@ export async function inviteUserAction(
   formData: FormData,
 ): Promise<InviteUserState> {
   const email = String(formData.get("email") ?? "").trim().toLowerCase();
-  const role = String(formData.get("role") ?? "").trim();
   const prenoms = String(formData.get("prenoms") ?? "").trim();
   const nom = String(formData.get("nom") ?? "").trim();
   const telephone = String(formData.get("telephone") ?? "").trim();
-  const values: InviteValues = { email, role, prenoms, nom, telephone };
+  const { role, permissions } = readAccess(formData);
+  const values: InviteValues = { email, prenoms, nom, telephone };
 
   // -------- Validation --------
   const fieldErrors: NonNullable<
@@ -109,15 +122,6 @@ export async function inviteUserAction(
   }
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     fieldErrors.email = ["Adresse email invalide"];
-  }
-  if (!role || !(ROLES as readonly string[]).includes(role)) {
-    fieldErrors.role = ["Rôle invalide"];
-  }
-  // On interdit la création d'un SUPER_ADMIN via cette UI — uniquement via SQL
-  if (role === "SUPER_ADMIN") {
-    fieldErrors.role = [
-      "L'élévation en SUPER_ADMIN doit être faite via SQL par l'équipe PORTTRACK",
-    ];
   }
   if (Object.keys(fieldErrors).length > 0) {
     return {
@@ -182,10 +186,11 @@ export async function inviteUserAction(
     .from("users")
     .update({
       tenant_id: tenantId,
-      role: role as Role,
+      role,
       prenoms,
       nom,
       telephone: telephone || null,
+      permissions,
     })
     .eq("id", created.user.id);
 
@@ -314,10 +319,10 @@ export async function updateUserRoleAction(
 }
 
 // =============================================================================
-// Action : mettre à jour l'identité d'un membre (prénoms / nom / téléphone)
+// Action : mettre à jour l'identité ET les droits d'un membre
 // =============================================================================
-// Permet de compléter les comptes créés avant la capture du nom, ou de
-// corriger une faute. Réservé aux administrateurs du tenant.
+// Réservé aux administrateurs du tenant. Met à jour prénoms/nom/téléphone +
+// le rôle (Manager ou non) + les permissions (profils/sous-droits).
 
 export async function updateUserProfileAction(
   userId: string,
@@ -327,6 +332,7 @@ export async function updateUserProfileAction(
   const prenoms = String(formData.get("prenoms") ?? "").trim();
   const nom = String(formData.get("nom") ?? "").trim();
   const telephone = String(formData.get("telephone") ?? "").trim();
+  const { role, permissions } = readAccess(formData);
 
   const fail = (msg: string) =>
     redirect(
@@ -336,16 +342,23 @@ export async function updateUserProfileAction(
   if (!prenoms || !nom) fail("Le prénom et le nom sont obligatoires.");
   if (telephone && !PHONE_RE.test(telephone)) fail("Numéro de téléphone invalide.");
 
+  let caller;
   try {
-    await ensureCanAdminTenant(tenantId);
+    caller = await ensureCanAdminTenant(tenantId);
   } catch (e: unknown) {
     fail(e instanceof Error ? e.message : "Erreur de droits");
+    return;
+  }
+  // Garde-fou : un manager ne peut pas retirer son PROPRE accès Manager
+  // (sinon il se verrouille hors de l'administration).
+  if (caller.user.id === userId && role !== "MANAGER") {
+    fail("Tu ne peux pas retirer ton propre accès Manager.");
   }
 
   const supabase = await createClient();
   const { error, data } = await supabase
     .from("users")
-    .update({ prenoms, nom, telephone: telephone || null })
+    .update({ prenoms, nom, telephone: telephone || null, role, permissions })
     .eq("id", userId)
     .eq("tenant_id", tenantId)
     .select("id")
@@ -359,7 +372,7 @@ export async function updateUserProfileAction(
   revalidatePath("/parametres");
   redirect(
     `/parametres?tenant=${tenantId}&userMsg=${encodeURIComponent(
-      "Identité mise à jour",
+      "Membre mis à jour",
     )}&userMsgType=success`,
   );
 }
