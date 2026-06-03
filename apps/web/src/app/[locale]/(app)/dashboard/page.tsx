@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 import {
   Users,
@@ -13,6 +14,7 @@ import {
   Gavel,
 } from "lucide-react";
 
+import { firstAllowedHref, parsePermissions, type Role } from "@porttrack/shared";
 import { createClient } from "@/lib/supabase/server";
 import {
   Card,
@@ -45,6 +47,21 @@ export default async function DashboardPage({
   setRequestLocale(locale);
 
   const supabase = await createClient();
+
+  // Le tableau de bord est réservé au Manager/Super Admin (cahier v8). Un autre
+  // profil est redirigé vers sa 1re page autorisée.
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: me } = await supabase
+      .from("users")
+      .select("role, permissions")
+      .eq("id", user.id)
+      .maybeSingle();
+    const role = (me?.role ?? "CUSTOM") as Role;
+    if (role !== "MANAGER" && role !== "SUPER_ADMIN") {
+      redirect(`/${locale}${firstAllowedHref(role, parsePermissions(me?.permissions))}`);
+    }
+  }
 
   // Compteurs simples (count exact via head:true pour ne pas tirer les lignes)
   const [

@@ -1,6 +1,8 @@
 import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 
+import { parsePermissions } from "@porttrack/shared";
+
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/app-shell";
 
@@ -39,12 +41,13 @@ export default async function AppLayout({
   // Récupère le profil métier (RLS laisse l'utilisateur lire sa propre ligne)
   const { data: profile } = await supabase
     .from("users")
-    .select("role, tenant_id, nom, prenoms")
+    .select("role, tenant_id, nom, prenoms, permissions")
     .eq("id", user.id)
     .maybeSingle();
 
   // Nom affiché dans l'en-tête : « Prénom Nom » si renseigné, sinon l'email.
   const userName = [profile?.prenoms, profile?.nom].filter(Boolean).join(" ").trim() || null;
+  const userPermissions = parsePermissions(profile?.permissions);
 
   // Si le profil a un tenant_id, on récupère son nom pour l'afficher dans le header.
   // Pour un SUPER_ADMIN tenant_id est null → on n'affiche pas de nom.
@@ -63,6 +66,7 @@ export default async function AppLayout({
       userEmail={user.email ?? "—"}
       userName={userName}
       userRole={profile?.role ?? "CUSTOM"}
+      userPermissions={userPermissions}
       tenantName={tenantName}
     >
       {children}

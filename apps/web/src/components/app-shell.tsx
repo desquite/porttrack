@@ -36,6 +36,19 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { signOutAction } from "@/app/[locale]/(app)/actions";
+import {
+  canAccess,
+  PERMISSION_DOMAINS,
+  PERMISSION_TREE,
+  type StoredPermissions,
+  type Role,
+} from "@porttrack/shared";
+
+// Map href (route locale-agnostique) → clé de sous-droit, pour filtrer le menu.
+const HREF_TO_PERMISSION: Record<string, string> = {};
+for (const d of PERMISSION_DOMAINS) {
+  for (const sr of PERMISSION_TREE[d].subRights) HREF_TO_PERMISSION[sr.href] = sr.key;
+}
 
 type NavLink = {
   label: string;
@@ -151,6 +164,7 @@ type AppShellProps = {
   userEmail: string;
   userName?: string | null;
   userRole: string;
+  userPermissions?: StoredPermissions;
   tenantName: string | null;
 };
 
@@ -159,6 +173,7 @@ export function AppShell({
   userEmail,
   userName,
   userRole,
+  userPermissions,
   tenantName,
 }: AppShellProps) {
   const pathname = usePathname();
@@ -181,6 +196,20 @@ export function AppShell({
       ? userName.trim().split(/\s+/).slice(0, 2).map((s) => s[0]).join("")
       : userEmail.slice(0, 2)
   ).toUpperCase();
+
+  // Filtrage du menu par droits. Manager/Super Admin voient tout. Les autres
+  // ne voient que les sous-droits accordés. Tableau de bord = Manager seul ;
+  // Paramètres/Facturation/Debug restent visibles par tous.
+  const role = userRole as Role;
+  const privileged = role === "MANAGER" || role === "SUPER_ADMIN";
+  const perms = userPermissions ?? {};
+  const canSee = (href: string): boolean => {
+    if (privileged) return true;
+    const key = HREF_TO_PERMISSION[href];
+    if (key) return canAccess(role, perms, key);
+    if (href === "/dashboard") return false;
+    return true;
+  };
 
   return (
     <div className="flex min-h-screen bg-muted/30">
@@ -221,13 +250,15 @@ export function AppShell({
 
         <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4">
           {/* Liens de tête */}
-          {NAV_TOP.map((item) => (
+          {NAV_TOP.filter((item) => canSee(item.href)).map((item) => (
             <NavRow key={item.href} item={item} active={isActive(item.href)} onNavigate={closeMobile} />
           ))}
 
           {/* Groupes repliables — le groupe contenant la page active est ouvert par défaut */}
           {NAV_GROUPS.map((group) => {
-            const containsActive = group.items.some((it) => isActive(it.href));
+            const items = group.items.filter((it) => canSee(it.href));
+            if (items.length === 0) return null; // groupe sans aucun droit → masqué
+            const containsActive = items.some((it) => isActive(it.href));
             const isOpen = openGroups[group.label] ?? containsActive;
             const GroupIcon = group.icon;
             return (
@@ -257,7 +288,7 @@ export function AppShell({
                   )}
                 >
                   <div className="ml-4 mt-1 space-y-1 border-l border-border/60 pl-2">
-                    {group.items.map((it) => (
+                    {items.map((it) => (
                       <NavRow key={it.href} item={it} active={isActive(it.href)} onNavigate={closeMobile} />
                     ))}
                   </div>
@@ -267,7 +298,7 @@ export function AppShell({
           })}
 
           {/* Liens de pied */}
-          {NAV_BOTTOM.map((item) => (
+          {NAV_BOTTOM.filter((item) => canSee(item.href)).map((item) => (
             <NavRow key={item.href} item={item} active={isActive(item.href)} onNavigate={closeMobile} />
           ))}
 
