@@ -27,6 +27,9 @@ export async function loadDriverContext() {
     `)
     .eq("chauffeur_id", chauffeur.id)
     .eq("date_designation", today)
+    // Seules les désignations VALIDÉES sont visibles du chauffeur (un brouillon
+    // n'existe que pour les Ressources d'Exploitation — cahier v8 §6.2).
+    .not("validee_at", "is", null)
     .maybeSingle();
 
   return { user, chauffeur, designation };

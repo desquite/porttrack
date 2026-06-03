@@ -68,6 +68,9 @@ export default async function ChecklistsPage({
       )
     `)
     .eq("date_designation", date)
+    // Seules les désignations VALIDÉES génèrent une check-list attendue
+    // (les brouillons ne sont pas encore officiels — cahier v8 §6.2).
+    .not("validee_at", "is", null)
     .order("created_at", { ascending: true });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

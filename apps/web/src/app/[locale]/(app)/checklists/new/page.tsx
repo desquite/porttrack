@@ -47,6 +47,7 @@ export default async function NewChecklistPage({
       equipe:equipes ( nom, code, couleur )
     `)
     .eq("id", sp.designation)
+    .not("validee_at", "is", null) // check-list possible seulement sur une désignation validée
     .maybeSingle();
 
   if (!d) notFound();

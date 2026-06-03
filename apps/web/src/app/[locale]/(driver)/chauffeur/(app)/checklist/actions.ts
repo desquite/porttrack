@@ -39,11 +39,12 @@ export async function submitDriverChecklist(
   const designationId = String(formData.get("designation_id") ?? "");
   if (!designationId) return { status: "error", formError: "Désignation manquante." };
 
-  // La désignation doit être la sienne
+  // La désignation doit être la sienne ET validée (pas un brouillon)
   const { data: des } = await supabase
     .from("designations")
     .select("id, chauffeur_id, materiel_roulant_id, date_designation")
     .eq("id", designationId)
+    .not("validee_at", "is", null)
     .maybeSingle();
   if (!des || des.chauffeur_id !== chauffeur.id) {
     return { status: "error", formError: "Désignation invalide." };

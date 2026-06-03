@@ -105,6 +105,7 @@ export default async function DriverChecklistPage({
     .from("designations")
     .select("id, chauffeur_id, materiel:materiel_roulant ( chrono, immatriculation )")
     .eq("id", designationId)
+    .not("validee_at", "is", null) // pas de check-list sur un brouillon
     .maybeSingle();
   if (!des || des.chauffeur_id !== chauffeur.id) notFound();
 
