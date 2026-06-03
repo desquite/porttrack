@@ -28,6 +28,7 @@ import {
   ClipboardCheck,
   History,
   FileArchive,
+  Gauge,
   Loader2,
 } from "lucide-react";
 
@@ -82,6 +83,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: "Opérations conteneurs",
     icon: Package,
     items: [
+      { label: "Tableau Opérations",  href: "/operations",   icon: Gauge },
       { label: "Conteneurs",          href: "/conteneurs",   icon: Package },
       { label: "Flux & affectations", href: "/affectations", icon: ClipboardList },
     ],
