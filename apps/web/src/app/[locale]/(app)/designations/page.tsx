@@ -1,38 +1,14 @@
 import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import {
-  Megaphone, Plus, CheckCircle2, ChevronLeft, ChevronRight, RotateCcw,
-  Truck, MessageSquare, MessageSquareWarning, MessageSquareOff, User,
+  Megaphone, ChevronLeft, ChevronRight, RotateCcw, Lock, CalendarClock,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
-import type { Database } from "@porttrack/shared";
-
-type WhatsappStatut = Database["public"]["Enums"]["designation_whatsapp_statut"];
-
-const WA_LABEL: Record<WhatsappStatut, string> = {
-  PENDING: "En attente",
-  SENT:    "Envoyé",
-  FAILED:  "Échec",
-  SKIPPED: "Non envoyé",
-};
-const WA_VARIANT: Record<WhatsappStatut, "secondary" | "success" | "danger" | "warning"> = {
-  PENDING: "warning",
-  SENT:    "success",
-  FAILED:  "danger",
-  SKIPPED: "secondary",
-};
-const WA_ICON: Record<WhatsappStatut, typeof MessageSquare> = {
-  PENDING: MessageSquare,
-  SENT:    MessageSquare,
-  FAILED:  MessageSquareWarning,
-  SKIPPED: MessageSquareOff,
-};
+import { DesignationBoard, type BoardPair, type BoardOption } from "./_components/designation-board";
 
 const FR_LONG = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
@@ -44,13 +20,16 @@ function addDays(iso: string, n: number): string {
   d.setDate(d.getDate() + n);
   return isoDate(d);
 }
+function truckLabel(m: { immatriculation: string; chrono: string | null }): string {
+  return m.chrono ? `${m.chrono} (${m.immatriculation})` : m.immatriculation;
+}
 
 export default async function DesignationsPage({
   params,
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ date?: string; created?: string; deleted?: string; resent?: string }>;
+  searchParams: Promise<{ date?: string }>;
 }) {
   const { locale } = await params;
   const sp = await searchParams;
@@ -60,27 +39,94 @@ export default async function DesignationsPage({
   const date = sp.date && /^\d{4}-\d{2}-\d{2}$/.test(sp.date) ? sp.date : today;
   const dateLabel = FR_LONG.format(new Date(date + "T12:00:00"));
 
+  const locked = date < today;                       // date passée = verrouillée
+  const horsDelai = date > addDays(today, 30);        // au-delà de J+30
+
   const supabase = await createClient();
-  const { data: designations } = await supabase
+
+  // 1) Paires (désignations) du jour — brouillons + validées
+  const { data: pairsRaw } = await supabase
     .from("designations")
     .select(`
-      id, date_designation, whatsapp_statut, whatsapp_sent_at, whatsapp_error, notes,
-      chauffeur:chauffeurs ( id, nom, prenoms, telephone ),
-      materiel:materiel_roulant ( id, immatriculation, chrono, marque ),
-      equipe:equipes ( nom, code, couleur )
+      id, validee_at, whatsapp_statut,
+      chauffeur:chauffeurs ( id, nom, prenoms ),
+      materiel:materiel_roulant ( id, immatriculation, chrono ),
+      equipe:equipes ( code, couleur )
     `)
     .eq("date_designation", date)
     .order("created_at", { ascending: true });
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pairsArr = (pairsRaw ?? []) as any[];
+  const pairedChauffeurIds = new Set(pairsArr.map((p) => p.chauffeur?.id).filter(Boolean));
+  const pairedTruckIds = new Set(pairsArr.map((p) => p.materiel?.id).filter(Boolean));
+
+  const pairs: BoardPair[] = pairsArr.map((p) => ({
+    id: p.id,
+    driverName: `${p.chauffeur?.nom ?? "?"} ${p.chauffeur?.prenoms ?? ""}`.trim(),
+    truckLabel: p.materiel ? truckLabel(p.materiel) : "—",
+    equipeCode: p.equipe?.code ?? null,
+    equipeCouleur: p.equipe?.couleur ?? null,
+    validated: !!p.validee_at,
+    whatsappStatut: p.whatsapp_statut,
+  }));
+
+  // 2) Listes disponibles (uniquement si la journée est éditable)
+  let trucks: BoardOption[] = [];
+  let drivers: BoardOption[] = [];
+
+  if (!locked && !horsDelai) {
+    const [{ data: trucksRaw }, { data: driversRaw }, { data: absences }] = await Promise.all([
+      supabase
+        .from("materiel_roulant")
+        .select("id, immatriculation, chrono")
+        .eq("etat", "EN_SERVICE")
+        .eq("type", "TRACTEUR")
+        .order("immatriculation", { ascending: true }),
+      supabase
+        .from("chauffeurs")
+        .select("id, nom, prenoms, equipe:equipes ( code, couleur )")
+        .eq("statut", "ACTIF")
+        .order("nom", { ascending: true }),
+      supabase
+        .from("absences")
+        .select("chauffeur_id, date_debut, date_fin")
+        .lte("date_debut", date)
+        .gte("date_fin", date),
+    ]);
+
+    const absentIds = new Set((absences ?? []).map((a) => a.chauffeur_id));
+
+    trucks = (trucksRaw ?? [])
+      .filter((m) => !pairedTruckIds.has(m.id))
+      .map((m) => ({ id: m.id, label: truckLabel(m) }));
+
+    drivers = (driversRaw ?? [])
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .filter((c: any) => !pairedChauffeurIds.has(c.id) && !absentIds.has(c.id))
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .map((c: any) => ({
+        id: c.id,
+        label: `${c.nom} ${c.prenoms}`.trim(),
+        equipeCode: c.equipe?.code ?? null,
+        equipeCouleur: c.equipe?.couleur ?? null,
+      }));
+  }
+
   return (
     <div className="space-y-6">
+      {/* En-tête + navigation date */}
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h1 className="flex items-center gap-2 text-2xl font-bold tracking-tight">
             <Megaphone className="size-6 text-primary" />
-            Désignations du jour
+            Désignation du jour
           </h1>
-          <p className="text-sm text-muted-foreground capitalize">{dateLabel}</p>
+          <p className="flex items-center gap-2 text-sm text-muted-foreground capitalize">
+            {dateLabel}
+            {locked && <Badge variant="secondary" className="gap-1 text-[10px] normal-case"><Lock className="size-3" />Verrouillée</Badge>}
+            {horsDelai && <Badge variant="warning" className="gap-1 text-[10px] normal-case"><CalendarClock className="size-3" />Hors délai</Badge>}
+          </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
           <Button asChild variant="outline" size="sm">
@@ -96,87 +142,17 @@ export default async function DesignationsPage({
           <Button asChild variant="outline" size="sm">
             <Link href={`/designations?date=${addDays(date, 1)}`}><ChevronRight className="size-4" /></Link>
           </Button>
-          <Button asChild>
-            <Link href={`/designations/new?date=${date}`}><Plus className="mr-2 size-4" />Désigner un chauffeur</Link>
-          </Button>
         </div>
       </div>
 
-      {sp.created && <Alert className="border-emerald-300 bg-emerald-50/60 text-emerald-900"><CheckCircle2 className="size-4" /><AlertTitle>Désignation créée et WhatsApp envoyé (si configuré)</AlertTitle></Alert>}
-      {sp.deleted && <Alert className="border-rose-200 bg-rose-50/60 text-rose-900"><CheckCircle2 className="size-4" /><AlertTitle>Désignation supprimée</AlertTitle></Alert>}
-      {sp.resent && <Alert className="border-emerald-300 bg-emerald-50/60 text-emerald-900"><CheckCircle2 className="size-4" /><AlertTitle>WhatsApp renvoyé</AlertTitle></Alert>}
-
-      {!designations || designations.length === 0 ? (
-        <Card>
-          <CardHeader className="text-center">
-            <Megaphone className="mx-auto size-8 text-muted-foreground" />
-            <CardTitle className="text-base">Aucune désignation</CardTitle>
-            <CardDescription>Personne n&apos;est désigné pour cette date. Tu peux commencer.</CardDescription>
-          </CardHeader>
-        </Card>
-      ) : (
-        <div className="grid gap-3">
-          {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          {(designations as any[]).map((d) => <DesignationCard key={d.id} d={d} />)}
-        </div>
-      )}
+      <DesignationBoard
+        date={date}
+        locked={locked}
+        horsDelai={horsDelai}
+        trucks={trucks}
+        drivers={drivers}
+        pairs={pairs}
+      />
     </div>
-  );
-}
-
-/* eslint-disable @typescript-eslint/no-explicit-any */
-function DesignationCard({ d }: { d: any }) {
-  const ch = d.chauffeur as { id: string; nom: string; prenoms: string; telephone: string | null } | null;
-  const mr = d.materiel as { id: string; immatriculation: string; chrono: string | null; marque: string | null } | null;
-  const equipe = d.equipe as { nom: string; code: string; couleur: string | null } | null;
-  const wa = d.whatsapp_statut as WhatsappStatut;
-  const WaIcon = WA_ICON[wa];
-
-  const mrLabel = mr
-    ? mr.chrono
-      ? `${mr.chrono} (${mr.immatriculation})`
-      : mr.immatriculation
-    : "—";
-
-  return (
-    <Card className="transition-colors hover:border-primary/30">
-      <CardContent className="flex flex-wrap items-center gap-4 p-4">
-        <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary">
-          <Megaphone className="size-5" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-2">
-            {equipe && (
-              <span className="flex size-5 items-center justify-center rounded text-[10px] font-bold text-white" style={{ backgroundColor: equipe.couleur ?? "#3b82f6" }}>
-                {equipe.code}
-              </span>
-            )}
-            <span className="font-medium truncate">{ch?.nom ?? "?"} {ch?.prenoms ?? ""}</span>
-            <span className="text-xs text-muted-foreground">→</span>
-            <span className="flex items-center gap-1 text-sm">
-              <Truck className="size-3.5 text-muted-foreground" />
-              {mrLabel}
-            </span>
-            {mr?.marque && <span className="text-xs text-muted-foreground">{mr.marque}</span>}
-          </div>
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
-            <Badge variant={WA_VARIANT[wa]} className="gap-1 text-[10px]">
-              <WaIcon className="size-3" />
-              WhatsApp {WA_LABEL[wa]}
-            </Badge>
-            {ch?.telephone && <span>{ch.telephone}</span>}
-            {equipe && <span>{equipe.nom}</span>}
-            {d.notes && <span className="truncate italic">— {d.notes}</span>}
-          </div>
-          {wa === "FAILED" && d.whatsapp_error && (
-            <p className="mt-1 text-[11px] text-rose-700">Erreur : {d.whatsapp_error}</p>
-          )}
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          {ch && <Button asChild variant="ghost" size="sm"><Link href={`/chauffeurs/${ch.id}`}><User className="size-3.5" /></Link></Button>}
-          <Button asChild variant="outline" size="sm"><Link href={`/designations/${d.id}`}>Détails</Link></Button>
-        </div>
-      </CardContent>
-    </Card>
   );
 }
