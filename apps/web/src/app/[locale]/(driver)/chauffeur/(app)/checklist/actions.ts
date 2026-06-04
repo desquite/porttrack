@@ -45,6 +45,7 @@ export async function submitDriverChecklist(
     .select("id, chauffeur_id, materiel_roulant_id, date_designation")
     .eq("id", designationId)
     .not("validee_at", "is", null)
+    .is("annulee_at", null)
     .maybeSingle();
   if (!des || des.chauffeur_id !== chauffeur.id) {
     return { status: "error", formError: "Désignation invalide." };

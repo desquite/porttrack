@@ -277,6 +277,29 @@ export async function removePaireAction(designationId: string): Promise<PaireRes
   return { ok: true };
 }
 
+/**
+ * Libère un chauffeur d'une désignation dont le camion est tombé en panne :
+ * on ANNULE la désignation (annulee_at) au lieu de la supprimer → la ligne et
+ * sa check-list sont conservées (trace), et le chauffeur redevient disponible
+ * (les contraintes UNIQUE sont partielles WHERE annulee_at IS NULL).
+ */
+export async function libererDesignationAction(designationId: string): Promise<PaireResult> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Session expirée." };
+
+  const { error } = await supabase
+    .from("designations")
+    .update({ annulee_at: new Date().toISOString(), annulee_motif: "Camion en panne" })
+    .eq("id", designationId)
+    .is("annulee_at", null);
+  if (error) return { ok: false, error: error.message };
+
+  revalidatePath("/designations");
+  revalidatePath("/operations");
+  return { ok: true };
+}
+
 /** Valide TOUS les brouillons du jour + envoi WhatsApp groupé. */
 export async function validerToutAction(date: string): Promise<ValiderToutResult> {
   if (!date) return { ok: false, error: "Date manquante." };

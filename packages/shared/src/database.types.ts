@@ -964,6 +964,8 @@ export type Database = {
           equipe_id: string | null
           id: string
           materiel_roulant_id: string
+          annulee_at: string | null
+          annulee_motif: string | null
           notes: string | null
           tenant_id: string
           updated_at: string
@@ -981,6 +983,8 @@ export type Database = {
           equipe_id?: string | null
           id?: string
           materiel_roulant_id: string
+          annulee_at?: string | null
+          annulee_motif?: string | null
           notes?: string | null
           tenant_id: string
           updated_at?: string
@@ -991,6 +995,8 @@ export type Database = {
           whatsapp_statut?: Database["public"]["Enums"]["designation_whatsapp_statut"]
         }
         Update: {
+          annulee_at?: string | null
+          annulee_motif?: string | null
           chauffeur_id?: string
           created_at?: string
           created_by?: string | null
@@ -1669,6 +1675,7 @@ export type Database = {
       }
       pannes: {
         Row: {
+          chauffeur_id: string | null
           cout_estime_fcfa: number | null
           cout_reel_fcfa: number | null
           created_at: string
@@ -1689,6 +1696,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          chauffeur_id?: string | null
           cout_estime_fcfa?: number | null
           cout_reel_fcfa?: number | null
           created_at?: string
@@ -1709,6 +1717,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          chauffeur_id?: string | null
           cout_estime_fcfa?: number | null
           cout_reel_fcfa?: number | null
           created_at?: string

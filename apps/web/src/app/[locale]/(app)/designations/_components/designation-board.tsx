@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Truck, User, Link2, X, Send, Loader2, CheckCircle2, AlertTriangle, Lock,
+  Truck, User, Link2, X, Send, Loader2, CheckCircle2, AlertTriangle, Lock, Wrench,
   MessageSquare, MessageSquareWarning, MessageSquareOff,
 } from "lucide-react";
 
@@ -13,7 +13,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import type { Database } from "@porttrack/shared";
-import { addPaireAction, removePaireAction, validerToutAction } from "../actions";
+import { addPaireAction, removePaireAction, validerToutAction, libererDesignationAction } from "../actions";
 
 type WhatsappStatut = Database["public"]["Enums"]["designation_whatsapp_statut"];
 
@@ -30,6 +30,7 @@ export type BoardPair = {
   equipeCode: string | null;
   equipeCouleur: string | null;
   validated: boolean;
+  enPanne: boolean;
   whatsappStatut: WhatsappStatut;
 };
 
@@ -91,6 +92,16 @@ export function DesignationBoard({
       const r = await validerToutAction(date);
       if (!r.ok) { setError(r.error); return; }
       setBilan(`${r.total} désignation(s) validée(s) — ${r.sent} WhatsApp envoyé(s), ${r.failed} échec(s), ${r.skipped} non envoyé(s).`);
+      router.refresh();
+    });
+  }
+
+  function liberer(id: string) {
+    if (!window.confirm("Libérer ce chauffeur ? Sa désignation sera annulée (camion en panne) et il redeviendra disponible pour une nouvelle désignation.")) return;
+    setError(null); setBilan(null);
+    startTransition(async () => {
+      const r = await libererDesignationAction(id);
+      if (!r.ok) { setError(r.error); return; }
       router.refresh();
     });
   }
@@ -185,7 +196,7 @@ export function DesignationBoard({
             {pairs.map((p) => {
               const WaIcon = WA_ICON[p.whatsappStatut];
               return (
-                <li key={p.id} className="flex flex-wrap items-center gap-3 rounded-md border p-2.5">
+                <li key={p.id} className={cn("flex flex-wrap items-center gap-3 rounded-md border p-2.5", p.enPanne && "border-rose-300 bg-rose-50/50")}>
                   <div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
                     {p.equipeCode && (
                       <span className="flex size-5 items-center justify-center rounded text-[10px] font-bold text-white" style={{ backgroundColor: p.equipeCouleur ?? "#3b82f6" }}>
@@ -196,12 +207,21 @@ export function DesignationBoard({
                     <span className="text-xs text-muted-foreground">↔</span>
                     <span className="flex items-center gap-1 text-sm"><Truck className="size-3.5 text-muted-foreground" />{p.truckLabel}</span>
                   </div>
-                  {p.validated ? (
+                  {p.enPanne ? (
+                    <Badge variant="danger" className="gap-1 text-[10px]"><Wrench className="size-3" />Camion en panne</Badge>
+                  ) : p.validated ? (
                     <Badge variant="success" className="gap-1 text-[10px]"><WaIcon className="size-3" />Validé · WhatsApp {WA_LABEL[p.whatsappStatut]}</Badge>
                   ) : (
                     <Badge variant="warning" className="gap-1 text-[10px]">Brouillon</Badge>
                   )}
-                  {editable && !p.validated && (
+                  {/* En panne → libérer le chauffeur (annule la désignation, garde la trace) */}
+                  {editable && p.enPanne && (
+                    <Button variant="outline" size="sm" onClick={() => liberer(p.id)} disabled={pending} className="h-8 gap-1 border-rose-300 text-rose-700 hover:bg-rose-50">
+                      <Wrench className="size-3.5" />Libérer
+                    </Button>
+                  )}
+                  {/* Brouillon non en panne → retirer */}
+                  {editable && !p.validated && !p.enPanne && (
                     <Button variant="ghost" size="sm" onClick={() => retirer(p.id)} disabled={pending} className="text-rose-600 hover:bg-rose-50 hover:text-rose-700" title="Retirer">
                       <X className="size-3.5" />
                     </Button>

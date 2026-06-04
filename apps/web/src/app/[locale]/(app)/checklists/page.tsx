@@ -68,9 +68,10 @@ export default async function ChecklistsPage({
       )
     `)
     .eq("date_designation", date)
-    // Seules les désignations VALIDÉES génèrent une check-list attendue
-    // (les brouillons ne sont pas encore officiels — cahier v8 §6.2).
+    // Désignations VALIDÉES et NON annulées (brouillon = pas officiel ; annulée
+    // = camion en panne, chauffeur libéré — cahier v8).
     .not("validee_at", "is", null)
+    .is("annulee_at", null)
     .order("created_at", { ascending: true });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

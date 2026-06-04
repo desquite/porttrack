@@ -2,7 +2,7 @@ import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import {
   Gauge, Megaphone, ClipboardCheck, Package, Truck, PackageCheck, AlertTriangle,
-  ChevronLeft, ChevronRight, RotateCcw, ArrowRight, CalendarClock,
+  ChevronLeft, ChevronRight, RotateCcw, ArrowRight, CalendarClock, Wrench,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
@@ -93,6 +93,23 @@ export default async function OperationsPage({
 
   const checklistsFaites = (checklistsDuJour ?? []).length;
 
+  // « À réaffecter » (état live) : conteneurs dont l'affectation active porte un
+  // camion actuellement EN_PANNE → l'ops doit les remettre sur un autre camion.
+  const { data: brokenTrucks } = await supabase
+    .from("materiel_roulant")
+    .select("id")
+    .eq("etat", "EN_PANNE");
+  const brokenIds = (brokenTrucks ?? []).map((t) => t.id);
+  let aReaffecter = 0;
+  if (brokenIds.length > 0) {
+    const { count } = await supabase
+      .from("affectations")
+      .select("*", { count: "exact", head: true })
+      .in("statut", ["PLANIFIEE", "EN_COURS"])
+      .in("tracteur_id", brokenIds);
+    aReaffecter = count ?? 0;
+  }
+
   return (
     <div className="space-y-6">
       <Header date={date} today={today} dateLabel={dateLabel} isToday={isToday} isFuture={isFuture} />
@@ -142,6 +159,15 @@ export default async function OperationsPage({
           subtitle="EIR archivés ce jour"
           icon={<PackageCheck className="size-4 text-emerald-600" />}
           href="/eir"
+        />
+        <OpsCard
+          title="À réaffecter"
+          value={aReaffecter}
+          subtitle="Conteneurs sur un camion en panne"
+          icon={<Wrench className="size-4 text-rose-600" />}
+          href="/affectations"
+          highlight={aReaffecter > 0}
+          live={!isToday}
         />
       </div>
 

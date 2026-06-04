@@ -44,16 +44,17 @@ export default async function DesignationsPage({
 
   const supabase = await createClient();
 
-  // 1) Paires (désignations) du jour — brouillons + validées
+  // 1) Paires (désignations) du jour — brouillons + validées, NON annulées
   const { data: pairsRaw } = await supabase
     .from("designations")
     .select(`
       id, validee_at, whatsapp_statut,
       chauffeur:chauffeurs ( id, nom, prenoms ),
-      materiel:materiel_roulant ( id, immatriculation, chrono ),
+      materiel:materiel_roulant ( id, immatriculation, chrono, etat ),
       equipe:equipes ( code, couleur )
     `)
     .eq("date_designation", date)
+    .is("annulee_at", null)
     .order("created_at", { ascending: true });
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -68,6 +69,7 @@ export default async function DesignationsPage({
     equipeCode: p.equipe?.code ?? null,
     equipeCouleur: p.equipe?.couleur ?? null,
     validated: !!p.validee_at,
+    enPanne: p.materiel?.etat === "EN_PANNE",
     whatsappStatut: p.whatsapp_statut,
   }));
 

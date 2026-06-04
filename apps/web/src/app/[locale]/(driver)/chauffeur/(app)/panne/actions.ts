@@ -49,6 +49,7 @@ export async function declarePanneAction(
   const { error } = await admin.from("pannes").insert({
     tenant_id: chauffeur.tenant_id,
     materiel_roulant_id: des.materiel_roulant_id,
+    chauffeur_id: chauffeur.id, // qui a signalé (le garage le verra)
     description,
     // statut DECLAREE + date_declaration par défaut ; created_by null (le
     // chauffeur n'a pas de ligne public.users).

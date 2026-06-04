@@ -48,6 +48,7 @@ export default async function NewChecklistPage({
     `)
     .eq("id", sp.designation)
     .not("validee_at", "is", null) // check-list possible seulement sur une désignation validée
+    .is("annulee_at", null)        // et non annulée (camion en panne)
     .maybeSingle();
 
   if (!d) notFound();
