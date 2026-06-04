@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Truck, LogOut, ChevronDown, Loader2 } from "lucide-react";
+import { Truck, LogOut, ChevronDown, Loader2, ShieldCheck } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/client";
 
@@ -43,7 +44,24 @@ export function DriverHeaderMenu({ name, truck }: { name: string; truck: string 
       {open && (
         <>
           <button type="button" aria-label="Fermer" className="fixed inset-0 z-30" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full z-40 mt-1 w-48 rounded-md border bg-popover p-1 shadow-md">
+          <div className="absolute right-0 top-full z-40 mt-1 w-52 rounded-md border bg-popover p-1 shadow-md">
+            <Link
+              href="/chauffeur/camion"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
+            >
+              <Truck className="size-4" />
+              Mon camion
+            </Link>
+            <Link
+              href="/chauffeur/conformite"
+              onClick={() => setOpen(false)}
+              className="flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm hover:bg-accent"
+            >
+              <ShieldCheck className="size-4" />
+              Ma conformité
+            </Link>
+            <div className="my-1 border-t" />
             <button
               type="button"
               onClick={logout}

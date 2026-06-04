@@ -17,7 +17,7 @@ export default async function DriverHomePage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ checklist?: string; livraison?: string }>;
+  searchParams: Promise<{ checklist?: string; livraison?: string; panne?: string }>;
 }) {
   const { locale } = await params;
   const sp = await searchParams;
@@ -72,6 +72,11 @@ export default async function DriverHomePage({
       {sp.checklist === "ok" && (
         <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
           <CheckCircle2 className="size-4" />Check-list enregistrée. Bonne route !
+        </div>
+      )}
+      {sp.panne === "ok" && (
+        <div className="flex items-center gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+          <CheckCircle2 className="size-4" />Panne déclarée. Le garage est informé.
         </div>
       )}
       {sp.livraison === "ok" && (
