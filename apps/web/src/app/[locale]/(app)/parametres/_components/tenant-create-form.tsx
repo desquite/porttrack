@@ -12,9 +12,9 @@ import { PLANS_ABONNEMENT, TENANT_STATUTS } from "@porttrack/shared";
 import { createTenantAction, type TenantCreateState } from "../actions";
 
 const PLAN_LABEL: Record<(typeof PLANS_ABONNEMENT)[number], string> = {
-  STARTER:  "Starter — 25 000 FCFA/mois (1-5 camions)",
-  BUSINESS: "Business — 55 000 FCFA/mois (6-20 camions)",
-  PREMIUM:  "Premium — 120 000 FCFA/mois (20+ camions)",
+  STARTER:  "Starter — 35 000 FCFA/mois (1-5 camions)",
+  BUSINESS: "Business — 60 000 FCFA/mois (6-20 camions)",
+  PREMIUM:  "Premium — 100 000 FCFA/mois (20+ camions)",
 };
 
 const STATUT_LABEL: Record<(typeof TENANT_STATUTS)[number], string> = {
