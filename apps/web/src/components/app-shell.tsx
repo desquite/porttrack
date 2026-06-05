@@ -29,6 +29,7 @@ import {
   History,
   FileArchive,
   Gauge,
+  BarChart3,
   Loader2,
 } from "lucide-react";
 
@@ -109,7 +110,18 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Traçabilité",  href: "/historique", icon: History },
     ],
   },
+  {
+    label: "Bilans",
+    icon: BarChart3,
+    items: [
+      { label: "Activité aconiers", href: "/bilan-aconiers", icon: BarChart3 },
+    ],
+  },
 ];
+
+// Routes réservées au Manager / Super Admin (masquées pour les autres profils,
+// comme le tableau de bord). Le menu et les pages appliquent cette règle.
+const MANAGER_ONLY_HREFS = new Set(["/dashboard", "/bilan-aconiers"]);
 
 // Liens de pied (après les groupes)
 const NAV_BOTTOM: NavLink[] = [
@@ -207,7 +219,7 @@ export function AppShell({
     if (privileged) return true;
     const key = HREF_TO_PERMISSION[href];
     if (key) return canAccess(role, perms, key);
-    if (href === "/dashboard") return false;
+    if (MANAGER_ONLY_HREFS.has(href)) return false;
     return true;
   };
 
