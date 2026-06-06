@@ -347,7 +347,7 @@ function MappingStep({
           <AlertTriangle className="size-4" />
           <AlertTitle>Colonne « Aconier » non mappée</AlertTitle>
           <AlertDescription>
-            L&apos;aconier est obligatoire. Associe la colonne qui contient l&apos;aconier (souvent « NOM ») pour pouvoir importer.
+            L&apos;aconier est obligatoire. Le fichier doit comporter une colonne « Aconier » : associe-la pour pouvoir importer. La colonne ne doit pas contenir de dates.
           </AlertDescription>
         </Alert>
       )}

@@ -228,7 +228,39 @@ export async function importFluxAction(
     return { ...baseReport, erreurs: [{ ligne: 0, message: "La colonne « N° conteneur » doit être mappée." }] };
   }
   if (!mapping.aconier) {
-    return { ...baseReport, erreurs: [{ ligne: 0, message: "La colonne « Aconier » est obligatoire : associe-la (souvent « NOM ») avant d'importer." }] };
+    return { ...baseReport, erreurs: [{ ligne: 0, message: "La colonne « Aconier » est obligatoire : le fichier doit comporter une colonne « Aconier ». Associe-la avant d'importer." }] };
+  }
+
+  // Garde anti-pollution : la colonne associée à « Aconier » doit contenir des
+  // noms de sociétés, jamais des dates ni des cellules vides. Si on détecte des
+  // dates (mauvaise colonne mappée) ou une colonne entièrement vide, on REFUSE
+  // tout l'import (et non ligne par ligne) — c'est ce qui a pollué les données
+  // historiques (des horodatages stockés en aconier).
+  {
+    let aconierNonEmpty = 0;
+    let aconierDateLike = 0;
+    for (const row of parsed.rows) {
+      const cell = mapping.aconier in row ? row[mapping.aconier] : null;
+      if (cell === null || cell === undefined || String(cell).trim() === "") continue;
+      aconierNonEmpty += 1;
+      const isDate =
+        cell instanceof Date ||
+        /^\d{4}-\d{2}-\d{2}([T ]|$)/.test(String(cell).trim()) ||
+        /^\d{1,2}[/\-.]\d{1,2}[/\-.]\d{2,4}/.test(String(cell).trim());
+      if (isDate) aconierDateLike += 1;
+    }
+    if (aconierNonEmpty === 0) {
+      return { ...baseReport, erreurs: [{ ligne: 0, message: "La colonne « Aconier » est vide : renseigne l'aconier (ex. MEDLOG TRANSPORT) avant d'importer." }] };
+    }
+    if (aconierDateLike > 0) {
+      return {
+        ...baseReport,
+        erreurs: [{
+          ligne: 0,
+          message: `La colonne associée à « Aconier » contient des dates (${aconierDateLike} ligne(s) sur ${aconierNonEmpty}). Vérifie le mapping : sélectionne la colonne « Aconier » du fichier, pas une colonne de date.`,
+        }],
+      };
+    }
   }
 
   // --- 3. Catalogues pour résolution (RLS : lecture autorisée à tout authentifié) ---
