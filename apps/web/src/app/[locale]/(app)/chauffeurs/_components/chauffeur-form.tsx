@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import Link from "next/link";
 import { Loader2, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -214,9 +215,9 @@ export function ChauffeurForm({
             <AlertDescription>
               Pour créer un chauffeur, tu dois d'abord créer au moins une équipe.
               {" "}
-              <a href="/equipes/new" className="font-medium underline underline-offset-2">
+              <Link href="/equipes/new" className="font-medium underline underline-offset-2">
                 Créer une équipe →
-              </a>
+              </Link>
             </AlertDescription>
           </Alert>
         ) : (

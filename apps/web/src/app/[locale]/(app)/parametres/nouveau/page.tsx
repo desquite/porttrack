@@ -3,7 +3,6 @@ import { setRequestLocale } from "next-intl/server";
 import { ArrowLeft } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
-import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,

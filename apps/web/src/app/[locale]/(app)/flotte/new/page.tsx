@@ -35,7 +35,7 @@ export default async function NewMaterielPage({
 
   const isSuperAdmin = profile?.role === "SUPER_ADMIN";
   let tenants: { id: string; nom_entreprise: string }[] = [];
-  let defaultTenantId: string | null = profile?.tenant_id ?? null;
+  const defaultTenantId: string | null = profile?.tenant_id ?? null;
   let blockerMessage: string | null = null;
 
   if (isSuperAdmin) {

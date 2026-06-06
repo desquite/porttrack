@@ -46,9 +46,9 @@ function daysInMonth(year: number, month1to12: number): number {
 
 /** Construit la période à partir du couple (kind, year, index). */
 export function makePeriod(kind: PeriodKind, year: number, index: number): Period {
-  let startY = year;
+  const startY = year;
   let startM = 1;
-  let endY = year;
+  const endY = year;
   let endM = 12;
   let endD = 31;
   let label = "";

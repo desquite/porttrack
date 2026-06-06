@@ -59,3 +59,6 @@ supabase/.env
 # Misc
 *.pem
 .vercel
+
+# Sauvegardes ponctuelles de nettoyage de données (ne pas versionner)
+apps/web/scripts/backup-aconier-*.json

@@ -1,4 +1,5 @@
 import { use } from "react";
+import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import { useTranslations } from "next-intl";
 import { Anchor, FileSpreadsheet, Bell, Receipt } from "lucide-react";
@@ -39,7 +40,7 @@ export default function HomePage({
             </span>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <a href="/login">{t("auth.login.submit")}</a>
+            <Link href="/login">{t("auth.login.submit")}</Link>
           </Button>
         </div>
       </header>
@@ -53,7 +54,7 @@ export default function HomePage({
         </p>
         <div className="mt-8 flex justify-center">
           <Button size="lg" asChild>
-            <a href="/login">{t("home.cta")}</a>
+            <Link href="/login">{t("home.cta")}</Link>
           </Button>
         </div>
       </section>
