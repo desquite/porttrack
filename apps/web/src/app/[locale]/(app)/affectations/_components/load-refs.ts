@@ -1,6 +1,15 @@
+import { MATERIEL_TYPES } from "@porttrack/shared";
 import { createClient } from "@/lib/supabase/server";
 
 export type RefOption = { id: string; label: string };
+
+// Tout type de matériel SAUF le tracteur compte comme « porteur de conteneur »
+// dans les sélecteurs « remorque » (remorques classiques, semi-remorques,
+// châssis porte-conteneur 20/40/mixte, REMORQUE_20/40, etc.). On dérive le set
+// depuis l'enum partagé pour ne pas oublier les futurs types (cf. migration #28
+// qui a ajouté REMORQUE_20 / REMORQUE_40 / AUTO_CHARGEUSE — l'ancien filtre en
+// dur les ignorait et la remorque n'apparaissait pas dans les listes).
+const REMORQUE_TYPES = new Set<string>(MATERIEL_TYPES.filter((t) => t !== "TRACTEUR"));
 
 /**
  * Charge les options pour le formulaire d'affectation :
@@ -74,18 +83,11 @@ export async function loadAffectationRefs(extra?: {
       label: `${m.immatriculation}${m.marque ? ` — ${m.marque}` : ""}`,
     }));
 
-  // Remorques : type remorque/châssis + EN_SERVICE + celle déjà liée
-  const remorqueTypes = new Set([
-    "REMORQUE",
-    "SEMI_REMORQUE",
-    "PORTE_CONTENEUR_20",
-    "PORTE_CONTENEUR_40",
-    "PORTE_CONTENEUR_MIXTE",
-  ]);
+  // Remorques : tout type non-TRACTEUR + EN_SERVICE + celle déjà liée
   const remorqueOptions: RefOption[] = (materiels ?? [])
     .filter(
       (m) =>
-        (remorqueTypes.has(m.type) && m.etat === "EN_SERVICE") ||
+        (REMORQUE_TYPES.has(m.type) && m.etat === "EN_SERVICE") ||
         m.id === extra?.remorqueId,
     )
     .map((m) => ({
