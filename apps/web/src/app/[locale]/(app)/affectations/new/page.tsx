@@ -14,6 +14,7 @@ import {
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { AffectationForm } from "../_components/affectation-form";
 import { loadAffectationRefs } from "../_components/load-refs";
+import { loadDesignationsDuJour } from "../_components/load-designations";
 
 export default async function NewAffectationPage({
   params,
@@ -51,11 +52,18 @@ export default async function NewAffectationPage({
   }
 
   const refs = await loadAffectationRefs();
+  // Désignations du jour : seuls les chauffeurs DÉSIGNÉS aujourd'hui peuvent
+  // être affectés à un conteneur. Le tracteur attribué au chauffeur du jour
+  // est auto-rempli depuis la désignation (cf. cahier §7.3).
+  const designationsJour = await loadDesignationsDuJour();
 
   // Cas spécial : pas de conteneur ouvert → on ne peut pas créer d'affectation
   if (!blockerMessage && refs.conteneurs.length === 0) {
     blockerMessage =
       "Aucun conteneur ouvert (en attente ou en cours) à affecter. Crée d'abord un conteneur.";
+  } else if (!blockerMessage && designationsJour.length === 0) {
+    blockerMessage =
+      "Aucun chauffeur n'est désigné pour aujourd'hui. Va dans « Désignations » pour désigner les équipes du jour avant de créer une affectation.";
   }
 
   return (
@@ -83,9 +91,10 @@ export default async function NewAffectationPage({
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Détails de l'affectation</CardTitle>
+            <CardTitle className="text-base">Détails de l&apos;affectation</CardTitle>
             <CardDescription>
-              Seuls les conteneurs ouverts, chauffeurs actifs et véhicules en service sont proposés.
+              Seuls les conteneurs ouverts et les chauffeurs désignés aujourd&apos;hui sont proposés.
+              Le tracteur attribué au chauffeur est repris automatiquement de la désignation du jour.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -97,6 +106,7 @@ export default async function NewAffectationPage({
               conteneurs={refs.conteneurs}
               chauffeurs={refs.chauffeurs}
               tracteurs={refs.tracteurs}
+              designationsJour={designationsJour}
             />
           </CardContent>
         </Card>

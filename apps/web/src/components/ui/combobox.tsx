@@ -22,6 +22,8 @@ type Props = {
   invalid?: boolean;
   id?: string;
   className?: string;
+  /** Notifie le parent à chaque changement de sélection (mode semi-contrôlé). */
+  onValueChange?: (value: string) => void;
 };
 
 /**
@@ -41,6 +43,7 @@ export function Combobox({
   invalid,
   id,
   className,
+  onValueChange,
 }: Props) {
   const reactId = useId();
   const fieldId = id ?? `${name}-${reactId}`;
@@ -92,6 +95,7 @@ export function Combobox({
   const choose = (value: string) => {
     setSelectedId(value);
     setOpen(false);
+    onValueChange?.(value);
   };
 
   return (

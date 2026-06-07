@@ -1,7 +1,7 @@
 "use client";
 
-import { useActionState } from "react";
-import { Loader2, Save } from "lucide-react";
+import { useMemo, useState, useActionState } from "react";
+import { Loader2, Save, Truck } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import {
   type AffectationFormState,
 } from "../actions";
 import type { RefOption } from "./load-refs";
+import type { DesignationDuJour } from "./load-designations";
 
 type Affectation = Database["public"]["Tables"]["affectations"]["Row"];
 
@@ -29,6 +30,12 @@ type Props = {
   conteneurs: RefOption[];
   chauffeurs: RefOption[];
   tracteurs: RefOption[];
+  /**
+   * Désignations du jour (chauffeur ↔ tracteur). Si fournies (mode create), la
+   * liste chauffeurs est restreinte aux désignés et le tracteur est repris
+   * automatiquement depuis la désignation (en lecture seule).
+   */
+  designationsJour?: DesignationDuJour[];
 };
 
 const STATUT_LABEL: Record<(typeof AFFECTATION_STATUTS)[number], string> = {
@@ -50,6 +57,7 @@ export function AffectationForm({
   conteneurs,
   chauffeurs,
   tracteurs,
+  designationsJour,
 }: Props) {
   const boundAction =
     mode === "update" && affectationId
@@ -57,6 +65,29 @@ export function AffectationForm({
       : createAffectationAction;
 
   const [state, formAction, pending] = useActionState(boundAction, initialState);
+
+  // Mode « chauffeurs désignés » : actif uniquement en création + désignations
+  // disponibles. Restreint la liste des chauffeurs aux désignés du jour et
+  // remplace le sélecteur tracteur par un champ lecture seule auto-rempli.
+  const useDesignations = mode === "create" && !!designationsJour && designationsJour.length > 0;
+  const designationByChauffeur = useMemo(() => {
+    const m = new Map<string, DesignationDuJour>();
+    for (const d of designationsJour ?? []) m.set(d.chauffeurId, d);
+    return m;
+  }, [designationsJour]);
+
+  // Liste chauffeurs effective pour le combobox
+  const chauffeursOptions: RefOption[] = useDesignations
+    ? (designationsJour ?? []).map((d) => ({ id: d.chauffeurId, label: d.chauffeurLabel }))
+    : chauffeurs;
+
+  // Sélection chauffeur courante (pour piloter le tracteur auto)
+  const initialChauffeurId =
+    (state.status === "error" && state.values?.chauffeur_id) ||
+    (defaultValues?.chauffeur_id as string | undefined) ||
+    "";
+  const [selectedChauffeurId, setSelectedChauffeurId] = useState<string>(initialChauffeurId);
+  const autoTracteur = useDesignations ? designationByChauffeur.get(selectedChauffeurId) ?? null : null;
 
   const getValue = (name: string): string => {
     if (state.status === "error" && state.values?.[name] !== undefined) {
@@ -141,31 +172,74 @@ export function AffectationForm({
             />
           </Field>
 
-          <Field label="Chauffeur" name="chauffeur_id" error={getError("chauffeur_id")}>
+          <Field
+            label={useDesignations ? "Chauffeur désigné aujourd'hui" : "Chauffeur"}
+            name="chauffeur_id"
+            error={getError("chauffeur_id")}
+            hint={useDesignations ? "Le tracteur sera repris automatiquement." : undefined}
+          >
             <Combobox
               id="chauffeur_id"
               name="chauffeur_id"
-              options={chauffeurs}
-              defaultValue={getValue("chauffeur_id")}
-              placeholder="— Non assigné —"
+              options={chauffeursOptions}
+              defaultValue={initialChauffeurId}
+              placeholder={useDesignations ? "— Choisir un chauffeur désigné —" : "— Non assigné —"}
               searchPlaceholder="Rechercher un chauffeur…"
-              emptyOptionLabel="— Non assigné —"
+              emptyOptionLabel={useDesignations ? undefined : "— Non assigné —"}
               invalid={!!getError("chauffeur_id")}
+              onValueChange={(v) => setSelectedChauffeurId(v)}
             />
           </Field>
 
-          <Field label="Tracteur" name="tracteur_id" error={getError("tracteur_id")}>
-            <Combobox
-              id="tracteur_id"
+          {useDesignations ? (
+            <Field
+              label="Tracteur (auto)"
               name="tracteur_id"
-              options={tracteurs}
-              defaultValue={getValue("tracteur_id")}
-              placeholder="— Non assigné —"
-              searchPlaceholder="Rechercher un tracteur (immat., chrono…)"
-              emptyOptionLabel="— Non assigné —"
-              invalid={!!getError("tracteur_id")}
-            />
-          </Field>
+              error={getError("tracteur_id")}
+              hint={
+                selectedChauffeurId
+                  ? autoTracteur?.tracteurId
+                    ? "Repris de la désignation du jour."
+                    : "Ce chauffeur n'a pas de tracteur attribué aujourd'hui."
+                  : "Sélectionne d'abord un chauffeur."
+              }
+            >
+              {/* Soumis au form */}
+              <input type="hidden" name="tracteur_id" value={autoTracteur?.tracteurId ?? ""} />
+              {/* Affichage lecture seule */}
+              <div
+                className={cn(
+                  "flex h-9 w-full items-center gap-2 rounded-md border border-input bg-muted/40 px-3 text-sm",
+                  "text-foreground",
+                  !autoTracteur?.tracteurLabel && "text-muted-foreground",
+                  getError("tracteur_id") && "border-rose-500",
+                )}
+                aria-readonly="true"
+              >
+                <Truck className="size-4 shrink-0 text-muted-foreground" />
+                <span className="truncate">
+                  {autoTracteur?.tracteurLabel
+                    ? autoTracteur.tracteurLabel
+                    : selectedChauffeurId
+                      ? "— Pas de tracteur attribué —"
+                      : "— En attente du chauffeur —"}
+                </span>
+              </div>
+            </Field>
+          ) : (
+            <Field label="Tracteur" name="tracteur_id" error={getError("tracteur_id")}>
+              <Combobox
+                id="tracteur_id"
+                name="tracteur_id"
+                options={tracteurs}
+                defaultValue={getValue("tracteur_id")}
+                placeholder="— Non assigné —"
+                searchPlaceholder="Rechercher un tracteur (immat., chrono…)"
+                emptyOptionLabel="— Non assigné —"
+                invalid={!!getError("tracteur_id")}
+              />
+            </Field>
+          )}
         </Grid>
       </Section>
 
