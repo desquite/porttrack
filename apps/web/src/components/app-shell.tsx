@@ -41,9 +41,17 @@ import {
   canAccess,
   PERMISSION_DOMAINS,
   PERMISSION_TREE,
+  planAllowsFeature,
   type StoredPermissions,
   type Role,
+  type PlanAbonnement,
+  type PlanFeature,
 } from "@porttrack/shared";
+
+// Routes dont la visibilité dépend d'une fonctionnalité de plan (V7 §15.2).
+const HREF_TO_PLAN_FEATURE: Record<string, PlanFeature> = {
+  "/planning": "planning",
+};
 
 // Map href (route locale-agnostique) → clé de sous-droit, pour filtrer le menu.
 const HREF_TO_PERMISSION: Record<string, string> = {};
@@ -178,6 +186,7 @@ type AppShellProps = {
   userRole: string;
   userPermissions?: StoredPermissions;
   tenantName: string | null;
+  tenantPlan?: PlanAbonnement | null;
 };
 
 export function AppShell({
@@ -187,6 +196,7 @@ export function AppShell({
   userRole,
   userPermissions,
   tenantName,
+  tenantPlan,
 }: AppShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -216,6 +226,12 @@ export function AppShell({
   const privileged = role === "MANAGER" || role === "SUPER_ADMIN";
   const perms = userPermissions ?? {};
   const canSee = (href: string): boolean => {
+    // Gating par plan : s'applique à TOUS, y compris le Manager (c'est une
+    // limite d'abonnement, pas une permission). Le SUPER_ADMIN n'a pas de tenant
+    // → tenantPlan null → planAllowsFeature renvoie true (aucune restriction).
+    const feature = HREF_TO_PLAN_FEATURE[href];
+    if (feature && !planAllowsFeature(tenantPlan ?? null, feature)) return false;
+
     if (privileged) return true;
     const key = HREF_TO_PERMISSION[href];
     if (key) return canAccess(role, perms, key);

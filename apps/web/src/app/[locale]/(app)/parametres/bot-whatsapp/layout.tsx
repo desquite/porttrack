@@ -1,6 +1,10 @@
-import { requireAccess } from "@/lib/auth/guard";
 import { requirePlanFeature } from "@/lib/auth/plan";
 
+/**
+ * Garde de plan : le bot WhatsApp est une fonctionnalité Business+ (V7 §15.2).
+ * Un tenant Starter (ou accès direct par URL) est redirigé vers /parametres
+ * avec un message d'upsell.
+ */
 export default async function Layout({
   children,
   params,
@@ -9,8 +13,6 @@ export default async function Layout({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
-  // Planning chauffeurs = fonctionnalité Business+ (V7 §15.2) + droit Exploitation.
-  await requirePlanFeature("planning", locale);
-  await requireAccess("exploitation.planning", locale);
+  await requirePlanFeature("bot_whatsapp", locale);
   return <>{children}</>;
 }

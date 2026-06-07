@@ -1,5 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import type { Database } from "@porttrack/shared";
+import {
+  type Database,
+  type PlanAbonnement,
+  planAllowsFeature,
+} from "@porttrack/shared";
 
 /**
  * Bot WhatsApp de consultation de documents (cahier v7 §7.5).
@@ -93,6 +97,19 @@ export async function processBotCommand(
     return { statut: "NON_AUTORISE", outbound: [] };
   }
   const tenantId = allow.tenant_id;
+
+  // 1bis) Gating de plan : le bot WhatsApp est réservé aux plans Business+
+  //       (V7 §15.2). Un tenant Starter ne reçoit AUCUNE réponse (comme un
+  //       numéro non autorisé), même s'il a configuré des numéros.
+  const { data: tenantRow } = await admin
+    .from("tenants")
+    .select("plan")
+    .eq("id", tenantId)
+    .maybeSingle();
+  if (!planAllowsFeature((tenantRow?.plan ?? null) as PlanAbonnement | null, "bot_whatsapp")) {
+    await journal(admin, { tenant_id: tenantId, numero, commande_brute: textRaw, statut: "NON_AUTORISE" });
+    return { statut: "NON_AUTORISE", outbound: [] };
+  }
 
   // 2) Parsing de la commande
   const parsed = parseCommand(textRaw);

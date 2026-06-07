@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 
-import { parsePermissions } from "@porttrack/shared";
+import { parsePermissions, type PlanAbonnement } from "@porttrack/shared";
 
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/app-shell";
@@ -52,13 +52,15 @@ export default async function AppLayout({
   // Si le profil a un tenant_id, on récupère son nom pour l'afficher dans le header.
   // Pour un SUPER_ADMIN tenant_id est null → on n'affiche pas de nom.
   let tenantName: string | null = null;
+  let tenantPlan: PlanAbonnement | null = null;
   if (profile?.tenant_id) {
     const { data: tenant } = await supabase
       .from("tenants")
-      .select("nom_entreprise")
+      .select("nom_entreprise, plan")
       .eq("id", profile.tenant_id)
       .maybeSingle();
     tenantName = tenant?.nom_entreprise ?? null;
+    tenantPlan = (tenant?.plan ?? null) as PlanAbonnement | null;
   }
 
   return (
@@ -68,6 +70,7 @@ export default async function AppLayout({
       userRole={profile?.role ?? "CUSTOM"}
       userPermissions={userPermissions}
       tenantName={tenantName}
+      tenantPlan={tenantPlan}
     >
       {children}
     </AppShell>

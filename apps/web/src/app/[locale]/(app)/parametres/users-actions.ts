@@ -3,7 +3,10 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { headers } from "next/headers";
-import { ROLES, type Role, type Json, parsePermissions } from "@porttrack/shared";
+import {
+  ROLES, type Role, type Json, parsePermissions,
+  type PlanAbonnement, planUserLimit, PLAN_LABELS,
+} from "@porttrack/shared";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendEmail } from "@/lib/notifications/email-resend";
@@ -142,6 +145,30 @@ export async function inviteUserAction(
 
   // -------- Création du user via service_role --------
   const admin = createAdminClient();
+
+  // -------- Quota du plan : nombre d'utilisateurs (V7 §15.2) --------
+  // Le plan du tenant CIBLE fixe le nombre max d'utilisateurs. SUPER_ADMIN sur
+  // un tenant sans plan → pas de limite. On compte tous les membres du tenant.
+  const { data: tenantRow } = await admin
+    .from("tenants")
+    .select("plan")
+    .eq("id", tenantId)
+    .maybeSingle();
+  const plan = (tenantRow?.plan ?? null) as PlanAbonnement | null;
+  const userLimit = planUserLimit(plan);
+  if (userLimit !== null) {
+    const { count } = await admin
+      .from("users")
+      .select("id", { count: "exact", head: true })
+      .eq("tenant_id", tenantId);
+    if ((count ?? 0) >= userLimit) {
+      return {
+        status: "error",
+        formError: `Limite atteinte : le plan ${PLAN_LABELS[plan as PlanAbonnement]} autorise ${userLimit} utilisateur(s). Passe à un plan supérieur pour en ajouter davantage.`,
+        values,
+      };
+    }
+  }
 
   // Vérifie d'abord si l'email existe déjà (auth.admin.createUser ne donne
   // pas un message net en cas de duplicate)

@@ -5,8 +5,12 @@ import { revalidatePath } from "next/cache";
 import {
   materielRoulantCreateSchema,
   type MaterielRoulantCreateInput,
+  type PlanAbonnement,
+  planMaterielLimit,
+  PLAN_LABELS,
 } from "@porttrack/shared";
 import { createClient } from "@/lib/supabase/server";
+import { getCurrentTenantPlan } from "@/lib/auth/plan";
 
 // =============================================================================
 // État partagé avec le composant client (useActionState)
@@ -103,6 +107,24 @@ export async function createMaterielAction(
   } = await supabase.auth.getUser();
   if (!user) {
     return { status: "error", formError: "Session expirée. Reconnecte-toi.", values };
+  }
+
+  // -------- Quota du plan : nombre de matériel roulant (V7 §15.2) --------
+  // RLS scope déjà le count au tenant courant. Pas de plan (SUPER_ADMIN) → pas
+  // de limite.
+  const { plan } = await getCurrentTenantPlan();
+  const matLimit = planMaterielLimit(plan);
+  if (matLimit !== null) {
+    const { count } = await supabase
+      .from("materiel_roulant")
+      .select("id", { count: "exact", head: true });
+    if ((count ?? 0) >= matLimit) {
+      return {
+        status: "error",
+        formError: `Limite atteinte : le plan ${PLAN_LABELS[plan as PlanAbonnement]} autorise ${matLimit} matériel(s) roulant(s). Passe à un plan supérieur pour en ajouter davantage.`,
+        values,
+      };
+    }
   }
 
   const { error } = await supabase.from("materiel_roulant").insert({

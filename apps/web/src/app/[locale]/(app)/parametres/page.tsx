@@ -21,6 +21,11 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import {
+  planAllowsFeature, minPlanForFeature, planUserLimit, planMaterielLimit,
+  PLAN_LABELS, PLAN_FEATURE_LABELS,
+  type PlanAbonnement, type PlanFeature,
+} from "@porttrack/shared";
 import { TenantForm } from "./_components/tenant-form";
 import { UsersSection } from "./_components/users-section";
 
@@ -34,6 +39,7 @@ export default async function ParametresPage({
     updated?: string;
     userMsg?: string;
     userMsgType?: string;
+    plan_feature?: string;
   }>;
 }) {
   const { locale } = await params;
@@ -42,6 +48,7 @@ export default async function ParametresPage({
     updated,
     userMsg,
     userMsgType,
+    plan_feature: planFeatureParam,
   } = await searchParams;
   setRequestLocale(locale);
 
@@ -206,6 +213,15 @@ export default async function ParametresPage({
     );
   }
 
+  // Usage vs quotas du plan (V7 §15.2) — compté sur le tenant édité.
+  const plan = (tenant.plan ?? null) as PlanAbonnement | null;
+  const [{ count: usersCount }, { count: materielCount }] = await Promise.all([
+    supabase.from("users").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id),
+    supabase.from("materiel_roulant").select("id", { count: "exact", head: true }).eq("tenant_id", tenant.id),
+  ]);
+  const usersLimit = planUserLimit(plan);
+  const materielLimit = planMaterielLimit(plan);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -231,6 +247,23 @@ export default async function ParametresPage({
         </p>
       </div>
 
+      {/* Flash : fonctionnalité réservée à un plan supérieur (redirection garde) */}
+      {planFeatureParam && (() => {
+        const feat = planFeatureParam as PlanFeature;
+        const featLabel = PLAN_FEATURE_LABELS[feat] ?? planFeatureParam;
+        const minPlan = minPlanForFeature(feat);
+        return (
+          <Alert className="border-amber-300 bg-amber-50/60 text-amber-900">
+            <AlertTitle>Fonctionnalité non incluse dans votre plan</AlertTitle>
+            <AlertDescription>
+              <strong>{featLabel}</strong> nécessite le plan{" "}
+              <strong>{minPlan ? PLAN_LABELS[minPlan] : "supérieur"}</strong> ou plus.
+              {" "}Contacte l&apos;équipe PORTTRACK pour faire évoluer ton abonnement.
+            </AlertDescription>
+          </Alert>
+        );
+      })()}
+
       {/* Flash post-update */}
       {updated && (
         <Alert className="border-emerald-300 bg-emerald-50/60 text-emerald-900">
@@ -253,6 +286,24 @@ export default async function ParametresPage({
         </CardHeader>
         <CardContent>
           <TenantForm tenant={tenant} isSuperAdmin={isSuperAdmin} canEdit={canAdmin} />
+        </CardContent>
+      </Card>
+
+      {/* Abonnement & usage (quotas du plan) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            Abonnement & usage
+            <Badge variant="secondary">{plan ? PLAN_LABELS[plan] : "—"}</Badge>
+          </CardTitle>
+          <CardDescription>
+            Consommation par rapport aux limites de ton plan. Pour augmenter ces
+            limites, contacte l&apos;équipe PORTTRACK.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-2">
+          <UsageRow label="Utilisateurs" used={usersCount ?? 0} limit={usersLimit} />
+          <UsageRow label="Matériel roulant" used={materielCount ?? 0} limit={materielLimit} />
         </CardContent>
       </Card>
 
@@ -290,25 +341,77 @@ export default async function ParametresPage({
         </CardHeader>
       </Card>
 
-      {/* Section Bot WhatsApp — consultation documents */}
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
-          <div className="space-y-1">
-            <CardTitle className="flex items-center gap-2 text-base">
-              <MessageSquare className="size-4 text-primary" />
-              Bot WhatsApp de consultation
-            </CardTitle>
-            <CardDescription>
-              Numéros autorisés à interroger le bot (CG/AS/VT…) et journal des consultations (cahier §7.5).
-            </CardDescription>
-          </div>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/parametres/bot-whatsapp">
-              Gérer<ChevronRight className="ml-1 size-3.5" />
-            </Link>
-          </Button>
-        </CardHeader>
-      </Card>
+      {/* Section Bot WhatsApp — consultation documents (fonctionnalité Business+) */}
+      {(() => {
+        const botAllowed = planAllowsFeature(
+          (tenant.plan ?? null) as PlanAbonnement | null,
+          "bot_whatsapp",
+        );
+        const minPlan = minPlanForFeature("bot_whatsapp");
+        return (
+          <Card>
+            <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+              <div className="space-y-1">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <MessageSquare className="size-4 text-primary" />
+                  Bot WhatsApp de consultation
+                  {!botAllowed && (
+                    <Badge variant="outline" className="ml-1 text-[10px]">
+                      {minPlan ? PLAN_LABELS[minPlan] : "Business"}+
+                    </Badge>
+                  )}
+                </CardTitle>
+                <CardDescription>
+                  {botAllowed
+                    ? "Numéros autorisés à interroger le bot (CG/AS/VT…) et journal des consultations (cahier §7.5)."
+                    : `Fonctionnalité incluse à partir du plan ${minPlan ? PLAN_LABELS[minPlan] : "Business"}. Contacte PORTTRACK pour faire évoluer ton abonnement.`}
+                </CardDescription>
+              </div>
+              {botAllowed ? (
+                <Button asChild variant="outline" size="sm">
+                  <Link href="/parametres/bot-whatsapp">
+                    Gérer<ChevronRight className="ml-1 size-3.5" />
+                  </Link>
+                </Button>
+              ) : (
+                <Button variant="outline" size="sm" disabled>
+                  Indisponible
+                </Button>
+              )}
+            </CardHeader>
+          </Card>
+        );
+      })()}
+    </div>
+  );
+}
+
+/** Ligne d'usage « X / Y » avec barre de remplissage. limit null = illimité. */
+function UsageRow({ label, used, limit }: { label: string; used: number; limit: number | null }) {
+  const unlimited = limit === null;
+  const pct = unlimited ? 0 : Math.min(100, Math.round((used / Math.max(1, limit)) * 100));
+  const atLimit = !unlimited && used >= limit;
+  const near = !unlimited && !atLimit && pct >= 80;
+  const barColor = atLimit ? "bg-rose-500" : near ? "bg-amber-500" : "bg-primary";
+  const textColor = atLimit ? "text-rose-600" : near ? "text-amber-600" : "text-foreground";
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-baseline justify-between text-sm">
+        <span className="text-muted-foreground">{label}</span>
+        <span className={`font-medium ${textColor}`}>
+          {used} {unlimited ? "" : `/ ${limit}`}
+          {unlimited && <span className="text-muted-foreground"> (illimité)</span>}
+        </span>
+      </div>
+      {!unlimited && (
+        <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className={`h-full rounded-full ${barColor}`} style={{ width: `${pct}%` }} />
+        </div>
+      )}
+      {atLimit && (
+        <p className="text-xs text-rose-600">Limite atteinte — passe à un plan supérieur pour en ajouter.</p>
+      )}
     </div>
   );
 }
