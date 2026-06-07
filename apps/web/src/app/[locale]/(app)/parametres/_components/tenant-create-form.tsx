@@ -77,7 +77,7 @@ export function TenantCreateForm() {
             <Input id="telephone" name="telephone" type="tel" defaultValue={getValue("telephone")} placeholder="+225 27 21 24 56 78" className={fieldClass("telephone")} />
           </Field>
           <Field label="Adresse" name="adresse" error={getError("adresse")} className="md:col-span-2">
-            <Input id="adresse" name="adresse" defaultValue={getValue("adresse")} placeholder="Zone industrielle de Vridi, Abidjan" className={fieldClass("adresse")} />
+            <Input id="adresse" name="adresse" defaultValue={getValue("adresse")} placeholder="Zone industrielle, ville" className={fieldClass("adresse")} />
           </Field>
         </Grid>
       </Section>

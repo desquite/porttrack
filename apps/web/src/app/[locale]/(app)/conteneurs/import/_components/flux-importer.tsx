@@ -15,12 +15,11 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
-  ACONIERS,
   FLUX_FIELDS,
-  type Aconier,
   type FluxFieldKey,
   type FluxMapping,
   type FluxImportReport,
@@ -41,21 +40,13 @@ type Step = "upload" | "mapping" | "report";
 
 type Analysis = Extract<AnalyzeFluxResult, { ok: true }>;
 
-const ACONIER_LABEL: Record<Aconier, string> = {
-  MEDLOG: "MEDLOG",
-  MAERSK: "MAERSK",
-  "CMA CGM": "CMA CGM",
-  AGL: "AGL",
-  AUTRE: "Autre / inconnu",
-};
-
 export function FluxImporter({ isSuperAdmin, tenants, defaultTenantId }: Props) {
   const [step, setStep] = useState<Step>("upload");
   const [file, setFile] = useState<File | null>(null);
   const [tenantId, setTenantId] = useState<string>(
     defaultTenantId ?? tenants[0]?.id ?? "",
   );
-  const [aconier, setAconier] = useState<Aconier>("MEDLOG");
+  const [aconier, setAconier] = useState<string>("");
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [mapping, setMapping] = useState<FluxMapping | null>(null);
   const [report, setReport] = useState<FluxImportReport | null>(null);
@@ -67,12 +58,17 @@ export function FluxImporter({ isSuperAdmin, tenants, defaultTenantId }: Props) 
   // --- Étape 1 : analyse ---
   async function handleAnalyze() {
     if (!file) return;
+    if (!aconier.trim()) {
+      setError("Renseigne le nom de l'aconier avant d'analyser le fichier.");
+      return;
+    }
     setError(null);
     setBusy(true);
     try {
       const fd = new FormData();
       fd.append("file", file);
       fd.append("tenantId", tenantId);
+      fd.append("aconier", aconier.trim());
       const result = await analyzeFluxAction(fd);
       if (!result.ok) {
         setError(result.error);
@@ -80,7 +76,6 @@ export function FluxImporter({ isSuperAdmin, tenants, defaultTenantId }: Props) 
       }
       setAnalysis(result);
       setMapping(result.mapping);
-      setAconier(result.aconier);
       setStep("mapping");
     } catch (e) {
       console.error(e);
@@ -120,7 +115,7 @@ export function FluxImporter({ isSuperAdmin, tenants, defaultTenantId }: Props) 
     setMapping(null);
     setReport(null);
     setError(null);
-    setAconier("MEDLOG");
+    setAconier("");
   }
 
   return (
@@ -182,7 +177,20 @@ export function FluxImporter({ isSuperAdmin, tenants, defaultTenantId }: Props) 
             </label>
           </div>
 
-          <Button onClick={handleAnalyze} disabled={!file || tenantMissing || busy}>
+          <div className="space-y-1.5">
+            <Label htmlFor="aconier-name">Nom de l&apos;aconier</Label>
+            <Input
+              id="aconier-name"
+              value={aconier}
+              onChange={(e) => setAconier(e.target.value)}
+              placeholder="Nom de l'aconier qui a envoyé le fichier"
+            />
+            <p className="text-xs text-muted-foreground">
+              Sert à mémoriser le mapping des colonnes pour les prochains imports de cet aconier.
+            </p>
+          </div>
+
+          <Button onClick={handleAnalyze} disabled={!file || !aconier.trim() || tenantMissing || busy}>
             {busy ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" />
@@ -207,7 +215,6 @@ export function FluxImporter({ isSuperAdmin, tenants, defaultTenantId }: Props) 
           mapping={mapping}
           setMapping={setMapping}
           aconier={aconier}
-          setAconier={setAconier}
           busy={busy}
           onBack={() => setStep("upload")}
           onImport={handleImport}
@@ -269,7 +276,6 @@ function MappingStep({
   mapping,
   setMapping,
   aconier,
-  setAconier,
   busy,
   onBack,
   onImport,
@@ -277,8 +283,7 @@ function MappingStep({
   analysis: Analysis;
   mapping: FluxMapping;
   setMapping: (m: FluxMapping) => void;
-  aconier: Aconier;
-  setAconier: (a: Aconier) => void;
+  aconier: string;
   busy: boolean;
   onBack: () => void;
   onImport: () => void;
@@ -302,22 +307,9 @@ function MappingStep({
             {analysis.totalRows > 1 ? "s" : ""} · {analysis.headers.length} colonnes
           </span>
         </div>
-        <div className="flex items-center gap-2">
-          <Label htmlFor="aconier" className="text-xs text-muted-foreground">
-            Aconier
-          </Label>
-          <select
-            id="aconier"
-            value={aconier}
-            onChange={(e) => setAconier(e.target.value as Aconier)}
-            className="h-8 rounded-md border border-input bg-background px-2 text-xs shadow-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
-          >
-            {ACONIERS.map((a) => (
-              <option key={a} value={a}>
-                {ACONIER_LABEL[a]}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-xs text-muted-foreground">Aconier :</span>
+          <Badge variant="secondary">{aconier}</Badge>
         </div>
       </div>
 
@@ -326,7 +318,7 @@ function MappingStep({
           <CheckCircle2 className="size-4" />
           <AlertTitle>Profil mémorisé appliqué</AlertTitle>
           <AlertDescription>
-            Le mapping enregistré pour <strong>{ACONIER_LABEL[aconier]}</strong> a été
+            Le mapping enregistré pour <strong>{aconier}</strong> a été
             réappliqué automatiquement. Tu peux l&apos;ajuster ci-dessous si besoin.
           </AlertDescription>
         </Alert>

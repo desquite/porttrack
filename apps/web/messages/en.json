@@ -2,7 +2,7 @@
   "app": {
     "name": "PORTTRACK",
     "tagline": "Fleet management and port logistics",
-    "footer": "© 2026 PORTTRACK — Port Autonome d'Abidjan"
+    "footer": "© 2026 PORTTRACK"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -46,13 +46,13 @@
   },
   "home": {
     "welcome": "Welcome to PORTTRACK",
-    "subtitle": "The app for subcontractors of the Port Autonome d'Abidjan",
+    "subtitle": "The app for container transporters",
     "cta": "Go to my workspace",
     "login": "Sign in",
     "features": {
       "import": {
         "title": "Multi-shipping-line Excel import",
-        "desc": "Load MEDLOG, MAERSK, AGL files… Columns are recognised and the mapping is remembered automatically."
+        "desc": "Load the Excel file received from your shipping agent. Columns are recognised and the mapping is remembered automatically."
       },
       "transport": {
         "title": "Assignment, deliveries & EIR",

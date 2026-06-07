@@ -354,7 +354,7 @@ export function AppShell({
 
         <div className="border-t p-3 text-xs text-muted-foreground">
           <p className="font-medium text-foreground/70">PORTTRACK v0.1.0</p>
-          <p>© 2026 Port Autonome d'Abidjan</p>
+          <p>© 2026 PORTTRACK</p>
         </div>
       </aside>
 

@@ -139,7 +139,7 @@ export function TenantForm({ tenant, isSuperAdmin, canEdit = true }: Props) {
               id="adresse"
               name="adresse"
               defaultValue={getValue("adresse", tenant.adresse)}
-              placeholder="Zone industrielle de Vridi, Abidjan"
+              placeholder="Zone industrielle, ville"
               className={fieldClass("adresse")}
             />
           </Field>

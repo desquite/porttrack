@@ -1,12 +1,12 @@
 import * as XLSX from "xlsx";
-import { normalizeHeader, MEDLOG_HEADER_ALIASES } from "@porttrack/shared";
+import { normalizeHeader, HEADER_ALIASES } from "@porttrack/shared";
 
 /**
  * Parsing serveur d'un fichier de flux aconier (.xlsx / .xls / .csv).
  *
  * Renvoie les en-têtes et les lignes brutes (valeurs typées : string, number ou
- * Date). La détection de l'aconier, le mapping et la conversion vers les champs
- * conteneur se font ensuite à partir de ces données.
+ * Date). Le mapping et la conversion vers les champs conteneur se font ensuite
+ * à partir de ces données.
  */
 
 export type FluxCell = string | number | boolean | Date | null;
@@ -21,7 +21,7 @@ const MAX_ROWS = 5000; // garde-fou : un flux raisonnable dépasse rarement quel
 
 /** Tous les alias connus, normalisés, pour repérer la ligne d'en-tête. */
 const ALL_ALIASES = new Set(
-  Object.values(MEDLOG_HEADER_ALIASES).flat(),
+  Object.values(HEADER_ALIASES).flat(),
 );
 
 export async function parseFluxFile(file: File): Promise<ParsedFlux> {

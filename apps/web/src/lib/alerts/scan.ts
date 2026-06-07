@@ -219,7 +219,7 @@ export function formatDigestHtml(d: TenantAlertDigest): string {
       </p>
       <hr style="margin-top:24px;border:none;border-top:1px solid #e2e8f0;">
       <p style="color:#94a3b8;font-size:11px;">
-        PORTTRACK — Port Autonome d'Abidjan. Tu reçois cet email car tu es le
+        PORTTRACK. Tu reçois cet email car tu es le
         contact d'une entreprise sur PORTTRACK.
       </p>
     </div>`;

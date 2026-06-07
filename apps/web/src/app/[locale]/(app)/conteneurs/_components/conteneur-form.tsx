@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { ACONIERS, CONTENEUR_STATUTS, type Database } from "@porttrack/shared";
+import { CONTENEUR_STATUTS, type Database } from "@porttrack/shared";
 import {
   createConteneurAction,
   updateConteneurAction,
@@ -192,17 +192,11 @@ export function ConteneurForm({
             <Input
               id="aconier"
               name="aconier"
-              list="aconier-suggestions"
               defaultValue={getValue("aconier")}
               required
-              placeholder="MEDLOG TRANSPORT"
+              placeholder="Nom de l'aconier"
               className={fieldClass("aconier")}
             />
-            <datalist id="aconier-suggestions">
-              {ACONIERS.filter((a) => a !== "AUTRE").map((a) => (
-                <option key={a} value={a} />
-              ))}
-            </datalist>
           </Field>
           <Field label="Client (importateur/exportateur)" name="client" error={getError("client")}>
             <Input id="client" name="client" defaultValue={getValue("client")} className={fieldClass("client")} />

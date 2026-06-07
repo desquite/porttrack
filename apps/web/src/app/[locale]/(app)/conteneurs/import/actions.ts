@@ -2,10 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import {
-  type Aconier,
   type FluxMapping,
   type FluxImportReport,
-  detectAconier,
   suggestMapping,
   situationToStatut,
   normalizeHeader,
@@ -26,13 +24,13 @@ const PREVIEW_ROWS = 8;
 const INSERT_CHUNK = 100;
 
 // =============================================================================
-// Étape 1 — Analyse du fichier (détection aconier + mapping + aperçu)
+// Étape 1 — Analyse du fichier (mapping + aperçu). L'aconier est saisi par
+// l'utilisateur (texte libre) et sert de clé au profil de mapping mémorisé.
 // =============================================================================
 
 export type AnalyzeFluxResult =
   | {
       ok: true;
-      aconier: Aconier;
       headers: string[];
       mapping: FluxMapping;
       samples: Record<string, string>;       // header → exemple de valeur
@@ -49,7 +47,11 @@ export async function analyzeFluxAction(
 ): Promise<AnalyzeFluxResult> {
   const file = formData.get("file");
   const tenantId = String(formData.get("tenantId") ?? "").trim();
+  const aconier = String(formData.get("aconier") ?? "").trim();
 
+  if (!aconier) {
+    return { ok: false, error: "Renseigne le nom de l'aconier." };
+  }
   if (!(file instanceof File) || file.size === 0) {
     return { ok: false, error: "Aucun fichier reçu." };
   }
@@ -73,13 +75,11 @@ export async function analyzeFluxAction(
   }
 
   // Lignes-échantillon (valeurs en chaînes, alignées par index aux headers)
-  // pour la détection par contenu (aconier) et du numéro de conteneur (ISO 6346).
+  // pour la détection du numéro de conteneur (motif ISO 6346) côté suggestMapping.
   const sampleRows: string[][] = parsed.rows.slice(0, SCAN_ROWS).map((row) =>
     parsed.headers.map((h) => cellToDisplay(row[h] ?? null)),
   );
-  const contentSamples = [...parsed.headers, ...sampleRows.flat()];
 
-  const aconier = detectAconier(file.name, parsed.headers, contentSamples);
   let mapping = suggestMapping(parsed.headers, sampleRows);
 
   // Réapplique le profil de mapping mémorisé pour ce (tenant, aconier), si présent.
@@ -117,7 +117,6 @@ export async function analyzeFluxAction(
 
   return {
     ok: true,
-    aconier,
     headers: parsed.headers,
     mapping,
     samples: parsed.samples,
@@ -250,7 +249,7 @@ export async function importFluxAction(
       if (isDate) aconierDateLike += 1;
     }
     if (aconierNonEmpty === 0) {
-      return { ...baseReport, erreurs: [{ ligne: 0, message: "La colonne « Aconier » est vide : renseigne l'aconier (ex. MEDLOG TRANSPORT) avant d'importer." }] };
+      return { ...baseReport, erreurs: [{ ligne: 0, message: "La colonne « Aconier » est vide : renseigne le nom de l'aconier avant d'importer." }] };
     }
     if (aconierDateLike > 0) {
       return {
@@ -337,7 +336,7 @@ export async function importFluxAction(
     const prefix = numero.slice(0, 4).toUpperCase();
     const shippingLineId = /^[A-Z]{4}$/.test(prefix) ? lineByScac.get(prefix) ?? null : null;
 
-    // Poids : MEDLOG en tonnes → kg
+    // Poids : exprimé en tonnes → converti en kg
     let poidsKg: number | null = null;
     const poidsT = cellToNumber(std.poids);
     if (poidsT !== null) {

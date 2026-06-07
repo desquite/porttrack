@@ -2,7 +2,7 @@
   "app": {
     "name": "PORTTRACK",
     "tagline": "Gestion de flotte et logistique portuaire",
-    "footer": "© 2026 PORTTRACK — Port Autonome d'Abidjan"
+    "footer": "© 2026 PORTTRACK"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -46,13 +46,13 @@
   },
   "home": {
     "welcome": "Bienvenue sur PORTTRACK",
-    "subtitle": "L'application des sous-traitants de transport du Port Autonome d'Abidjan",
+    "subtitle": "L'application des transporteurs de conteneurs",
     "cta": "Accéder à mon espace",
     "login": "Se connecter",
     "features": {
       "import": {
         "title": "Import flux Excel multi-aconiers",
-        "desc": "Chargez les fichiers MEDLOG, MAERSK, AGL… Les colonnes sont reconnues et le mapping mémorisé automatiquement."
+        "desc": "Chargez le fichier Excel reçu de votre aconier. Les colonnes sont reconnues et le mapping mémorisé automatiquement."
       },
       "transport": {
         "title": "Affectation, livraisons & EIR",

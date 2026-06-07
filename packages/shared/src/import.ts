@@ -1,39 +1,18 @@
 /**
  * Module Import de Flux Excel — référence partagée (cahier §4).
  *
- * Chaque aconier (MEDLOG, AGL, MAERSK…) envoie un fichier Excel avec ses propres
- * en-têtes. PORTTRACK mappe ces colonnes vers un jeu de champs standard avant de
- * créer les conteneurs. Ce fichier décrit :
+ * L'aconier envoie un fichier Excel avec ses propres en-têtes. PORTTRACK mappe
+ * ces colonnes vers un jeu de champs standard avant de créer les conteneurs. Ce
+ * fichier décrit :
  *   - les champs standard cibles (FLUX_FIELDS)
- *   - les alias d'en-têtes connus par aconier (pour le mapping automatique)
- *   - la détection de l'aconier (nom de fichier + structure des colonnes)
+ *   - les alias d'en-têtes courants (pour le mapping automatique)
  *
- * Le parsing binaire (.xlsx/.xls/.csv) et l'insertion en base vivent côté web.
+ * Le nom de l'aconier est saisi par l'utilisateur (texte libre) et sert de clé
+ * au profil de mapping mémorisé. Le parsing binaire (.xlsx/.xls/.csv) et
+ * l'insertion en base vivent côté web.
  */
 
 import type { ConteneurStatut } from "./constants";
-
-// =============================================================================
-// Aconiers connus
-// =============================================================================
-
-export const ACONIERS = ["MEDLOG", "MAERSK", "CMA CGM", "AGL", "AUTRE"] as const;
-export type Aconier = (typeof ACONIERS)[number];
-
-/**
- * Noms de compagnies (normalisés) trouvés dans le contenu des fichiers, qui
- * permettent de reconnaître l'aconier émetteur — typiquement via une colonne
- * « NOM » (ex. MEDLOG TRANSPORT). Plus fiable que le nom de fichier.
- *
- * Les motifs courts (≤ 3 caractères) sont comparés comme mots entiers pour
- * éviter les faux positifs ; les autres en sous-chaîne.
- */
-export const ACONIER_NAME_PATTERNS: Record<Exclude<Aconier, "AUTRE">, string[]> = {
-  MEDLOG: ["MEDLOG", "MEDITERRANEAN"],
-  MAERSK: ["MAERSK", "SAFMARINE"],
-  "CMA CGM": ["CMA CGM", "CMACGM", "DELMAS"],
-  AGL: ["AGL", "BOLLORE", "AFRICA GLOBAL LOGISTICS"],
-};
 
 // =============================================================================
 // Champs standard cibles de l'import
@@ -86,7 +65,7 @@ export const FLUX_FIELDS: readonly FluxFieldDef[] = [
   { key: "date_badt",       label: "Date BADT",           description: "Date limite de retrait (jalon critique)", required: false },
   { key: "situation",       label: "Situation / statut",  description: "Vide = En attente",                       required: false },
   { key: "transporteur",    label: "Transporteur affecté", description: "Transporteur noté par l'aconier",        required: false },
-  { key: "aconier",         label: "Aconier",             description: "Société de manutention au terminal — colonne « Aconier » (ex. MEDLOG TRANSPORT, AGL). OBLIGATOIRE.", required: true },
+  { key: "aconier",         label: "Aconier",             description: "Société de manutention au terminal — colonne « Aconier ». OBLIGATOIRE.", required: true },
   { key: "plomb",           label: "Plomb / scellé",      description: "Numéro de plomb",                         required: false },
   { key: "num_declaration", label: "N° déclaration",      description: "Numéro de déclaration en douane",         required: false },
   { key: "type_visite",     label: "Type de visite",      description: "Circuit douanier (SCANNER, VISITE…)",     required: false },
@@ -96,10 +75,10 @@ export const FLUX_FIELDS: readonly FluxFieldDef[] = [
 // =============================================================================
 // Alias d'en-têtes (en-têtes normalisés) → champ standard
 // =============================================================================
-// Le mapping MEDLOG est la référence (cahier §4.2). Les variantes courantes
-// sont ajoutées pour couvrir AGL/MAERSK et les fichiers légèrement différents.
+// Liste des variantes d'en-têtes courantes (cahier §4.2), pour reconnaître
+// automatiquement les colonnes quel que soit l'aconier émetteur.
 
-export const MEDLOG_HEADER_ALIASES: Record<FluxFieldKey, string[]> = {
+export const HEADER_ALIASES: Record<FluxFieldKey, string[]> = {
   numero:          ["TC", "N TC", "NUMERO TC", "NUMERO CONTENEUR", "N CONTENEUR", "CONTENEUR", "CONTAINER", "CONTAINER NO"],
   type_conteneur:  ["TYPE DE TC", "TYPE TC", "TYPE DE CONTENEUR", "TYPE CONTENEUR", "TYPE", "ISO TYPE"],
   client:          ["CLIENT", "CONSIGNATAIRE", "DESTINATAIRE", "RECEIVER"],
@@ -135,60 +114,6 @@ export function normalizeHeader(raw: string): string {
     .toUpperCase()
     .replace(/[^A-Z0-9]+/g, " ")
     .trim();
-}
-
-// =============================================================================
-// Détection de l'aconier
-// =============================================================================
-
-/**
- * Détecte l'aconier. Priorité : (1) contenu du fichier (noms de compagnie dans
- * les cellules, ex. colonne « NOM » = MEDLOG TRANSPORT), (2) nom du fichier,
- * (3) structure des colonnes. Retourne "AUTRE" si rien ne ressort.
- */
-export function detectAconier(
-  fileName: string,
-  headers: string[],
-  contentSamples?: string[],
-): Aconier {
-  // (1) Contenu
-  if (contentSamples && contentSamples.length) {
-    const byContent = detectAconierFromContent(contentSamples);
-    if (byContent) return byContent;
-  }
-  // (2) Nom de fichier
-  const fn = normalizeHeader(fileName);
-  if (fn.includes("MEDLOG")) return "MEDLOG";
-  if (fn.includes("MAERSK") || fn.includes("SAFMARINE")) return "MAERSK";
-  if (fn.includes("CMACGM") || fn.includes("CMA CGM") || fn.includes("DELMAS")) return "CMA CGM";
-  if (fn.includes("AGL") || fn.includes("BOLLORE")) return "AGL";
-  // (3) Structure (le format MEDLOG est la référence)
-  if (countMappableFields(headers) >= 5) return "MEDLOG";
-  return "AUTRE";
-}
-
-/**
- * Cherche un nom de compagnie connu dans des cellules (en-têtes + données).
- * Les motifs ≤ 3 caractères sont comparés comme mots entiers.
- */
-export function detectAconierFromContent(samples: string[]): Aconier | null {
-  const normed = samples.map(normalizeHeader).filter((s) => s.length > 0);
-  for (const aconier of Object.keys(ACONIER_NAME_PATTERNS) as Exclude<Aconier, "AUTRE">[]) {
-    for (const pattern of ACONIER_NAME_PATTERNS[aconier]) {
-      const isShort = pattern.length <= 3;
-      const hit = normed.some((s) =>
-        isShort ? s.split(" ").includes(pattern) : s.includes(pattern),
-      );
-      if (hit) return aconier;
-    }
-  }
-  return null;
-}
-
-/** Nombre de champs standard qu'on sait mapper à partir de ces en-têtes. */
-export function countMappableFields(headers: string[]): number {
-  const mapping = suggestMapping(headers);
-  return Object.values(mapping).filter((h) => h !== "").length;
 }
 
 // =============================================================================
@@ -250,7 +175,7 @@ export function suggestMapping(headers: string[], sampleRows?: string[][]): Flux
   const out = {} as FluxMapping;
 
   for (const field of FLUX_FIELDS) {
-    const aliases = MEDLOG_HEADER_ALIASES[field.key];
+    const aliases = HEADER_ALIASES[field.key];
     let found = "";
     for (const alias of aliases) {
       const hit = normalized.find((h) => !used.has(h.raw) && h.norm === alias);
@@ -279,7 +204,7 @@ export function suggestMapping(headers: string[], sampleRows?: string[][]): Flux
 // Conversions métier
 // =============================================================================
 
-/** SITUATION MEDLOG (texte libre) → statut conteneur. Vide = En attente. */
+/** Colonne « Situation » (texte libre) → statut conteneur. Vide = En attente. */
 export function situationToStatut(raw: string | null | undefined): ConteneurStatut {
   const s = normalizeHeader(String(raw ?? ""));
   if (!s) return "EN_ATTENTE";

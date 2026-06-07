@@ -125,7 +125,7 @@ export type ValiderToutResult =
   | { ok: true; total: number; sent: number; failed: number; skipped: number }
   | { ok: false; error: string };
 
-/** Date du jour à Abidjan (UTC+0) au format YYYY-MM-DD. */
+/** Date du jour (UTC+0) au format YYYY-MM-DD. */
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }

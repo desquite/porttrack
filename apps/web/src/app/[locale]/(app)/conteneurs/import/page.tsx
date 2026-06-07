@@ -66,8 +66,8 @@ export default async function ImportFluxPage({
           Importer un flux Excel
         </h1>
         <p className="text-sm text-muted-foreground">
-          Charge le fichier reçu de l&apos;aconier (MEDLOG, AGL, MAERSK…). PORTTRACK
-          détecte le format, mappe les colonnes et crée les conteneurs en statut
+          Charge le fichier reçu de l&apos;aconier. PORTTRACK
+          mappe les colonnes et crée les conteneurs en statut
           « En attente ». Formats acceptés : .xlsx, .xls, .csv.
         </p>
       </div>

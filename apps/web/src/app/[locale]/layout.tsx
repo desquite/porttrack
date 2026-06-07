@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "PORTTRACK — Gestion de flotte portuaire",
   description:
-    "SaaS multi-tenant de gestion de flotte et logistique portuaire pour les sous-traitants du Port Autonome d'Abidjan.",
+    "SaaS multi-tenant de gestion de flotte et logistique pour les transporteurs de conteneurs.",
   // PWA chauffeur sur iOS : lancement plein écran depuis l'écran d'accueil +
   // titre court sous l'icône. L'icône elle-même vient de app/apple-icon.tsx.
   appleWebApp: {
