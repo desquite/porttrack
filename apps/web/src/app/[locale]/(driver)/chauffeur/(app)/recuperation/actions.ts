@@ -26,5 +26,6 @@ export async function confirmDriverRecuperationAction(
   }
 
   revalidatePath("/chauffeur");
+  revalidatePath("/chauffeur/mouvements");
   redirect("/chauffeur?recup=ok");
 }

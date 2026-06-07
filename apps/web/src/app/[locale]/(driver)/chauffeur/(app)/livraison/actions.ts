@@ -139,6 +139,6 @@ export async function confirmDriverDelivery(
   if (affErr) console.error("[confirmDriverDelivery] maj affectation TERMINEE:", affErr);
 
   revalidatePath("/chauffeur");
-  revalidatePath("/chauffeur/livraisons");
+  revalidatePath("/chauffeur/mouvements");
   redirect("/chauffeur?livraison=ok");
 }
