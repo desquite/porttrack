@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import {
-  Truck, ClipboardCheck, AlertTriangle, CheckCircle2, Package, MapPin, MinusCircle, ChevronRight, PackageCheck,
+  Truck, ClipboardCheck, AlertTriangle, CheckCircle2, Package, MapPin, MinusCircle, ChevronRight, PackageCheck, Undo2,
 } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
@@ -17,7 +17,7 @@ export default async function DriverHomePage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ checklist?: string; livraison?: string; panne?: string }>;
+  searchParams: Promise<{ checklist?: string; livraison?: string; panne?: string; recup?: string }>;
 }) {
   const { locale } = await params;
   const sp = await searchParams;
@@ -62,6 +62,16 @@ export default async function DriverHomePage({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((c: any) => c && c.statut !== "LIVRE");
 
+  // Mes récupérations planifiées (vides à aller récupérer).
+  const { data: recupsData } = await supabase
+    .from("recuperations")
+    .select(`id, destination_type, destination_lieu, conteneur:conteneurs ( numero, client, destination_libre )`)
+    .eq("chauffeur_id", chauffeur.id)
+    .eq("statut", "PLANIFIEE");
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recups = (recupsData ?? []) as any[];
+  const destLabel: Record<string, string> = { PARC_ACONIER: "Parc aconier", TERMINAL: "Terminal" };
+
   return (
     <div className="space-y-5">
       <div>
@@ -82,6 +92,11 @@ export default async function DriverHomePage({
       {sp.livraison === "ok" && (
         <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
           <PackageCheck className="size-4" />Livraison confirmée et EIR archivé. ✅
+        </div>
+      )}
+      {sp.recup === "ok" && (
+        <div className="flex items-center gap-2 rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-900">
+          <CheckCircle2 className="size-4" />Récupération confirmée. Merci !
         </div>
       )}
 
@@ -162,6 +177,39 @@ export default async function DriverHomePage({
           </div>
         )}
       </div>
+
+      {/* Mes récupérations (vides à récupérer) */}
+      {recups.length > 0 && (
+        <div>
+          <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+            <Undo2 className="size-4" />Mes récupérations
+          </h2>
+          <div className="space-y-2">
+            {recups.map((r) => (
+              <Card key={r.id}>
+                <CardContent className="space-y-3 p-3">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono font-medium">{r.conteneur?.numero}</span>
+                      <Badge variant="info" className="text-[10px]">Vide à récupérer</Badge>
+                    </div>
+                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
+                      {r.conteneur?.client && <span>{r.conteneur.client}</span>}
+                      {r.conteneur?.destination_libre && <span className="flex items-center gap-1"><MapPin className="size-3" />{r.conteneur.destination_libre}</span>}
+                      <span>→ {r.destination_lieu || destLabel[r.destination_type] || "destination"}</span>
+                    </div>
+                  </div>
+                  <Button asChild className="h-11 w-full" variant="outline">
+                    <Link href={`/chauffeur/recuperation?id=${r.id}`}>
+                      <Undo2 className="mr-2 size-4" />Confirmer la récupération
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
