@@ -65,12 +65,36 @@ export default async function DriverHomePage({
   // Mes récupérations planifiées (vides à aller récupérer).
   const { data: recupsData } = await supabase
     .from("recuperations")
-    .select(`id, destination_type, destination_lieu, conteneur:conteneurs ( numero, client, destination_libre )`)
+    .select(`id, destination_type, destination_lieu, conteneur_id,
+             conteneur:conteneurs ( numero, client, destination_libre )`)
     .eq("chauffeur_id", chauffeur.id)
     .eq("statut", "PLANIFIEE");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recups = (recupsData ?? []) as any[];
   const destLabel: Record<string, string> = { PARC_ACONIER: "Parc aconier", TERMINAL: "Terminal" };
+  const modeLabel: Record<string, string> = {
+    REMORQUE_COUPEE: "Remorque coupée",
+    CLIENT_DECHARGE: "Client a déchargé",
+    AUTO_CHARGEUR: "Auto-chargeur",
+  };
+
+  // Contexte de la livraison initiale pour chaque récup (mode + lieu figé +
+  // remorque coupée sur place le cas échéant) — sert à briefer le chauffeur.
+  const eirByConteneur = new Map<string, { mode_livraison: string | null; lieu_livraison: string | null; remorque_immat: string | null }>();
+  if (recups.length > 0) {
+    const ids = recups.map((r) => r.conteneur_id).filter(Boolean);
+    if (ids.length > 0) {
+      const { data: eirs } = await supabase
+        .from("eir_archives")
+        .select("conteneur_id, mode_livraison, lieu_livraison, remorque_immat, date_livraison")
+        .in("conteneur_id", ids)
+        .order("date_livraison", { ascending: false });
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      for (const e of (eirs ?? []) as any[]) {
+        if (!eirByConteneur.has(e.conteneur_id)) eirByConteneur.set(e.conteneur_id, e);
+      }
+    }
+  }
 
   return (
     <div className="space-y-5">
@@ -185,28 +209,54 @@ export default async function DriverHomePage({
             <Undo2 className="size-4" />Mes récupérations
           </h2>
           <div className="space-y-2">
-            {recups.map((r) => (
-              <Card key={r.id}>
-                <CardContent className="space-y-3 p-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono font-medium">{r.conteneur?.numero}</span>
-                      <Badge variant="info" className="text-[10px]">Vide à récupérer</Badge>
+            {recups.map((r) => {
+              const eir = eirByConteneur.get(r.conteneur_id);
+              // Lieu où le chauffeur doit aller : lieu_livraison figé sur l'EIR
+              // (= ce qui a été livré), sinon destination_libre du conteneur.
+              const lieuRecup = eir?.lieu_livraison || r.conteneur?.destination_libre || null;
+              const isRemorqueCoupee = eir?.mode_livraison === "REMORQUE_COUPEE";
+              return (
+                <Card key={r.id}>
+                  <CardContent className="space-y-3 p-3">
+                    <div className="min-w-0 space-y-1.5">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="font-mono font-medium">{r.conteneur?.numero}</span>
+                        <Badge variant="info" className="text-[10px]">Vide à récupérer</Badge>
+                        {eir?.mode_livraison && (
+                          <Badge variant="outline" className="text-[10px]">
+                            {modeLabel[eir.mode_livraison] ?? eir.mode_livraison}
+                          </Badge>
+                        )}
+                      </div>
+                      {r.conteneur?.client && (
+                        <div className="text-xs text-foreground/80">📦 {r.conteneur.client}</div>
+                      )}
+                      {lieuRecup && (
+                        <div className="flex items-start gap-1 text-xs">
+                          <MapPin className="mt-0.5 size-3 shrink-0 text-rose-600" />
+                          <span><span className="text-muted-foreground">Aller à : </span><span className="font-medium">{lieuRecup}</span></span>
+                        </div>
+                      )}
+                      {isRemorqueCoupee && eir?.remorque_immat && (
+                        <div className="flex items-start gap-1 text-xs">
+                          <Truck className="mt-0.5 size-3 shrink-0 text-amber-700" />
+                          <span><span className="text-muted-foreground">Remorque sur place : </span><span className="font-medium">{eir.remorque_immat}</span></span>
+                        </div>
+                      )}
+                      <div className="text-xs">
+                        <span className="text-muted-foreground">À déposer à : </span>
+                        <span className="font-medium">{r.destination_lieu || destLabel[r.destination_type] || "destination"}</span>
+                      </div>
                     </div>
-                    <div className="mt-0.5 flex flex-wrap items-center gap-x-3 text-xs text-muted-foreground">
-                      {r.conteneur?.client && <span>{r.conteneur.client}</span>}
-                      {r.conteneur?.destination_libre && <span className="flex items-center gap-1"><MapPin className="size-3" />{r.conteneur.destination_libre}</span>}
-                      <span>→ {r.destination_lieu || destLabel[r.destination_type] || "destination"}</span>
-                    </div>
-                  </div>
-                  <Button asChild className="h-11 w-full" variant="outline">
-                    <Link href={`/chauffeur/recuperation?id=${r.id}`}>
-                      <Undo2 className="mr-2 size-4" />Confirmer la récupération
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
+                    <Button asChild className="h-11 w-full" variant="outline">
+                      <Link href={`/chauffeur/recuperation?id=${r.id}`}>
+                        <Undo2 className="mr-2 size-4" />Confirmer la récupération
+                      </Link>
+                    </Button>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
         </div>
       )}
