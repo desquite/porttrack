@@ -2,7 +2,7 @@ import { use } from "react";
 import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import { useTranslations } from "next-intl";
-import { Anchor, FileSpreadsheet, Truck, ShieldCheck, Smartphone } from "lucide-react";
+import { Anchor, FileSpreadsheet, Truck, ShieldCheck, Smartphone, Phone, Mail } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -74,6 +74,29 @@ export default function HomePage({
               </CardContent>
             </Card>
           ))}
+        </div>
+      </section>
+
+      {/* Contact */}
+      <section className="border-t bg-muted/30">
+        <div className="mx-auto max-w-6xl px-6 py-12 text-center">
+          <h2 className="text-xl font-semibold tracking-tight">{t("contact.title")}</h2>
+          <div className="mt-5 flex flex-col items-center justify-center gap-3 sm:flex-row sm:gap-8">
+            <a
+              href={`tel:${t("contact.phoneHref")}`}
+              className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary"
+            >
+              <Phone className="size-4 text-primary" />
+              {t("contact.phone")}
+            </a>
+            <a
+              href={`mailto:${t("contact.email")}`}
+              className="inline-flex items-center gap-2 text-sm font-medium text-foreground hover:text-primary"
+            >
+              <Mail className="size-4 text-primary" />
+              {t("contact.email")}
+            </a>
+          </div>
         </div>
       </section>
 

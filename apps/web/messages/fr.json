@@ -2,7 +2,7 @@
   "app": {
     "name": "PORTTRACK",
     "tagline": "Gestion de flotte et logistique portuaire",
-    "footer": "© 2026 PORTTRACK"
+    "footer": "© 2026 PORTTRACK · Géré par Hinov Group"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -67,6 +67,12 @@
         "desc": "Désignation, check-list et livraison sur le téléphone du chauffeur ; documents disponibles en 5 secondes par WhatsApp."
       }
     }
+  },
+  "contact": {
+    "title": "Une question ? Contactez-nous",
+    "phone": "07 07 02 94 71",
+    "phoneHref": "+2250707029471",
+    "email": "y.ouattara@hinovgroup.com"
   },
   "common": {
     "loading": "Chargement…",
