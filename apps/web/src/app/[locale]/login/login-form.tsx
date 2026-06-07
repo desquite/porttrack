@@ -32,6 +32,7 @@ const initialState: LoginState = { status: "idle" };
 
 export function LoginForm() {
   const t = useTranslations("auth.login");
+  const tContact = useTranslations("contact");
   const searchParams = useSearchParams();
   const [requestState, requestSubmit, requestPending] = useActionState(
     requestOtpAction,
@@ -246,7 +247,15 @@ export function LoginForm() {
       </CardContent>
 
       <CardFooter className="text-center text-xs text-muted-foreground">
-        <p className="w-full">{t("noAccount")} {t("contactUs")}</p>
+        <p className="w-full">
+          {t("noAccount")}{" "}
+          <a
+            href={`mailto:${tContact("email")}`}
+            className="font-medium text-primary hover:underline"
+          >
+            {t("contactUs")}
+          </a>
+        </p>
       </CardFooter>
     </Card>
   );
