@@ -64,19 +64,25 @@ export default async function LivraisonsPage({
   const { data: rows } = await query.limit(LIST_LIMIT);
   const conteneurs = rows ?? [];
 
-  // Pour l'onglet « Livrés » : on récupère les infos de livraison depuis l'EIR.
+  // Pour l'onglet « Livrés » : on récupère les infos de livraison depuis l'EIR
+  // (incl. la traçabilité : PWA chauffeur vs saisie bureau, par qui).
   const eirByConteneur = new Map<string, {
     chauffeur_nom: string | null; tracteur_immat: string | null; remorque_immat: string | null;
     mode_livraison: string | null; lieu_livraison: string | null; date_livraison: string | null;
+    validated_via: string | null; validated_by_nom: string | null;
   }>();
   if (onglet === "livres" && conteneurs.length > 0) {
     const ids = conteneurs.map((c) => c.id);
+    // Colonnes validated_via/validated_by_nom ajoutées par la migration #33
+    // (types pas encore régénérés) → cast.
     const { data: eirs } = await supabase
       .from("eir_archives")
-      .select("conteneur_id, chauffeur_nom, tracteur_immat, remorque_immat, mode_livraison, lieu_livraison, date_livraison")
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .select("conteneur_id, chauffeur_nom, tracteur_immat, remorque_immat, mode_livraison, lieu_livraison, date_livraison, validated_via, validated_by_nom" as any)
       .in("conteneur_id", ids)
       .order("date_livraison", { ascending: false });
-    for (const e of eirs ?? []) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    for (const e of (eirs ?? []) as any[]) {
       if (!eirByConteneur.has(e.conteneur_id)) eirByConteneur.set(e.conteneur_id, e);
     }
   }
@@ -153,6 +159,13 @@ export default async function LivraisonsPage({
                             <span className="inline-flex items-center gap-1 text-emerald-700">✅ Livré le {formatDateFR(c.date_livraison_reelle)}</span>
                             {eir?.chauffeur_nom && <span>👤 {eir.chauffeur_nom}</span>}
                             {eir?.tracteur_immat && <span className="inline-flex items-center gap-1"><Truck className="size-3" />{eir.tracteur_immat}{eir.remorque_immat ? ` + ${eir.remorque_immat}` : ""}</span>}
+                            {eir?.validated_via && (
+                              <span className="text-foreground/80">
+                                Validé par {eir.validated_by_nom || (eir.validated_via === "SAISIE_BUREAU" ? "opérateur" : eir.chauffeur_nom || "chauffeur")}
+                                {" "}
+                                <span className="text-muted-foreground">({eir.validated_via === "SAISIE_BUREAU" ? "saisie bureau" : "PWA chauffeur"})</span>
+                              </span>
+                            )}
                           </>
                         )}
                       </div>

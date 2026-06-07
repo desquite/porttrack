@@ -49,13 +49,19 @@ export default async function RecuperationsPage({
 
   const supabase = await createClient();
 
-  // Récupérations actives (non annulées) → map par conteneur
+  // Récupérations actives (non annulées) → map par conteneur. Colonnes
+  // validated_via/validated_by_nom ajoutées par la migration #33 (types pas
+  // encore régénérés) → cast.
   const { data: recupRows } = await supabase
     .from("recuperations")
-    .select("id, conteneur_id, statut, chauffeur_nom, tracteur_immat, remorque_immat, destination_type, destination_lieu, date_planifiee, date_recuperation")
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .select("id, conteneur_id, statut, chauffeur_nom, tracteur_immat, remorque_immat, destination_type, destination_lieu, date_planifiee, date_recuperation, validated_via, validated_by_nom" as any)
     .neq("statut", "ANNULEE");
-  const recupByConteneur = new Map((recupRows ?? []).map((r) => [r.conteneur_id, r]));
-  const confirmedIds = new Set((recupRows ?? []).filter((r) => r.statut === "CONFIRMEE").map((r) => r.conteneur_id));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recupRowsAny = (recupRows ?? []) as any[];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const recupByConteneur = new Map(recupRowsAny.map((r) => [r.conteneur_id, r as any]));
+  const confirmedIds = new Set(recupRowsAny.filter((r) => r.statut === "CONFIRMEE").map((r) => r.conteneur_id));
   const confirmedArr = Array.from(confirmedIds);
 
   // Compteurs (tiennent compte de la recherche). Les conteneurs LIVRE incluent
@@ -171,6 +177,13 @@ export default async function RecuperationsPage({
                           ? ` → ${recup?.destination_lieu || ""}${recup?.destination_type ? ` (${DEST_LABEL[recup.destination_type] ?? recup.destination_type})` : ""}`
                           : ""}
                       </div>
+                      {recup?.validated_via && (
+                        <div className="text-xs text-foreground/80">
+                          Validé par {recup.validated_by_nom || (recup.validated_via === "SAISIE_BUREAU" ? "opérateur" : recup.chauffeur_nom || "chauffeur")}
+                          {" "}
+                          <span className="text-muted-foreground">({recup.validated_via === "SAISIE_BUREAU" ? "saisie bureau" : "PWA chauffeur"})</span>
+                        </div>
+                      )}
                     </div>
                   </CardContent>
                 </Card>

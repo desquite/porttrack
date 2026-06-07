@@ -32,6 +32,7 @@ import {
   BarChart3,
   PackageCheck,
   Undo2,
+  ClipboardEdit,
   Loader2,
 } from "lucide-react";
 
@@ -114,6 +115,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Flux & affectations", href: "/affectations", icon: ClipboardList },
       { label: "Livraison",           href: "/livraisons",   icon: PackageCheck },
       { label: "Récupération",        href: "/recuperations", icon: Undo2 },
+      { label: "Saisie opération",    href: "/saisie-operation", icon: ClipboardEdit },
     ],
   },
   {
