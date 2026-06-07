@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Home, PackageCheck, Users } from "lucide-react";
+import { Home, PackageCheck, Undo2, Users } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
 const TABS = [
   { href: "/chauffeur", label: "Accueil", icon: Home, exact: true },
   { href: "/chauffeur/livraisons", label: "Livraisons", icon: PackageCheck },
+  { href: "/chauffeur/recuperations", label: "Récup.", icon: Undo2 },
   { href: "/chauffeur/equipe", label: "Équipe", icon: Users },
 ];
 
@@ -17,7 +18,7 @@ export function DriverBottomNav() {
   const clean = pathname.replace(/^\/(fr|en)(?=\/|$)/, "") || "/";
 
   return (
-    <nav className="sticky bottom-0 z-20 grid grid-cols-3 border-t bg-background">
+    <nav className="sticky bottom-0 z-20 grid grid-cols-4 border-t bg-background">
       {TABS.map((t) => {
         const active = t.exact ? clean === t.href : clean === t.href || clean.startsWith(t.href + "/");
         const Icon = t.icon;
