@@ -48,11 +48,24 @@
     "welcome": "Bienvenue sur PORTTRACK",
     "subtitle": "L'application des sous-traitants de transport du Port Autonome d'Abidjan",
     "cta": "Accéder à mon espace",
+    "login": "Se connecter",
     "features": {
-      "import": "Import flux Excel multi-aconiers",
-      "fleet": "Suivi flotte & documents",
-      "alerts": "Alertes BADT & expirations",
-      "billing": "Facturation FNE & CA temps réel"
+      "import": {
+        "title": "Import flux Excel multi-aconiers",
+        "desc": "Chargez les fichiers MEDLOG, MAERSK, AGL… Les colonnes sont reconnues et le mapping mémorisé automatiquement."
+      },
+      "transport": {
+        "title": "Affectation, livraisons & EIR",
+        "desc": "Reliez chaque conteneur à un camion et un chauffeur, jusqu'à la livraison confirmée avec l'EIR archivé."
+      },
+      "fleet": {
+        "title": "Flotte, documents & alertes",
+        "desc": "Papiers des véhicules scannés et suivis ; alertes WhatsApp et email avant chaque expiration ou dépassement de BADT."
+      },
+      "driver": {
+        "title": "Application chauffeur & Bot WhatsApp",
+        "desc": "Désignation, check-list et livraison sur le téléphone du chauffeur ; documents disponibles en 5 secondes par WhatsApp."
+      }
     }
   },
   "common": {

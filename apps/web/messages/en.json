@@ -48,11 +48,24 @@
     "welcome": "Welcome to PORTTRACK",
     "subtitle": "The app for subcontractors of the Port Autonome d'Abidjan",
     "cta": "Go to my workspace",
+    "login": "Sign in",
     "features": {
-      "import": "Multi-shipping-line Excel import",
-      "fleet": "Fleet & documents tracking",
-      "alerts": "BADT & expiry alerts",
-      "billing": "FNE billing & real-time revenue"
+      "import": {
+        "title": "Multi-shipping-line Excel import",
+        "desc": "Load MEDLOG, MAERSK, AGL files… Columns are recognised and the mapping is remembered automatically."
+      },
+      "transport": {
+        "title": "Assignment, deliveries & EIR",
+        "desc": "Link each container to a truck and a driver, all the way to delivery confirmed with the archived EIR."
+      },
+      "fleet": {
+        "title": "Fleet, documents & alerts",
+        "desc": "Vehicle papers scanned and tracked; WhatsApp and email alerts before any expiry or BADT overrun."
+      },
+      "driver": {
+        "title": "Driver app & WhatsApp bot",
+        "desc": "Assignment, checklist and delivery on the driver's phone; documents available in 5 seconds over WhatsApp."
+      }
     }
   },
   "common": {

@@ -2,7 +2,7 @@ import { use } from "react";
 import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import { useTranslations } from "next-intl";
-import { Anchor, FileSpreadsheet, Bell, Receipt } from "lucide-react";
+import { Anchor, FileSpreadsheet, Truck, ShieldCheck, Smartphone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -24,9 +24,9 @@ export default function HomePage({
 
   const features = [
     { icon: FileSpreadsheet, key: "import" },
-    { icon: Anchor, key: "fleet" },
-    { icon: Bell, key: "alerts" },
-    { icon: Receipt, key: "billing" },
+    { icon: Truck, key: "transport" },
+    { icon: ShieldCheck, key: "fleet" },
+    { icon: Smartphone, key: "driver" },
   ] as const;
 
   return (
@@ -40,7 +40,7 @@ export default function HomePage({
             </span>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/login">{t("auth.login.submit")}</Link>
+            <Link href="/login">{t("home.login")}</Link>
           </Button>
         </div>
       </header>
@@ -66,11 +66,11 @@ export default function HomePage({
               <CardHeader>
                 <Icon className="mb-2 size-6 text-primary" />
                 <CardTitle className="text-base">
-                  {t(`home.features.${key}`)}
+                  {t(`home.features.${key}.title`)}
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <CardDescription>{t("app.tagline")}</CardDescription>
+                <CardDescription>{t(`home.features.${key}.desc`)}</CardDescription>
               </CardContent>
             </Card>
           ))}
