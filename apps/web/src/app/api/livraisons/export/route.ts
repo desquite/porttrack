@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import * as XLSX from "xlsx";
 
-import { canAccess, parsePermissions, type Role } from "@porttrack/shared";
+import { canAccess, parsePermissions, normalizeForSearch, type Role } from "@porttrack/shared";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
   }
 
   const onglet = request.nextUrl.searchParams.get("onglet") === "livres" ? "livres" : "a_livrer";
+  const qRaw = request.nextUrl.searchParams.get("q") ?? "";
+  const qNorm = qRaw ? normalizeForSearch(qRaw).replace(/[%_]/g, "").trim() : "";
 
   const selectCols = `id, numero, client, transitaire, numero_bl, aconier, poids_kg, marchandise,
     mode_livraison, date_do, date_badt, navire_voyage, num_declaration, type_visite, statut,
@@ -47,6 +49,7 @@ export async function GET(request: NextRequest) {
   } else {
     query = query.eq("statut", "LIVRE").order("date_livraison_reelle", { ascending: false, nullsFirst: false });
   }
+  if (qNorm) query = query.ilike("search_text", `%${qNorm}%`);
   const { data: rows } = await query.limit(5000);
   const conteneurs = (rows ?? []) as Array<Record<string, unknown> & {
     id: string; destination_libre: string | null;

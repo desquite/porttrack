@@ -8,6 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { formatDateFR, classifyExpiry } from "@/lib/utils/dates";
+import { normalizeForSearch } from "@porttrack/shared";
+import { LivraisonsSearch } from "./_components/livraisons-search";
 
 type Onglet = "a_livrer" | "livres";
 const LIST_LIMIT = 200;
@@ -28,19 +30,25 @@ export default async function LivraisonsPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ onglet?: string }>;
+  searchParams: Promise<{ onglet?: string; q?: string }>;
 }) {
   const { locale } = await params;
   const sp = await searchParams;
   setRequestLocale(locale);
 
   const onglet: Onglet = sp.onglet === "livres" ? "livres" : "a_livrer";
+  const qNorm = sp.q ? normalizeForSearch(sp.q).replace(/[%_]/g, "").trim() : "";
+  const qParam = sp.q?.trim() ? `&q=${encodeURIComponent(sp.q.trim())}` : "";
   const supabase = await createClient();
 
-  const [{ count: aLivrerCount }, { count: livresCount }] = await Promise.all([
-    supabase.from("conteneurs").select("*", { count: "exact", head: true }).in("statut", ["EN_ATTENTE", "EN_COURS"]),
-    supabase.from("conteneurs").select("*", { count: "exact", head: true }).eq("statut", "LIVRE"),
-  ]);
+  // Compteurs (tiennent compte de la recherche si présente)
+  let cntALivrer = supabase.from("conteneurs").select("*", { count: "exact", head: true }).in("statut", ["EN_ATTENTE", "EN_COURS"]);
+  let cntLivres = supabase.from("conteneurs").select("*", { count: "exact", head: true }).eq("statut", "LIVRE");
+  if (qNorm) {
+    cntALivrer = cntALivrer.ilike("search_text", `%${qNorm}%`);
+    cntLivres = cntLivres.ilike("search_text", `%${qNorm}%`);
+  }
+  const [{ count: aLivrerCount }, { count: livresCount }] = await Promise.all([cntALivrer, cntLivres]);
 
   const selectCols = `id, numero, client, aconier, date_badt, date_livraison_reelle, destination_libre,
     types_conteneur ( code_trade ),
@@ -52,6 +60,7 @@ export default async function LivraisonsPage({
   } else {
     query = query.eq("statut", "LIVRE").order("date_livraison_reelle", { ascending: false, nullsFirst: false });
   }
+  if (qNorm) query = query.ilike("search_text", `%${qNorm}%`);
   const { data: rows } = await query.limit(LIST_LIMIT);
   const conteneurs = rows ?? [];
 
@@ -89,17 +98,20 @@ export default async function LivraisonsPage({
           </p>
         </div>
         <Button asChild variant="outline" size="sm">
-          <a href={`/api/livraisons/export?onglet=${onglet}`}>
+          <a href={`/api/livraisons/export?onglet=${onglet}${qParam}`}>
             <Download className="mr-2 size-4" />
             Exporter en Excel
           </a>
         </Button>
       </header>
 
-      {/* Onglets */}
-      <div className="inline-flex rounded-md border bg-background p-0.5">
-        <TabLink href="/livraisons?onglet=a_livrer" active={onglet === "a_livrer"} label="À livrer" count={aLivrerCount ?? 0} />
-        <TabLink href="/livraisons?onglet=livres" active={onglet === "livres"} label="Livrés" count={livresCount ?? 0} />
+      {/* Onglets + recherche (la recherche filtre l'onglet courant) */}
+      <div className="space-y-3">
+        <div className="inline-flex rounded-md border bg-background p-0.5">
+          <TabLink href={`/livraisons?onglet=a_livrer${qParam}`} active={onglet === "a_livrer"} label="À livrer" count={aLivrerCount ?? 0} />
+          <TabLink href={`/livraisons?onglet=livres${qParam}`} active={onglet === "livres"} label="Livrés" count={livresCount ?? 0} />
+        </div>
+        <LivraisonsSearch />
       </div>
 
       {/* Liste */}
