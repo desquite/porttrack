@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
-import { ArrowLeft, MapPin, Building2, Package, CalendarClock } from "lucide-react";
+import { ArrowLeft, MapPin, Building2, Package, CalendarClock, Info } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,6 +11,11 @@ import { loadAffectationRefs } from "../../../affectations/_components/load-refs
 import { SaisieRecuperationForm } from "../../_components/saisie-recuperation-form";
 
 const DEST_LABEL: Record<string, string> = { PARC_ACONIER: "Parc aconier", TERMINAL: "Terminal" };
+const MODE_LABEL: Record<string, string> = {
+  REMORQUE_COUPEE: "Remorque coupée",
+  CLIENT_DECHARGE: "Client décharge",
+  AUTO_CHARGEUR: "Auto-chargeur",
+};
 
 /**
  * Saisie d'une récupération à partir de l'EIR papier (chauffeur n'ayant pas
@@ -53,6 +58,18 @@ export default async function SaisieRecuperationPage({
     tracteurId: recup!.tracteur_id,
     remorqueId: recup!.remorque_id,
   });
+
+  // Mode de livraison initial → pour informer l'opérateur du contexte
+  const { data: eirRow } = await supabase
+    .from("eir_archives")
+    .select("mode_livraison, remorque_immat, date_livraison")
+    .eq("conteneur_id", conteneur.id)
+    .order("date_livraison", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const eir = eirRow as any;
+  const modeLivraison = (eir?.mode_livraison ?? null) as string | null;
 
   const lieuRecup = conteneur.destination_libre || conteneur.destination?.nom_lieu || "—";
   const destinationLabel =
@@ -105,6 +122,29 @@ export default async function SaisieRecuperationPage({
           )}
         </AlertDescription>
       </Alert>
+
+      {modeLivraison && MODE_LABEL[modeLivraison] && (
+        <Alert>
+          <Info className="size-4" />
+          <AlertTitle>
+            Livraison « {MODE_LABEL[modeLivraison]} »
+            {eir?.date_livraison && (
+              <span className="font-normal text-muted-foreground"> · le {formatDateFR(eir.date_livraison)}</span>
+            )}
+          </AlertTitle>
+          <AlertDescription>
+            {modeLivraison === "REMORQUE_COUPEE" && (
+              <>Récupération de la remorque{eir?.remorque_immat ? <> <strong>{eir.remorque_immat}</strong></> : ""} restée chez le client.</>
+            )}
+            {modeLivraison === "CLIENT_DECHARGE" && (
+              <>Le client avait déchargé — le chauffeur est venu reprendre le vide avec un attelage complet.</>
+            )}
+            {modeLivraison === "AUTO_CHARGEUR" && (
+              <>Récupération par auto-chargeuse (pas de remorque).</>
+            )}
+          </AlertDescription>
+        </Alert>
+      )}
 
       <Card className="bg-muted/30">
         <CardHeader>

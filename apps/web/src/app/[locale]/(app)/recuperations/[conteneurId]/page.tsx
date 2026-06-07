@@ -8,7 +8,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatDateFR } from "@/lib/utils/dates";
 import { loadAffectationRefs } from "../../affectations/_components/load-refs";
+import { loadDesignationsDuJour } from "../../affectations/_components/load-designations";
 import { PlanifierForm } from "../_components/planifier-form";
+
+type ModeLivraison = "REMORQUE_COUPEE" | "CLIENT_DECHARGE" | "AUTO_CHARGEUR";
 
 /**
  * Planification de la récupération d'un conteneur livré : on affecte le camion
@@ -47,6 +50,21 @@ export default async function PlanifierRecuperationPage({
   }
 
   const refs = await loadAffectationRefs();
+  const designationsJour = await loadDesignationsDuJour();
+
+  // Contexte de la livraison initiale (mode + remorque éventuellement coupée)
+  // → conditionne les champs du formulaire de planification.
+  const { data: eirRow } = await supabase
+    .from("eir_archives")
+    .select("mode_livraison, remorque_id, remorque_immat, date_livraison")
+    .eq("conteneur_id", conteneurId)
+    .order("date_livraison", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const eir = eirRow as any;
+  const modeLivraison: ModeLivraison | null = (eir?.mode_livraison ?? null) as ModeLivraison | null;
+
   const lieu = conteneur!.destination_libre || conteneur!.destination?.nom_lieu || "—";
 
   return (
@@ -78,6 +96,11 @@ export default async function PlanifierRecuperationPage({
             chauffeurs={refs.chauffeurs}
             tracteurs={refs.tracteurs}
             remorques={refs.remorques}
+            designationsJour={designationsJour}
+            modeLivraison={modeLivraison}
+            livraisonRemorqueId={eir?.remorque_id ?? null}
+            livraisonRemorqueImmat={eir?.remorque_immat ?? null}
+            livraisonDate={eir?.date_livraison ?? null}
           />
         </CardContent>
       </Card>

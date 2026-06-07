@@ -1,28 +1,37 @@
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Une désignation du jour, normalisée pour le formulaire d'affectation :
- * un chauffeur désigné avec, le cas échéant, son tracteur associé.
+ * Une désignation du jour, normalisée :
+ * un chauffeur désigné avec, le cas échéant, son matériel attribué.
  *
- * Note : la table `designations` lie un chauffeur à n'importe quel matériel
- * roulant (tracteur, remorque, etc.). On filtre ici pour ne garder que les
- * couples où le matériel est un TRACTEUR (les remorques n'ont pas de sens
- * pour une affectation).
+ * `materielType` permet aux appelants de filtrer selon le besoin :
+ *   - affectation / récupération « remorque » → garde les TRACTEUR
+ *   - récupération « auto-chargeur »          → garde les AUTO_CHARGEUSE
  */
 export type DesignationDuJour = {
   chauffeurId: string;
   chauffeurLabel: string;
+  materielId: string | null;
+  materielLabel: string | null;
+  materielType: string | null;
+  /** Compat : équivalent de materielId quand materielType === "TRACTEUR" */
   tracteurId: string | null;
+  /** Compat : équivalent de materielLabel quand materielType === "TRACTEUR" */
   tracteurLabel: string | null;
 };
 
 /**
- * Charge les désignations actives pour une date donnée (par défaut aujourd'hui)
- * et retourne, par chauffeur, son tracteur attribué du jour.
+ * Charge les désignations actives pour une date donnée (par défaut aujourd'hui).
+ * Retourne 1 ligne par couple (chauffeur, matériel attribué).
  *
  * - Filtre sur date_designation = date demandée
- * - Ne garde que les matériels de type TRACTEUR
+ * - Ne garde que les matériels EN_SERVICE
  * - Filtré par RLS (tenant courant)
+ *
+ * NB : la table `designations` lie un chauffeur à n'importe quel matériel
+ * roulant. On expose ici le type du matériel pour que l'appelant décide quoi
+ * garder (TRACTEUR pour une affectation classique, AUTO_CHARGEUSE pour une
+ * récup auto-chargeur, etc.).
  */
 export async function loadDesignationsDuJour(
   date: string = new Date().toISOString().slice(0, 10),
@@ -45,18 +54,20 @@ export async function loadDesignationsDuJour(
     if (!ch) continue;
 
     const chauffeurLabel = `${ch.prenoms ?? ""} ${ch.nom ?? ""}`.trim() || "Chauffeur";
-    // On ne garde le tracteur que s'il est de type TRACTEUR et en service.
-    const isTracteur = mr?.type === "TRACTEUR" && mr.etat === "EN_SERVICE";
+    const enService = mr?.etat === "EN_SERVICE";
+    const isTracteur = enService && mr?.type === "TRACTEUR";
 
     rows.push({
       chauffeurId: ch.id,
       chauffeurLabel,
+      materielId: enService ? mr!.id : null,
+      materielLabel: enService ? mr!.immatriculation : null,
+      materielType: enService ? mr!.type : null,
       tracteurId: isTracteur ? mr!.id : null,
       tracteurLabel: isTracteur ? mr!.immatriculation : null,
     });
   }
 
-  // Tri alpha par nom de chauffeur (utile pour le combobox)
   rows.sort((a, b) => a.chauffeurLabel.localeCompare(b.chauffeurLabel, "fr"));
   return rows;
 }
