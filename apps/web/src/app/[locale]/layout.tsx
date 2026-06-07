@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { NextIntlClientProvider, hasLocale } from "next-intl";
 import { setRequestLocale } from "next-intl/server";
@@ -20,6 +20,17 @@ export const metadata: Metadata = {
   title: "PORTTRACK — Gestion de flotte portuaire",
   description:
     "SaaS multi-tenant de gestion de flotte et logistique portuaire pour les sous-traitants du Port Autonome d'Abidjan.",
+  // PWA chauffeur sur iOS : lancement plein écran depuis l'écran d'accueil +
+  // titre court sous l'icône. L'icône elle-même vient de app/apple-icon.tsx.
+  appleWebApp: {
+    capable: true,
+    title: "PORTTRACK",
+    statusBarStyle: "black-translucent",
+  },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#1d3557",
 };
 
 export function generateStaticParams() {
