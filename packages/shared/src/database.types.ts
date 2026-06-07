@@ -957,6 +957,8 @@ export type Database = {
       }
       designations: {
         Row: {
+          annulee_at: string | null
+          annulee_motif: string | null
           chauffeur_id: string
           created_at: string
           created_by: string | null
@@ -964,8 +966,6 @@ export type Database = {
           equipe_id: string | null
           id: string
           materiel_roulant_id: string
-          annulee_at: string | null
-          annulee_motif: string | null
           notes: string | null
           tenant_id: string
           updated_at: string
@@ -976,6 +976,8 @@ export type Database = {
           whatsapp_statut: Database["public"]["Enums"]["designation_whatsapp_statut"]
         }
         Insert: {
+          annulee_at?: string | null
+          annulee_motif?: string | null
           chauffeur_id: string
           created_at?: string
           created_by?: string | null
@@ -983,8 +985,6 @@ export type Database = {
           equipe_id?: string | null
           id?: string
           materiel_roulant_id: string
-          annulee_at?: string | null
-          annulee_motif?: string | null
           notes?: string | null
           tenant_id: string
           updated_at?: string
@@ -1739,6 +1739,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "pannes_chauffeur_id_fkey"
+            columns: ["chauffeur_id"]
+            isOneToOne: false
+            referencedRelation: "chauffeurs"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "pannes_created_by_fkey"
             columns: ["created_by"]
             isOneToOne: false
@@ -1796,6 +1803,125 @@ export type Database = {
           pays_iso?: string
         }
         Relationships: []
+      }
+      recuperations: {
+        Row: {
+          chauffeur_id: string | null
+          chauffeur_nom: string | null
+          confirmed_by: string | null
+          conteneur_id: string
+          created_at: string
+          created_by: string | null
+          date_planifiee: string | null
+          date_recuperation: string | null
+          destination_lieu: string | null
+          destination_type: string | null
+          eir_nom: string | null
+          eir_url: string | null
+          id: string
+          remorque_id: string | null
+          remorque_immat: string | null
+          statut: string
+          tenant_id: string
+          tracteur_id: string | null
+          tracteur_immat: string | null
+          updated_at: string
+        }
+        Insert: {
+          chauffeur_id?: string | null
+          chauffeur_nom?: string | null
+          confirmed_by?: string | null
+          conteneur_id: string
+          created_at?: string
+          created_by?: string | null
+          date_planifiee?: string | null
+          date_recuperation?: string | null
+          destination_lieu?: string | null
+          destination_type?: string | null
+          eir_nom?: string | null
+          eir_url?: string | null
+          id?: string
+          remorque_id?: string | null
+          remorque_immat?: string | null
+          statut?: string
+          tenant_id: string
+          tracteur_id?: string | null
+          tracteur_immat?: string | null
+          updated_at?: string
+        }
+        Update: {
+          chauffeur_id?: string | null
+          chauffeur_nom?: string | null
+          confirmed_by?: string | null
+          conteneur_id?: string
+          created_at?: string
+          created_by?: string | null
+          date_planifiee?: string | null
+          date_recuperation?: string | null
+          destination_lieu?: string | null
+          destination_type?: string | null
+          eir_nom?: string | null
+          eir_url?: string | null
+          id?: string
+          remorque_id?: string | null
+          remorque_immat?: string | null
+          statut?: string
+          tenant_id?: string
+          tracteur_id?: string | null
+          tracteur_immat?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recuperations_chauffeur_id_fkey"
+            columns: ["chauffeur_id"]
+            isOneToOne: false
+            referencedRelation: "chauffeurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recuperations_confirmed_by_fkey"
+            columns: ["confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recuperations_conteneur_id_fkey"
+            columns: ["conteneur_id"]
+            isOneToOne: false
+            referencedRelation: "conteneurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recuperations_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recuperations_remorque_id_fkey"
+            columns: ["remorque_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recuperations_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recuperations_tracteur_id_fkey"
+            columns: ["tracteur_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       shipping_lines: {
         Row: {
@@ -2058,12 +2184,12 @@ export type Database = {
       materiel_type:
         | "TRACTEUR"
         | "REMORQUE"
-        | "REMORQUE_20"
-        | "REMORQUE_40"
         | "SEMI_REMORQUE"
         | "PORTE_CONTENEUR_20"
         | "PORTE_CONTENEUR_40"
         | "PORTE_CONTENEUR_MIXTE"
+        | "REMORQUE_20"
+        | "REMORQUE_40"
         | "AUTO_CHARGEUSE"
       panne_statut: "DECLAREE" | "EN_REPARATION" | "REPAREE" | "ANNULEE"
       plan_abonnement: "STARTER" | "BUSINESS" | "PREMIUM"
@@ -2259,12 +2385,12 @@ export const Constants = {
       materiel_type: [
         "TRACTEUR",
         "REMORQUE",
-        "REMORQUE_20",
-        "REMORQUE_40",
         "SEMI_REMORQUE",
         "PORTE_CONTENEUR_20",
         "PORTE_CONTENEUR_40",
         "PORTE_CONTENEUR_MIXTE",
+        "REMORQUE_20",
+        "REMORQUE_40",
         "AUTO_CHARGEUSE",
       ],
       panne_statut: ["DECLAREE", "EN_REPARATION", "REPAREE", "ANNULEE"],

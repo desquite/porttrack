@@ -31,6 +31,7 @@ import {
   Gauge,
   BarChart3,
   PackageCheck,
+  Undo2,
   Loader2,
 } from "lucide-react";
 
@@ -112,6 +113,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: "Conteneurs",          href: "/conteneurs",   icon: Package },
       { label: "Flux & affectations", href: "/affectations", icon: ClipboardList },
       { label: "Livraison",           href: "/livraisons",   icon: PackageCheck },
+      { label: "Récupération",        href: "/recuperations", icon: Undo2 },
     ],
   },
   {
