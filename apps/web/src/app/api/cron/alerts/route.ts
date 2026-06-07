@@ -5,6 +5,7 @@ import {
   formatDigestText,
   formatDigestHtml,
 } from "@/lib/alerts/scan";
+import { suspendExpiredTrials } from "@/lib/billing/suspend-expired-trials";
 import { notify } from "@/lib/notifications";
 
 // Force le runtime Node (le client admin + fetch ont besoin du runtime complet)
@@ -41,6 +42,15 @@ export async function GET(request: NextRequest) {
   }
 
   const admin = createAdminClient();
+
+  // -------- Suspension des essais expirés (V7 §15.3) --------
+  let trialSuspension: { suspended: number; ids: string[] } = { suspended: 0, ids: [] };
+  try {
+    trialSuspension = await suspendExpiredTrials(admin);
+  } catch (e: unknown) {
+    console.error("[cron/alerts] suspendExpiredTrials error:", e);
+    // Non bloquant : on continue vers le scan d'alertes.
+  }
 
   // -------- Scan --------
   let digests;
@@ -80,6 +90,7 @@ export async function GET(request: NextRequest) {
   return NextResponse.json({
     ok: true,
     ranAt: new Date().toISOString(),
+    trialsSuspended: trialSuspension.suspended,
     tenantsWithAlerts: digests.length,
     results,
   });

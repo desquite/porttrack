@@ -6,6 +6,7 @@ import { headers } from "next/headers";
 import {
   tenantUpdateSchema,
   tenantCreateSchema,
+  computeTrialEnd,
   type TenantUpdateInput,
   type TenantCreateInput,
 } from "@porttrack/shared";
@@ -212,6 +213,11 @@ export async function createTenantAction(
   }
 
   // 3. Insertion du tenant (RLS tenants_insert_super_only valide is_super_admin)
+  // Si le tenant démarre en essai (TRIAL), on pose automatiquement la date de
+  // fin d'essai = aujourd'hui + durée d'essai (V7 §15.3).
+  const dateFinEssai =
+    parsed.data.statut === "TRIAL" ? computeTrialEnd() : null;
+
   const { data: tenant, error: insertErr } = await supabase
     .from("tenants")
     .insert({
@@ -222,6 +228,7 @@ export async function createTenantAction(
       adresse: parsed.data.adresse,
       plan: parsed.data.plan,
       statut: parsed.data.statut,
+      date_fin_essai: dateFinEssai,
     })
     .select("id, nom_entreprise")
     .single();

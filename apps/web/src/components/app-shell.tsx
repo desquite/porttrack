@@ -42,10 +42,12 @@ import {
   PERMISSION_DOMAINS,
   PERMISSION_TREE,
   planAllowsFeature,
+  trialDaysRemaining,
   type StoredPermissions,
   type Role,
   type PlanAbonnement,
   type PlanFeature,
+  type TenantStatut,
 } from "@porttrack/shared";
 
 // Routes dont la visibilité dépend d'une fonctionnalité de plan (V7 §15.2).
@@ -187,6 +189,8 @@ type AppShellProps = {
   userPermissions?: StoredPermissions;
   tenantName: string | null;
   tenantPlan?: PlanAbonnement | null;
+  tenantStatut?: TenantStatut | null;
+  tenantTrialEnd?: string | null;
 };
 
 export function AppShell({
@@ -197,6 +201,8 @@ export function AppShell({
   userPermissions,
   tenantName,
   tenantPlan,
+  tenantStatut,
+  tenantTrialEnd,
 }: AppShellProps) {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -420,6 +426,27 @@ export function AppShell({
             )}
           </div>
         </header>
+
+        {/* Bandeau essai (uniquement pendant un essai TRIAL en cours) */}
+        {tenantStatut === "TRIAL" && (() => {
+          const days = trialDaysRemaining(tenantTrialEnd ?? null);
+          if (days === null) return null;
+          const urgent = days <= 7;
+          return (
+            <div
+              className={cn(
+                "px-4 py-2 text-center text-sm lg:px-8",
+                urgent ? "bg-amber-100 text-amber-900" : "bg-primary/5 text-foreground",
+              )}
+            >
+              {days > 0 ? (
+                <>Essai gratuit — il reste <strong>{days} jour{days > 1 ? "s" : ""}</strong>. Contactez PORTTRACK pour activer votre abonnement.</>
+              ) : (
+                <>Votre essai gratuit se termine <strong>aujourd&apos;hui</strong>. Contactez PORTTRACK pour continuer.</>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Page content */}
         <main className="flex-1 p-4 lg:p-8">{children}</main>

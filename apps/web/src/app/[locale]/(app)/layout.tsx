@@ -1,7 +1,10 @@
 import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
 
-import { parsePermissions, type PlanAbonnement } from "@porttrack/shared";
+import {
+  parsePermissions, isTenantBlocked,
+  type PlanAbonnement, type TenantStatut,
+} from "@porttrack/shared";
 
 import { createClient } from "@/lib/supabase/server";
 import { AppShell } from "@/components/app-shell";
@@ -49,18 +52,30 @@ export default async function AppLayout({
   const userName = [profile?.prenoms, profile?.nom].filter(Boolean).join(" ").trim() || null;
   const userPermissions = parsePermissions(profile?.permissions);
 
+  const isSuperAdmin = profile?.role === "SUPER_ADMIN";
+
   // Si le profil a un tenant_id, on récupère son nom pour l'afficher dans le header.
   // Pour un SUPER_ADMIN tenant_id est null → on n'affiche pas de nom.
   let tenantName: string | null = null;
   let tenantPlan: PlanAbonnement | null = null;
+  let tenantStatut: TenantStatut | null = null;
+  let tenantTrialEnd: string | null = null;
   if (profile?.tenant_id) {
     const { data: tenant } = await supabase
       .from("tenants")
-      .select("nom_entreprise, plan")
+      .select("nom_entreprise, plan, statut, date_fin_essai")
       .eq("id", profile.tenant_id)
       .maybeSingle();
     tenantName = tenant?.nom_entreprise ?? null;
     tenantPlan = (tenant?.plan ?? null) as PlanAbonnement | null;
+    tenantStatut = (tenant?.statut ?? null) as TenantStatut | null;
+    tenantTrialEnd = tenant?.date_fin_essai ?? null;
+  }
+
+  // Blocage d'accès : compte suspendu / résilié / essai expiré (V7 §15.3).
+  // Le SUPER_ADMIN n'est jamais bloqué (il doit pouvoir réactiver les comptes).
+  if (!isSuperAdmin && isTenantBlocked(tenantStatut, tenantTrialEnd)) {
+    redirect(`/${locale}/compte-suspendu`);
   }
 
   return (
@@ -71,6 +86,8 @@ export default async function AppLayout({
       userPermissions={userPermissions}
       tenantName={tenantName}
       tenantPlan={tenantPlan}
+      tenantStatut={tenantStatut}
+      tenantTrialEnd={tenantTrialEnd}
     >
       {children}
     </AppShell>
