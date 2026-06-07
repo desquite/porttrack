@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import * as XLSX from "xlsx";
 
-import { canAccess, parsePermissions, type Role } from "@porttrack/shared";
+import { canAccess, parsePermissions, normalizeForSearch, type Role } from "@porttrack/shared";
 import { createClient } from "@/lib/supabase/server";
 
 export const runtime = "nodejs";
@@ -26,6 +26,8 @@ export async function GET(request: NextRequest) {
   }
 
   const onglet = request.nextUrl.searchParams.get("onglet") === "recuperes" ? "recuperes" : "a_recuperer";
+  const qRaw = request.nextUrl.searchParams.get("q") ?? "";
+  const qNorm = qRaw ? normalizeForSearch(qRaw).replace(/[%_]/g, "").trim() : "";
 
   const { data: recupRows } = await supabase
     .from("recuperations")
@@ -46,12 +48,16 @@ export async function GET(request: NextRequest) {
 
   if (onglet === "recuperes") {
     if (confirmedIds.size > 0) {
-      const { data } = await supabase.from("conteneurs").select(selectCols).in("id", Array.from(confirmedIds)).limit(5000);
+      let q = supabase.from("conteneurs").select(selectCols).in("id", Array.from(confirmedIds));
+      if (qNorm) q = q.ilike("search_text", `%${qNorm}%`);
+      const { data } = await q.limit(5000);
       conteneurs = (data ?? []) as typeof conteneurs;
     }
   } else {
-    const { data } = await supabase.from("conteneurs").select(selectCols).eq("statut", "LIVRE")
-      .order("date_livraison_reelle", { ascending: true, nullsFirst: false }).limit(5000);
+    let q = supabase.from("conteneurs").select(selectCols).eq("statut", "LIVRE")
+      .order("date_livraison_reelle", { ascending: true, nullsFirst: false });
+    if (qNorm) q = q.ilike("search_text", `%${qNorm}%`);
+    const { data } = await q.limit(5000);
     conteneurs = ((data ?? []) as typeof conteneurs).filter((c) => !confirmedIds.has(c.id));
   }
 

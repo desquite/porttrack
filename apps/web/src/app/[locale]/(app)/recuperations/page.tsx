@@ -9,7 +9,9 @@ import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { formatDateFR } from "@/lib/utils/dates";
+import { normalizeForSearch } from "@porttrack/shared";
 import { confirmerRecuperationAction, annulerRecuperationAction } from "./actions";
+import { RecuperationsSearch } from "./_components/recuperations-search";
 
 type Onglet = "a_recuperer" | "recuperes";
 const LIST_LIMIT = 300;
@@ -36,12 +38,14 @@ export default async function RecuperationsPage({
   searchParams,
 }: {
   params: Promise<{ locale: string }>;
-  searchParams: Promise<{ onglet?: string; planifie?: string; confirme?: string; annule?: string; error?: string }>;
+  searchParams: Promise<{ onglet?: string; q?: string; planifie?: string; confirme?: string; annule?: string; error?: string }>;
 }) {
   const { locale } = await params;
   const sp = await searchParams;
   setRequestLocale(locale);
   const onglet: Onglet = sp.onglet === "recuperes" ? "recuperes" : "a_recuperer";
+  const qNorm = sp.q ? normalizeForSearch(sp.q).replace(/[%_]/g, "").trim() : "";
+  const qParam = sp.q?.trim() ? `&q=${encodeURIComponent(sp.q.trim())}` : "";
 
   const supabase = await createClient();
 
@@ -52,11 +56,22 @@ export default async function RecuperationsPage({
     .neq("statut", "ANNULEE");
   const recupByConteneur = new Map((recupRows ?? []).map((r) => [r.conteneur_id, r]));
   const confirmedIds = new Set((recupRows ?? []).filter((r) => r.statut === "CONFIRMEE").map((r) => r.conteneur_id));
+  const confirmedArr = Array.from(confirmedIds);
 
-  const { count: totalLivre } = await supabase
-    .from("conteneurs").select("*", { count: "exact", head: true }).eq("statut", "LIVRE");
-  const aRecupererCount = Math.max(0, (totalLivre ?? 0) - confirmedIds.size);
-  const recuperesCount = confirmedIds.size;
+  // Compteurs (tiennent compte de la recherche). Les conteneurs LIVRE incluent
+  // les récupérés (le statut conteneur ne change pas) → on soustrait les confirmés.
+  let livreCountQ = supabase.from("conteneurs").select("*", { count: "exact", head: true }).eq("statut", "LIVRE");
+  if (qNorm) livreCountQ = livreCountQ.ilike("search_text", `%${qNorm}%`);
+  const { count: livreMatching } = await livreCountQ;
+
+  let confirmedMatching = 0;
+  if (confirmedArr.length > 0) {
+    let cq = supabase.from("conteneurs").select("*", { count: "exact", head: true }).in("id", confirmedArr);
+    if (qNorm) cq = cq.ilike("search_text", `%${qNorm}%`);
+    confirmedMatching = (await cq).count ?? 0;
+  }
+  const recuperesCount = confirmedMatching;
+  const aRecupererCount = Math.max(0, (livreMatching ?? 0) - confirmedMatching);
 
   // Conteneurs livrés (avec lieu/type), puis on partitionne selon l'onglet
   const selectCols = `id, numero, client, date_livraison_reelle, destination_libre,
@@ -70,16 +85,18 @@ export default async function RecuperationsPage({
   }> = [];
 
   if (onglet === "recuperes") {
-    if (confirmedIds.size > 0) {
-      const { data } = await supabase.from("conteneurs").select(selectCols)
-        .in("id", Array.from(confirmedIds)).limit(LIST_LIMIT);
+    if (confirmedArr.length > 0) {
+      let q = supabase.from("conteneurs").select(selectCols).in("id", confirmedArr);
+      if (qNorm) q = q.ilike("search_text", `%${qNorm}%`);
+      const { data } = await q.limit(LIST_LIMIT);
       conteneurs = (data ?? []) as typeof conteneurs;
     }
   } else {
-    const { data } = await supabase.from("conteneurs").select(selectCols)
+    let q = supabase.from("conteneurs").select(selectCols)
       .eq("statut", "LIVRE")
-      .order("date_livraison_reelle", { ascending: true, nullsFirst: false })
-      .limit(LIST_LIMIT);
+      .order("date_livraison_reelle", { ascending: true, nullsFirst: false });
+    if (qNorm) q = q.ilike("search_text", `%${qNorm}%`);
+    const { data } = await q.limit(LIST_LIMIT);
     conteneurs = ((data ?? []) as typeof conteneurs).filter((c) => !confirmedIds.has(c.id));
   }
 
@@ -108,7 +125,7 @@ export default async function RecuperationsPage({
           </p>
         </div>
         <Button asChild variant="outline" size="sm">
-          <a href={`/api/recuperations/export?onglet=${onglet}`}><Download className="mr-2 size-4" />Exporter en Excel</a>
+          <a href={`/api/recuperations/export?onglet=${onglet}${qParam}`}><Download className="mr-2 size-4" />Exporter en Excel</a>
         </Button>
       </header>
 
@@ -117,9 +134,12 @@ export default async function RecuperationsPage({
       {sp.annule && <Flash>Planification annulée. Le conteneur est de nouveau à planifier.</Flash>}
       {sp.error && <Flash error>{sp.error}</Flash>}
 
-      <div className="inline-flex rounded-md border bg-background p-0.5">
-        <TabLink href="/recuperations?onglet=a_recuperer" active={onglet === "a_recuperer"} label="À récupérer" count={aRecupererCount} />
-        <TabLink href="/recuperations?onglet=recuperes" active={onglet === "recuperes"} label="Récupérés" count={recuperesCount} />
+      <div className="space-y-3">
+        <div className="inline-flex rounded-md border bg-background p-0.5">
+          <TabLink href={`/recuperations?onglet=a_recuperer${qParam}`} active={onglet === "a_recuperer"} label="À récupérer" count={aRecupererCount} />
+          <TabLink href={`/recuperations?onglet=recuperes${qParam}`} active={onglet === "recuperes"} label="Récupérés" count={recuperesCount} />
+        </div>
+        <RecuperationsSearch />
       </div>
 
       {conteneurs.length === 0 ? (
