@@ -3,6 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export type LoginState = {
   status: "idle" | "sent" | "error";
@@ -31,6 +32,36 @@ export async function requestOtpAction(
     return { status: "error", method, email, error: "Adresse email invalide." };
   }
 
+  // Avant d'envoyer un OTP : vérifier que l'adresse correspond à un compte
+  // PORTTRACK existant et actif. Sans ce check, signInWithOtp créerait
+  // silencieusement un nouveau utilisateur Supabase Auth (shouldCreateUser true
+  // par défaut), polluant la base et envoyant des emails à des destinataires
+  // arbitraires. Vérification via client admin pour bypasser la RLS qui
+  // protège public.users.
+  const admin = createAdminClient();
+  const { data: account } = await admin
+    .from("users")
+    .select("id, actif")
+    .eq("email", email)
+    .maybeSingle();
+
+  if (!account) {
+    return {
+      status: "error",
+      method,
+      email,
+      error: "Aucun compte n'est associé à cette adresse. Contacte ton administrateur.",
+    };
+  }
+  if (!account.actif) {
+    return {
+      status: "error",
+      method,
+      email,
+      error: "Compte désactivé. Contacte ton administrateur.",
+    };
+  }
+
   const supabase = await createClient();
   const host = (await headers()).get("host") ?? "localhost:3000";
   const protocol = host.startsWith("localhost") ? "http" : "https";
@@ -38,7 +69,7 @@ export async function requestOtpAction(
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {
-      shouldCreateUser: true,
+      shouldCreateUser: false,
       emailRedirectTo: `${protocol}://${host}/api/auth/callback`,
     },
   });
