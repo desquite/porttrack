@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
-import { Undo2, MapPin, CalendarClock, Truck, Lock, Download, CheckCircle2 } from "lucide-react";
+import { Undo2, MapPin, CalendarClock, Truck, Lock, Download, CheckCircle2, ChevronRight } from "lucide-react";
 
 import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
@@ -190,10 +190,11 @@ export default async function RecuperationsPage({
               );
             }
 
-            // Onglet « À récupérer »
+            // Onglet « À récupérer » — la ligne non planifiée est cliquable et
+            // mène à la planification (plus de bouton dédié).
             const planifiee = recup?.statut === "PLANIFIEE";
-            return (
-              <Card key={c.id} className={cn(planifiee && "border-primary/30 bg-primary/5")}>
+            const card = (
+              <Card className={cn(planifiee ? "border-primary/30 bg-primary/5" : "transition-colors hover:border-primary/40 hover:bg-muted/30")}>
                 <CardContent className="flex flex-col gap-3 py-3 sm:flex-row sm:items-center sm:justify-between">
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
@@ -229,13 +230,20 @@ export default async function RecuperationsPage({
                         </form>
                       </>
                     ) : (
-                      <Button asChild size="sm">
-                        <Link href={`/recuperations/${c.id}`}>Planifier la récupération</Link>
-                      </Button>
+                      <ChevronRight className="size-4 text-muted-foreground" />
                     )}
                   </div>
                 </CardContent>
               </Card>
+            );
+            // Carte planifiée : contient des <form> (Confirmer / Annuler) → pas
+            // de Link englobant (HTML invalide). Seule la non-planifiée navigue.
+            return planifiee ? (
+              <div key={c.id}>{card}</div>
+            ) : (
+              <Link key={c.id} href={`/recuperations/${c.id}`} className="block">
+                {card}
+              </Link>
             );
           })}
           {conteneurs.length === LIST_LIMIT && (

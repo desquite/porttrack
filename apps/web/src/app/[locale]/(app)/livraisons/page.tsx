@@ -171,7 +171,6 @@ export default async function LivraisonsPage({
                       </div>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
-                      {onglet === "a_livrer" && <span className="hidden text-xs font-medium text-primary sm:inline">Planifier la livraison</span>}
                       <ChevronRight className="size-4 text-muted-foreground" />
                     </div>
                   </CardContent>
