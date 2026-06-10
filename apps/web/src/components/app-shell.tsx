@@ -342,20 +342,22 @@ export function AppShell({
             <NavRow key={item.href} item={item} active={isActive(item.href)} onNavigate={closeMobile} />
           ))}
 
-          {/* Debug — visible pour tous (utile en dev, on le restreindra à SUPER_ADMIN plus tard) */}
-          <Link href="/debug" onClick={closeMobile} className="block pt-4">
-            <span
-              className={cn(
-                "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
-                cleanPath === "/debug"
-                  ? "bg-primary/10 text-primary font-medium"
-                  : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-              )}
-            >
-              <Bug className="size-4" />
-              Debug session
-            </span>
-          </Link>
+          {/* Debug — réservé au SUPER_ADMIN (outil interne PORTTRACK / Hinov) */}
+          {userRole === "SUPER_ADMIN" && (
+            <Link href="/debug" onClick={closeMobile} className="block pt-4">
+              <span
+                className={cn(
+                  "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+                  cleanPath === "/debug"
+                    ? "bg-primary/10 text-primary font-medium"
+                    : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
+                )}
+              >
+                <Bug className="size-4" />
+                Debug session
+              </span>
+            </Link>
+          )}
         </nav>
 
         <div className="border-t p-3 text-xs text-muted-foreground">
