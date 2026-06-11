@@ -18,6 +18,29 @@ import { buildParcours, type ConteneurParcours, type TimelineStep } from "./_com
 
 const RESULT_LIMIT = 60;
 
+/**
+ * Devine si la saisie est un n° de conteneur (norme ISO 6346 : 4 lettres +
+ * 7 chiffres, ex. TLLU5057849) ou un n° de BL (tout autre code alphanumérique,
+ * ex. MEDURK962252). Sert à formuler le bon message « aucun résultat ».
+ */
+function classifyQuery(q: string): "conteneur" | "bl" | "inconnu" {
+  const s = q.trim().toUpperCase().replace(/\s+/g, "");
+  if (/^[A-Z]{4}\d{7}$/.test(s)) return "conteneur";
+  if (/^[A-Z]{2,}\d{4,}$/.test(s) || /^\d{6,}$/.test(s)) return "bl";
+  return "inconnu";
+}
+
+function noResultMessage(q: string): string {
+  switch (classifyQuery(q)) {
+    case "conteneur":
+      return `Aucun conteneur ne correspond à « ${q} ».`;
+    case "bl":
+      return `Aucun BL ne correspond à « ${q} ».`;
+    default:
+      return `Aucun conteneur ni BL ne correspond à « ${q} ».`;
+  }
+}
+
 const STEP_ICON: Record<TimelineStep["kind"], React.ComponentType<{ className?: string }>> = {
   cree: CircleDot,
   affecte: Truck,
@@ -122,7 +145,7 @@ async function SearchResults({ qRaw }: { qRaw: string }) {
     return (
       <Card>
         <CardContent className="py-12 text-center text-sm text-muted-foreground">
-          Aucun conteneur ne correspond à « {qRaw} ».
+          {noResultMessage(qRaw)}
         </CardContent>
       </Card>
     );
