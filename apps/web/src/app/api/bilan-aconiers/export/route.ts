@@ -73,8 +73,10 @@ export async function GET(request: NextRequest) {
     .gte("date_livraison_reelle", `${year - 1}-01-01`)
     .lt("date_livraison_reelle", `${year}-01-01`);
   if (aconierFilter) {
-    qCurr = qCurr.eq("aconier", aconierFilter);
-    qPrev = qPrev.eq("aconier", aconierFilter);
+    // ilike sans joker = égalité insensible à la casse (cohérent avec la page).
+    const pattern = aconierFilter.replace(/[%_]/g, "\\$&");
+    qCurr = qCurr.ilike("aconier", pattern);
+    qPrev = qPrev.ilike("aconier", pattern);
   }
 
   const [currRes, prevRes, typesRes] = await Promise.all([

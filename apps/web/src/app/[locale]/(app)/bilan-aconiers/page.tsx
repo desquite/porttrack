@@ -11,7 +11,7 @@ import {
   variationPct, type PeriodKind,
 } from "@/lib/bilan/periods";
 import {
-  aggregateByAconier, aggregateByZone, inRange,
+  aggregateByAconier, aggregateByZone, inRange, canonLabel, dedupeLabels,
   type ConteneurLivre,
 } from "@/lib/bilan/aggregate";
 
@@ -112,8 +112,11 @@ export default async function BilanAconiersPage({
     .lt("date_livraison_reelle", prevYearEnd);
 
   if (aconierFilter) {
-    qCurr = qCurr.eq("aconier", aconierFilter);
-    qPrev = qPrev.eq("aconier", aconierFilter);
+    // ilike sans joker = égalité insensible à la casse → attrape « Medlog
+    // Transport » ET « MEDLOG TRANSPORT » (on échappe les jokers SQL).
+    const pattern = aconierFilter.replace(/[%_]/g, "\\$&");
+    qCurr = qCurr.ilike("aconier", pattern);
+    qPrev = qPrev.ilike("aconier", pattern);
   }
 
   const [currRes, prevRes, typesRes, aconiersRes] = await Promise.all([
@@ -134,9 +137,9 @@ export default async function BilanAconiersPage({
   const aconiersRaw = (aconiersRes.data ?? []) as Array<{ aconier: string | null }>;
 
   const typeSizeById = new Map(types.map((t) => [t.id, t.taille_pieds] as const));
-  const distinctAconiers = Array.from(
-    new Set(aconiersRaw.map((r) => (r.aconier ?? "").trim()).filter((s) => s.length > 0)),
-  ).sort();
+  // Dédupliqué par clé canonique : une seule entrée par aconier quelle que
+  // soit la casse saisie à l'import.
+  const distinctAconiers = dedupeLabels(aconiersRaw.map((r) => r.aconier));
 
   // ---------- Filtre par PÉRIODE COURANTE / PRÉCÉDENTE (sous-ensemble de l'année) ----------
   const currPeriod = currAll.filter((c) =>
@@ -177,17 +180,19 @@ export default async function BilanAconiersPage({
   });
   const hasPrevYearData = prevAll.length > 0;
 
-  // 4) Évolution mensuelle par aconier (top 5 sur la période courante)
+  // 4) Évolution mensuelle par aconier (top 5 sur la période courante).
+  // Comparaison canonique : toutes les graphies d'un même aconier comptent.
   const top5 = byAconier.slice(0, 5).map((a) => a.aconier);
+  const top5Canon = top5.map((ac) => canonLabel(ac));
   const evolutionData = months.map((m) => {
     const slot: Record<string, string | number> = { mois: m.label };
-    for (const ac of top5) {
+    top5.forEach((ac, i) => {
       slot[ac] = currAll.filter(
         (c) =>
-          c.aconier === ac &&
+          canonLabel(c.aconier) === top5Canon[i] &&
           inRange(c.date_livraison_reelle, m.startISO, m.endExclusiveISO),
       ).length;
-    }
+    });
     return slot;
   });
 
