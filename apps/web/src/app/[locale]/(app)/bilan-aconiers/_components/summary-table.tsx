@@ -8,8 +8,6 @@ type Props = {
 };
 
 const nf = (n: number) => n.toLocaleString("fr-FR");
-const nfTons = (n: number) =>
-  n.toLocaleString("fr-FR", { maximumFractionDigits: 1 });
 
 export function SummaryTable({ rows, totalCurr, hasPrev }: Props) {
   if (rows.length === 0) {
@@ -31,7 +29,6 @@ export function SummaryTable({ rows, totalCurr, hasPrev }: Props) {
             <th className="py-2 pr-4 font-medium text-right">20&apos;</th>
             <th className="py-2 pr-4 font-medium text-right">40&apos;</th>
             <th className="py-2 pr-4 font-medium text-right">Autres</th>
-            <th className="py-2 pr-4 font-medium text-right">Tonnage</th>
             {hasPrev && <th className="py-2 pr-4 font-medium text-right">vs N-1</th>}
           </tr>
         </thead>
@@ -48,7 +45,6 @@ export function SummaryTable({ rows, totalCurr, hasPrev }: Props) {
               <td className="py-2 pr-4 text-right tabular-nums text-muted-foreground">
                 {nf(r.tailleAutre)}
               </td>
-              <td className="py-2 pr-4 text-right tabular-nums">{nfTons(r.tonnage)} t</td>
               {hasPrev && (
                 <td className="py-2 pr-4 text-right tabular-nums">
                   <VariationCell value={r.variationPct} />
@@ -69,9 +65,6 @@ export function SummaryTable({ rows, totalCurr, hasPrev }: Props) {
             </td>
             <td className="py-2 pr-4 text-right tabular-nums">
               {nf(rows.reduce((s, r) => s + r.tailleAutre, 0))}
-            </td>
-            <td className="py-2 pr-4 text-right tabular-nums">
-              {nfTons(rows.reduce((s, r) => s + r.tonnage, 0))} t
             </td>
             {hasPrev && <td className="py-2 pr-4" />}
           </tr>

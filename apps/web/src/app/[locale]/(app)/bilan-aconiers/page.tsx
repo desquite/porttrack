@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
 import { setRequestLocale } from "next-intl/server";
-import { BarChart3, Trophy, TrendingUp, Package, Scale } from "lucide-react";
+import { BarChart3, Trophy, TrendingUp, Package } from "lucide-react";
 
 import { firstAllowedHref, parsePermissions, type Role } from "@porttrack/shared";
 import { createClient } from "@/lib/supabase/server";
@@ -156,11 +156,6 @@ export default async function BilanAconiersPage({
   const totalPrev = prevPeriodArr.length;
   const variation = variationPct(totalCurr, totalPrev);
 
-  const tonnageCurr = currPeriod.reduce(
-    (s, c) => s + (c.poids_kg ?? 0) / 1000,
-    0,
-  );
-
   // 2) Répartition par aconier (période courante)
   const byAconier = aggregateByAconier(currPeriod, prevPeriodArr, typeSizeById);
   const topAconier = byAconier[0] ?? null;
@@ -236,7 +231,7 @@ export default async function BilanAconiersPage({
       </Card>
 
       {/* KPI */}
-      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <KpiCard
           icon={<Package className="size-5" />}
           label="Conteneurs livrés"
@@ -267,12 +262,6 @@ export default async function BilanAconiersPage({
               ? `${topAconier.livres} conteneur(s) · ${topAconier.partPct.toFixed(0)}%`
               : "Aucune livraison"
           }
-        />
-        <KpiCard
-          icon={<Scale className="size-5" />}
-          label="Tonnage transporté"
-          value={`${tonnageCurr.toLocaleString("fr-FR", { maximumFractionDigits: 1 })} t`}
-          hint={`sur ${period.label}`}
         />
       </section>
 

@@ -101,7 +101,6 @@ export async function GET(request: NextRequest) {
   const byZone = aggregateByZone(currPeriod);
   const hasPrev = prevPeriodArr.length > 0;
   const total = currPeriod.length;
-  const totalTonnage = currPeriod.reduce((s, c) => s + (c.poids_kg ?? 0) / 1000, 0);
 
   // -------- Construction du classeur --------
   const wb = XLSX.utils.book_new();
@@ -116,7 +115,6 @@ export async function GET(request: NextRequest) {
     ["Date de référence", "Date de livraison réelle"],
     [],
     ["Conteneurs livrés", total],
-    ["Tonnage transporté (t)", round1(totalTonnage)],
     hasPrev
       ? ["Comparaison " + prevPeriod.label, prevPeriodArr.length]
       : ["Comparaison N-1", "Pas d'historique"],
@@ -130,7 +128,6 @@ export async function GET(request: NextRequest) {
   // Feuille 2 : Récap par aconier
   const recapHeader = [
     "Aconier", "Conteneurs livrés", "Part (%)", "20'", "40'", "Autres tailles",
-    "Tonnage (t)",
     ...(hasPrev ? [`${prevPeriod.label} (N-1)`, "Variation (%)"] : []),
   ];
   const recapRows = byAconier.map((r) => [
@@ -140,7 +137,6 @@ export async function GET(request: NextRequest) {
     r.taille20,
     r.taille40,
     r.tailleAutre,
-    round1(r.tonnage),
     ...(hasPrev ? [r.prevLivres, r.variationPct == null ? "—" : round1(r.variationPct)] : []),
   ]);
   // Ligne total
@@ -151,7 +147,6 @@ export async function GET(request: NextRequest) {
     byAconier.reduce((s, r) => s + r.taille20, 0),
     byAconier.reduce((s, r) => s + r.taille40, 0),
     byAconier.reduce((s, r) => s + r.tailleAutre, 0),
-    round1(totalTonnage),
     ...(hasPrev ? [prevPeriodArr.length, ""] : []),
   ];
   const wsRecap = XLSX.utils.aoa_to_sheet([recapHeader, ...recapRows, [], totalRow]);
