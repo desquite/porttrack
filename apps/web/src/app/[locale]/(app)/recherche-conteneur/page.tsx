@@ -86,13 +86,37 @@ async function SearchResults({ qRaw }: { qRaw: string }) {
   }
 
   const supabase = await createClient();
-  const { data: rows } = await supabase
+  const baseSelect =
+    "id, numero, numero_bl, client, transitaire, date_badt, statut, created_at, date_livraison_reelle";
+
+  // 1) Conteneurs qui matchent directement la recherche (n° conteneur OU BL).
+  const { data: matched } = await supabase
     .from("conteneurs")
-    .select("id, numero, numero_bl, client, transitaire, date_badt, statut, created_at, date_livraison_reelle")
+    .select(baseSelect)
     .ilike("search_text", `%${qNorm}%`)
     .order("created_at", { ascending: false })
     .limit(RESULT_LIMIT);
-  const parcours = await buildParcours(rows ?? []);
+  const matchedRows = matched ?? [];
+
+  // 2) Expansion par BL : on récupère TOUS les conteneurs partageant un BL
+  // trouvé, même s'ils ne matchent pas directement la recherche. Ainsi, en
+  // cherchant un seul n° de conteneur, on voit tout son BL (et le bon compteur).
+  const byId = new Map<string, (typeof matchedRows)[number]>();
+  for (const r of matchedRows) byId.set(r.id, r);
+
+  const bls = Array.from(
+    new Set(matchedRows.map((m) => m.numero_bl?.trim()).filter((b): b is string => !!b)),
+  );
+  if (bls.length > 0) {
+    const { data: siblings } = await supabase
+      .from("conteneurs")
+      .select(baseSelect)
+      .in("numero_bl", bls)
+      .limit(500);
+    for (const r of siblings ?? []) byId.set(r.id, r);
+  }
+
+  const parcours = await buildParcours(Array.from(byId.values()));
 
   if (parcours.length === 0) {
     return (
