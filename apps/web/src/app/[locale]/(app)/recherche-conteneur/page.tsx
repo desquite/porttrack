@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Link from "next/link";
 import { setRequestLocale } from "next-intl/server";
 import {
@@ -8,6 +9,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { PorttrackLoader } from "@/components/porttrack-loader";
 import { cn } from "@/lib/utils";
 import { formatDateFR } from "@/lib/utils/dates";
 import { normalizeForSearch } from "@porttrack/shared";
@@ -29,6 +31,9 @@ const STEP_ICON: Record<TimelineStep["kind"], React.ComponentType<{ className?: 
  * Module « Recherche » (Opérations conteneurs).
  * Recherche par n° conteneur OU n° BL. Regroupe les résultats par BL, et pour
  * chaque conteneur affiche son parcours (timeline d'étapes réellement franchies).
+ *
+ * La barre reste visible en permanence ; seule la zone résultats est suspendue
+ * (loader ancre PORTTRACK) pendant le chargement des données.
  */
 export default async function RechercheConteneurPage({
   params,
@@ -42,28 +47,6 @@ export default async function RechercheConteneurPage({
   setRequestLocale(locale);
 
   const qRaw = sp.q?.trim() ?? "";
-  const qNorm = qRaw ? normalizeForSearch(qRaw).replace(/[%_]/g, "").trim() : "";
-
-  let parcours: ConteneurParcours[] = [];
-  if (qNorm) {
-    const supabase = await createClient();
-    const { data: rows } = await supabase
-      .from("conteneurs")
-      .select("id, numero, numero_bl, client, transitaire, date_badt, statut, created_at, date_livraison_reelle")
-      .ilike("search_text", `%${qNorm}%`)
-      .order("created_at", { ascending: false })
-      .limit(RESULT_LIMIT);
-    parcours = await buildParcours(rows ?? []);
-  }
-
-  // Regroupement par BL (les conteneurs sans BL → groupe « Sans BL »)
-  const groups = new Map<string, ConteneurParcours[]>();
-  for (const p of parcours) {
-    const key = p.numeroBl?.trim() || "__SANS_BL__";
-    const arr = groups.get(key) ?? [];
-    arr.push(p);
-    groups.set(key, arr);
-  }
 
   return (
     <div className="space-y-6">
@@ -79,65 +62,101 @@ export default async function RechercheConteneurPage({
 
       <RechercheBar defaultValue={qRaw} />
 
-      {!qNorm ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-2 py-12 text-center text-sm text-muted-foreground">
-            <Search className="size-8 opacity-40" />
-            Saisis un n° de conteneur ou de BL pour démarrer la recherche.
-          </CardContent>
-        </Card>
-      ) : parcours.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center text-sm text-muted-foreground">
-            Aucun conteneur ne correspond à « {qRaw} ».
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-5">
-          {Array.from(groups.entries()).map(([key, conteneurs]) => {
-            const bl = key === "__SANS_BL__" ? null : key;
-            const head = conteneurs[0];
-            return (
-              <div key={key} className="space-y-2">
-                {/* En-tête BL */}
-                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-muted/30 px-4 py-3 text-sm">
-                  <span className="inline-flex items-center gap-1.5 font-semibold">
-                    <FileText className="size-4 text-primary" />
-                    {bl ? `BL ${bl}` : "Sans BL"}
-                  </span>
-                  <Badge variant="secondary" className="text-[10px]">
-                    {conteneurs.length} conteneur{conteneurs.length > 1 ? "s" : ""}
-                  </Badge>
-                  {head.client && (
-                    <span className="inline-flex items-center gap-1 text-muted-foreground">
-                      <Building2 className="size-3.5" />{head.client}
-                    </span>
-                  )}
-                  {head.transitaire && (
-                    <span className="text-muted-foreground">Transitaire : {head.transitaire}</span>
-                  )}
-                  {head.dateBadt && (
-                    <span className="inline-flex items-center gap-1 text-muted-foreground">
-                      <CalendarClock className="size-3.5" />BADT {formatDateFR(head.dateBadt)}
-                    </span>
-                  )}
-                </div>
+      {/* key={qRaw} → le fallback (loader) se ré-affiche à chaque nouvelle recherche */}
+      <Suspense key={qRaw} fallback={<PorttrackLoader label="Recherche en cours…" />}>
+        <SearchResults qRaw={qRaw} />
+      </Suspense>
+    </div>
+  );
+}
 
-                {/* Conteneurs du BL avec leur parcours */}
-                <div className="space-y-2">
-                  {conteneurs.map((c) => (
-                    <ConteneurCard key={c.id} c={c} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
-          {parcours.length === RESULT_LIMIT && (
-            <p className="text-center text-xs text-muted-foreground">
-              {RESULT_LIMIT} premiers résultats affichés. Affine ta recherche.
-            </p>
-          )}
-        </div>
+/** Zone résultats (async) — suspendue pendant le fetch. */
+async function SearchResults({ qRaw }: { qRaw: string }) {
+  const qNorm = qRaw ? normalizeForSearch(qRaw).replace(/[%_]/g, "").trim() : "";
+
+  if (!qNorm) {
+    return (
+      <Card>
+        <CardContent className="flex flex-col items-center gap-2 py-12 text-center text-sm text-muted-foreground">
+          <Search className="size-8 opacity-40" />
+          Saisis un n° de conteneur ou de BL pour démarrer la recherche.
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const supabase = await createClient();
+  const { data: rows } = await supabase
+    .from("conteneurs")
+    .select("id, numero, numero_bl, client, transitaire, date_badt, statut, created_at, date_livraison_reelle")
+    .ilike("search_text", `%${qNorm}%`)
+    .order("created_at", { ascending: false })
+    .limit(RESULT_LIMIT);
+  const parcours = await buildParcours(rows ?? []);
+
+  if (parcours.length === 0) {
+    return (
+      <Card>
+        <CardContent className="py-12 text-center text-sm text-muted-foreground">
+          Aucun conteneur ne correspond à « {qRaw} ».
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Regroupement par BL (les conteneurs sans BL → groupe « Sans BL »)
+  const groups = new Map<string, ConteneurParcours[]>();
+  for (const p of parcours) {
+    const key = p.numeroBl?.trim() || "__SANS_BL__";
+    const arr = groups.get(key) ?? [];
+    arr.push(p);
+    groups.set(key, arr);
+  }
+
+  return (
+    <div className="space-y-5">
+      {Array.from(groups.entries()).map(([key, conteneurs]) => {
+        const bl = key === "__SANS_BL__" ? null : key;
+        const head = conteneurs[0];
+        return (
+          <div key={key} className="space-y-2">
+            {/* En-tête BL */}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 rounded-lg border bg-muted/30 px-4 py-3 text-sm">
+              <span className="inline-flex items-center gap-1.5 font-semibold">
+                <FileText className="size-4 text-primary" />
+                {bl ? `BL ${bl}` : "Sans BL"}
+              </span>
+              <Badge variant="secondary" className="text-[10px]">
+                {conteneurs.length} conteneur{conteneurs.length > 1 ? "s" : ""}
+              </Badge>
+              {head.client && (
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  <Building2 className="size-3.5" />{head.client}
+                </span>
+              )}
+              {head.transitaire && (
+                <span className="text-muted-foreground">Transitaire : {head.transitaire}</span>
+              )}
+              {head.dateBadt && (
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  <CalendarClock className="size-3.5" />BADT {formatDateFR(head.dateBadt)}
+                </span>
+              )}
+            </div>
+
+            {/* Conteneurs du BL avec leur parcours */}
+            <div className="space-y-2">
+              {conteneurs.map((c) => (
+                <ConteneurCard key={c.id} c={c} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+      {parcours.length === RESULT_LIMIT && (
+        <p className="text-center text-xs text-muted-foreground">
+          {RESULT_LIMIT} premiers résultats affichés. Affine ta recherche.
+        </p>
       )}
     </div>
   );
