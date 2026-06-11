@@ -65,6 +65,7 @@ export const PERMISSION_TREE: Record<PermissionDomain, DomainDef> = {
       { key: "operations.livraisons",   label: "Livraison",           href: "/livraisons" },
       { key: "operations.recuperations",label: "Récupération",        href: "/recuperations" },
       { key: "operations.saisie",       label: "Saisie opération",    href: "/saisie-operation" },
+      { key: "operations.recherche",    label: "Recherche",           href: "/recherche-conteneur" },
       { key: "operations.eir",          label: "Archives EIR",        href: "/eir" },
       { key: "operations.historique",   label: "Traçabilité",         href: "/historique" },
     ],

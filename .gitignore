@@ -62,3 +62,5 @@ supabase/.env
 
 # Sauvegardes ponctuelles de nettoyage de données (ne pas versionner)
 apps/web/scripts/backup-aconier-*.json
+
+.vercel
