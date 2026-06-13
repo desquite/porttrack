@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { sendWhatsapp } from "@/lib/notifications/whatsapp-wasender";
 
 // =============================================================================
-// Construction du message WhatsApp (cahier §7.3)
+// Construction du message WhatsApp
 // =============================================================================
 
 function buildWhatsappMessage(args: {
@@ -114,7 +114,7 @@ async function sendDesignationWhatsapp(
 }
 
 // =============================================================================
-// Écran de désignation 2 panneaux (cahier v8 §6.2) — brouillon + VALIDER TOUT
+// Écran de désignation 2 panneaux — brouillon + VALIDER TOUT
 // =============================================================================
 // Modèle : former une paire = créer une désignation BROUILLON (validee_at null,
 // auto-sauvée, AUCUN WhatsApp). « VALIDER TOUT » valide tous les brouillons du

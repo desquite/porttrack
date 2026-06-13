@@ -222,7 +222,7 @@ export async function importFluxAction(
   const nombreLignes = parsed.rows.length;
 
   // L'aconier est OBLIGATOIRE : la colonne doit être mappée, sinon l'import
-  // entier est refusé (cahier : indispensable au bilan par aconier).
+  // entier est refusé (indispensable au bilan par aconier).
   if (!mapping.numero) {
     return { ...baseReport, erreurs: [{ ligne: 0, message: "La colonne « N° conteneur » doit être mappée." }] };
   }
@@ -479,7 +479,7 @@ export async function importFluxAction(
     .update({ nombre_importes: importes, nombre_erreurs: erreurs.length, statut })
     .eq("id", flux.id);
 
-  // --- 9. Mémorisation du profil de mapping (cahier §4.4) ---
+  // --- 9. Mémorisation du profil de mapping ---
   // Dès qu'au moins une ligne est importée, on enregistre le mapping retenu
   // pour ce (tenant, aconier) afin de le réappliquer aux imports suivants.
   if (importes > 0) {

@@ -81,7 +81,7 @@ export default async function ChecklistItemsPage({
               Items de check-list
             </h1>
             <p className="text-sm text-muted-foreground">
-              Liste des items affichés aux chauffeurs et dispatchers lors de la saisie de la check-list de départ (cahier §7.3).
+              Liste des items affichés aux chauffeurs et dispatchers lors de la saisie de la check-list de départ.
               Personnalise-les selon les besoins de ton entreprise.
             </p>
           </div>

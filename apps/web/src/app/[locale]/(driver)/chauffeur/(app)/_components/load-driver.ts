@@ -28,7 +28,7 @@ export async function loadDriverContext() {
     .eq("chauffeur_id", chauffeur.id)
     .eq("date_designation", today)
     // Seules les désignations VALIDÉES et NON annulées sont visibles du chauffeur
-    // (brouillon = Exploitation seulement ; annulée = camion en panne — cahier v8).
+    // (brouillon = Exploitation seulement ; annulée = camion en panne).
     .not("validee_at", "is", null)
     .is("annulee_at", null)
     .maybeSingle();

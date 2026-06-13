@@ -54,7 +54,7 @@ export default async function NewAffectationPage({
   const refs = await loadAffectationRefs();
   // Désignations du jour : seuls les chauffeurs DÉSIGNÉS aujourd'hui peuvent
   // être affectés à un conteneur. Le tracteur attribué au chauffeur du jour
-  // est auto-rempli depuis la désignation (cf. cahier §7.3).
+  // est auto-rempli depuis la désignation.
   const designationsJour = await loadDesignationsDuJour();
 
   // Cas spécial : pas de conteneur ouvert → on ne peut pas créer d'affectation

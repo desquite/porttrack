@@ -59,7 +59,7 @@ export default async function EirPage({
           Archives EIR
         </h1>
         <p className="text-sm text-muted-foreground">
-          Equipment Interchange Receipt — preuve de prise en charge / restitution (cahier §10). Conservation 5 ans.
+          Equipment Interchange Receipt — preuve de prise en charge / restitution. Conservation 5 ans.
         </p>
       </div>
 

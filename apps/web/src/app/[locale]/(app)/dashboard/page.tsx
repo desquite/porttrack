@@ -48,7 +48,7 @@ export default async function DashboardPage({
 
   const supabase = await createClient();
 
-  // Le tableau de bord est réservé au Manager/Super Admin (cahier v8). Un autre
+  // Le tableau de bord est réservé au Manager/Super Admin. Un autre
   // profil est redirigé vers sa 1re page autorisée.
   const { data: { user } } = await supabase.auth.getUser();
   if (user) {

@@ -1,5 +1,5 @@
 // =============================================================================
-// Limites des plans d'abonnement (cahier §15.2 — V7)
+// Limites des plans d'abonnement (V7)
 // =============================================================================
 // Source de vérité unique des quotas et du gating de fonctionnalités par plan.
 // Utilisée côté serveur (blocage création users/MR, gardes de page, webhook bot)

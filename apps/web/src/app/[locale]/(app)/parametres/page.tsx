@@ -330,7 +330,7 @@ export default async function ParametresPage({
             </CardTitle>
             <CardDescription>
               Personnalise les items affichés aux chauffeurs (huile, pneus, freins, etc.).
-              Par défaut, les 6 items du cahier §7.3 sont configurés.
+              Par défaut, les 6 items sont configurés.
             </CardDescription>
           </div>
           <Button asChild variant="outline" size="sm">
@@ -363,7 +363,7 @@ export default async function ParametresPage({
                 </CardTitle>
                 <CardDescription>
                   {botAllowed
-                    ? "Numéros autorisés à interroger le bot (CG/AS/VT…) et journal des consultations (cahier §7.5)."
+                    ? "Numéros autorisés à interroger le bot (CG/AS/VT…) et journal des consultations."
                     : `Fonctionnalité incluse à partir du plan ${minPlan ? PLAN_LABELS[minPlan] : "Business"}. Contacte PORTTRACK pour faire évoluer ton abonnement.`}
                 </CardDescription>
               </div>

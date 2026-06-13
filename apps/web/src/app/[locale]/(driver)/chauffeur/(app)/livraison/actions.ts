@@ -15,7 +15,7 @@ const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/heic", "ap
 const MODES = ["REMORQUE_COUPEE", "CLIENT_DECHARGE", "AUTO_CHARGEUR"];
 
 /**
- * Confirmation de livraison PAR LE CHAUFFEUR (PWA, cahier §9.2 + remorque).
+ * Confirmation de livraison PAR LE CHAUFFEUR (PWA, remorque).
  * EIR obligatoire. Capture le mode de livraison + la remorque utilisée (sauf
  * auto-chargeur) + le lieu figé. Inserts/maj via client admin après validation
  * d'appartenance (RLS Storage + update conteneur bloqués pour le chauffeur).

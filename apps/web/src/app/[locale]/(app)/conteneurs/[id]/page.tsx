@@ -84,7 +84,7 @@ export default async function EditConteneurPage({
 
   const refs = await loadConteneurRefs();
 
-  // EIR (cahier §10) : affectation active pour pré-remplir chauffeur/camion +
+  // EIR : affectation active pour pré-remplir chauffeur/camion +
   // EIR déjà archivés pour ce conteneur.
   const dejaLivre = conteneur.statut === "LIVRE" || conteneur.statut === "ANNULE";
   const [{ data: activeAff }, { data: eirArchives }] = await Promise.all([
@@ -167,7 +167,7 @@ export default async function EditConteneurPage({
         </Alert>
       )}
 
-      {/* Confirmation de livraison avec EIR (cahier §10) */}
+      {/* Confirmation de livraison avec EIR */}
       {!dejaLivre && (
         <Card className="border-emerald-200">
           <CardHeader>
@@ -204,7 +204,7 @@ export default async function EditConteneurPage({
                 {eirArchives.length}
               </span>
             </CardTitle>
-            <CardDescription>Conservation 5 ans — suppression réservée au Super Admin (cahier §9.4).</CardDescription>
+            <CardDescription>Conservation 5 ans — suppression réservée au Super Admin.</CardDescription>
           </CardHeader>
           <CardContent>
             <ul className="divide-y rounded-md border">
@@ -255,7 +255,7 @@ export default async function EditConteneurPage({
         </CardContent>
       </Card>
 
-      {/* Modification tracée — champs sensibles (cahier §9) */}
+      {/* Modification tracée — champs sensibles */}
       <Card className="border-amber-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">

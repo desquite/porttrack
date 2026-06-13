@@ -85,7 +85,7 @@ export default async function ChauffeursPage({
   let query = supabase
     .from("chauffeurs")
     // Join Supabase sur la FK equipe_id_defaut → on récupère le code/nom/couleur
-    // de l'équipe pour l'afficher sur la carte (cf. cahier v7 §7.2).
+    // de l'équipe pour l'afficher sur la carte.
     .select("*, equipe:equipes(id, nom, code, couleur)", { count: "exact" })
     .order("nom", { ascending: true })
     .range(from, to);
@@ -266,7 +266,7 @@ function ChauffeurCard({ chauffeur: c }: { chauffeur: ChauffeurAvecEquipe }) {
               <Badge variant={STATUT_VARIANT[c.statut]} className="text-[10px]">
                 {STATUT_LABEL[c.statut]}
               </Badge>
-              {/* Équipe : pastille couleur + code/nom (cf. cahier v7 §7.2) */}
+              {/* Équipe : pastille couleur + code/nom */}
               {c.equipe ? (
                 <span className="inline-flex items-center gap-1.5 rounded-md border px-1.5 py-0.5 text-[10px] font-medium text-foreground/80">
                   <span

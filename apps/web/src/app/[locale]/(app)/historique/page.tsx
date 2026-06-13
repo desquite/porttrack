@@ -48,7 +48,7 @@ export default async function HistoriquePage({
           Traçabilité
         </h1>
         <p className="text-sm text-muted-foreground">
-          Journal des modifications de données sensibles (cahier §9).
+          Journal des modifications de données sensibles.
         </p>
       </div>
 

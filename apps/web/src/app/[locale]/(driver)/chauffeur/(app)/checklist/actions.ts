@@ -16,7 +16,7 @@ const MAX_FILE = 10 * 1024 * 1024;
 const ALLOWED_MIME = ["image/jpeg", "image/png", "image/webp", "image/heic"];
 
 /**
- * Soumission de la check-list de départ PAR LE CHAUFFEUR (PWA, cahier §7.3).
+ * Soumission de la check-list de départ PAR LE CHAUFFEUR (PWA).
  * Les inserts DB passent par la session du chauffeur (RLS « own »). La photo
  * passe par le client admin car la RLS Storage bloque le chauffeur (pas de
  * tenant dans son JWT) — on valide l'appartenance avant.

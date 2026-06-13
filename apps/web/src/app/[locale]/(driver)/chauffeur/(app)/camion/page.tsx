@@ -10,7 +10,7 @@ import { classifyExpiry, EXPIRY_BADGE_VARIANT, formatExpiryLabel } from "@/lib/u
 import { loadDriverContext } from "../_components/load-driver";
 import { downloadCamionDocAction } from "./actions";
 
-// Lignes documentaires d'un tracteur (cahier §8) : label + colonne d'échéance.
+// Lignes documentaires d'un tracteur : label + colonne d'échéance.
 const DOC_ROWS: { type: string; label: string; col: string | null }[] = [
   { type: "CARTE_GRISE",         label: "Carte grise",          col: null },
   { type: "ASSURANCE",           label: "Assurance",            col: "assurance_fin" },

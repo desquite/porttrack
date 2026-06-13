@@ -1,5 +1,5 @@
 /**
- * Module Import de Flux Excel — référence partagée (cahier §4).
+ * Module Import de Flux Excel — référence partagée.
  *
  * L'aconier envoie un fichier Excel avec ses propres en-têtes. PORTTRACK mappe
  * ces colonnes vers un jeu de champs standard avant de créer les conteneurs. Ce
@@ -19,7 +19,7 @@ import type { ConteneurStatut } from "./constants";
 // =============================================================================
 // `required` = bloquant (la ligne est rejetée si vide). Seul le numéro l'est :
 // c'est la clé d'unicité et la colonne NOT NULL en base. Les autres champs
-// recommandés par le cahier (client, destination, type) génèrent un simple
+// recommandés (client, destination, type) génèrent un simple
 // avertissement plutôt qu'un rejet, pour ne pas écarter en masse des fichiers
 // réels souvent incomplets.
 
@@ -48,7 +48,7 @@ export interface FluxFieldDef {
   label: string;
   description: string;
   required: boolean;     // bloquant à l'import
-  recommended?: boolean; // recommandé par le cahier (avertissement si vide)
+  recommended?: boolean; // recommandé (avertissement si vide)
 }
 
 export const FLUX_FIELDS: readonly FluxFieldDef[] = [
@@ -75,7 +75,7 @@ export const FLUX_FIELDS: readonly FluxFieldDef[] = [
 // =============================================================================
 // Alias d'en-têtes (en-têtes normalisés) → champ standard
 // =============================================================================
-// Liste des variantes d'en-têtes courantes (cahier §4.2), pour reconnaître
+// Liste des variantes d'en-têtes courantes, pour reconnaître
 // automatiquement les colonnes quel que soit l'aconier émetteur.
 
 export const HEADER_ALIASES: Record<FluxFieldKey, string[]> = {

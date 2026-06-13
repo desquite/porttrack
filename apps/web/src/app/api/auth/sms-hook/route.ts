@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * « Send SMS Hook » de Supabase Auth (cahier Phase 5).
+ * « Send SMS Hook » de Supabase Auth.
  *
  * Quand un chauffeur demande un code de connexion (phone OTP), Supabase appelle
  * ce endpoint avec le numéro + l'OTP. On envoie le code par WhatsApp (WasenderAPI)

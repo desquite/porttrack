@@ -7,7 +7,7 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 /**
- * Webhook du bot WhatsApp de consultation de documents (cahier §7.5).
+ * Webhook du bot WhatsApp de consultation de documents.
  *
  * GET  : vérification d'abonnement (Meta Cloud API renvoie un challenge).
  * POST : réception d'un message entrant → traitement → réponse + journal.

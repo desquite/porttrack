@@ -112,7 +112,7 @@ export const DOCUMENT_TYPES = [
   "ATTESTATION_CNPS",
   "CONTRAT_TRAVAIL",
   "PHOTO_IDENTITE",
-  // Matériel (ordre cahier §8 : Carte Grise, Assurance, Visite Technique,
+  // Matériel (ordre : Carte Grise, Assurance, Visite Technique,
   // Carte de Transport, Carte de Stationnement, Patente)
   "CARTE_GRISE",
   "ASSURANCE",
@@ -142,7 +142,7 @@ export const SEUILS_ALERTE_DOC = {
   URGENT: 15,  // alerte rouge avant expiration
 } as const;
 
-/** BADT (Bon À Délivrer Transitaire — cahier §13.3) */
+/** BADT (Bon À Délivrer Transitaire) */
 export const SEUILS_BADT = {
   ANTICIPEE_HEURES: 48,
   URGENTE_HEURES: 24,
@@ -262,7 +262,7 @@ export const CHECKLIST_STATUTS_GLOBAUX = ["FAITE", "REMARQUE", "NON_FAITE"] as c
 export type ChecklistStatutGlobal = (typeof CHECKLIST_STATUTS_GLOBAUX)[number];
 
 /**
- * Items par défaut (cahier v7 §7.3) — seedés automatiquement à la création
+ * Items par défaut — seedés automatiquement à la création
  * de chaque tenant via la fonction Postgres `seed_checklist_items_for_tenant`.
  * Ces codes sont stables ; les libellés peuvent être renommés côté UI.
  */
@@ -295,8 +295,8 @@ export type TrackedField = {
 };
 
 /**
- * Registre EXTENSIBLE des champs dont la modification exige un justificatif
- * (cahier §8.2). Pour tracer un nouveau champ : ajouter une entrée ici.
+ * Registre EXTENSIBLE des champs dont la modification exige un justificatif.
+ * Pour tracer un nouveau champ : ajouter une entrée ici.
  * La clé est le nom de table (`table_cible`).
  *
  * ⚠️ La colonne doit exister sur la table cible — l'action whiteliste
@@ -326,7 +326,7 @@ export function getTrackedField(table: string, champ: string): TrackedField | un
   return fields?.find((f) => f.champ === champ);
 }
 
-/** Formats de justificatif acceptés (cahier §8.4 RÈGLE 2). */
+/** Formats de justificatif acceptés. */
 export const JUSTIFICATIF_MIME = [
   "application/pdf",
   "image/jpeg",
@@ -341,7 +341,7 @@ export const STATUTS_CONTENEUR = CONTENEUR_STATUTS;
 export type StatutConteneur = ConteneurStatut;
 
 // =============================================================================
-// Bot WhatsApp (futur — cahier §7.5)
+// Bot WhatsApp (futur)
 // =============================================================================
 
 export const BOT_WHATSAPP_COMMANDES = {

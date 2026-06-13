@@ -66,7 +66,7 @@ export default async function EditAffectationPage({
     remorqueId: affectation.remorque_id,
   });
 
-  // Champs sensibles tracés (cahier §8.2) : chauffeur affecté + camion affecté.
+  // Champs sensibles tracés : chauffeur affecté + camion affecté.
   const trackedFields: TrackedFieldOption[] = [
     {
       champ: "chauffeur_id",
@@ -144,7 +144,7 @@ export default async function EditAffectationPage({
         </CardContent>
       </Card>
 
-      {/* Modification tracée — chauffeur / camion affecté (cahier §8.2) */}
+      {/* Modification tracée — chauffeur / camion affecté */}
       <Card className="border-amber-200">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-base">

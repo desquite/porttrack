@@ -159,7 +159,7 @@ export function TrackedModificationForm({ tenantId, tableCible, recordId, fields
           className="block w-full cursor-pointer rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-sm file:mr-2 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-xs"
         />
         <p className="text-[11px] text-muted-foreground">
-          Obligatoire (cahier §8.4). PDF, JPG, PNG ou HEIC — 10 Mo max. Le bouton reste désactivé tant qu&apos;aucun fichier n&apos;est joint.
+          Obligatoire. PDF, JPG, PNG ou HEIC — 10 Mo max. Le bouton reste désactivé tant qu&apos;aucun fichier n&apos;est joint.
         </p>
       </div>
 

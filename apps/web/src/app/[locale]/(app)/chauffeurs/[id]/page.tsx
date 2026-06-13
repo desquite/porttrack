@@ -289,7 +289,7 @@ export default async function EditChauffeurPage({
             </span>
           </CardTitle>
           <CardDescription>
-            Historique des check-lists effectuées avant le départ (cahier v7 §7.3).
+            Historique des check-lists effectuées avant le départ.
           </CardDescription>
         </CardHeader>
         <CardContent>

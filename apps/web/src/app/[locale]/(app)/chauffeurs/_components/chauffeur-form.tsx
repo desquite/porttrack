@@ -28,7 +28,7 @@ type Props = {
   isSuperAdmin: boolean;
   tenants: { id: string; nom_entreprise: string }[];
   defaultTenantId: string | null;
-  /** Équipes disponibles pour le sélecteur (cahier v7 §7.2). */
+  /** Équipes disponibles pour le sélecteur. */
   equipes?: { id: string; nom: string; code: string }[];
   /** Valeurs pré-remplies (mode update) — issues du chauffeur chargé en DB */
   defaultValues?: Partial<Chauffeur>;

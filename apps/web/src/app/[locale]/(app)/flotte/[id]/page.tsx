@@ -240,7 +240,7 @@ export default async function EditMaterielPage({
             </span>
           </CardTitle>
           <CardDescription>
-            Historique des inspections avant départ effectuées sur ce matériel (cahier v7 §7.3).
+            Historique des inspections avant départ effectuées sur ce matériel.
           </CardDescription>
         </CardHeader>
         <CardContent>

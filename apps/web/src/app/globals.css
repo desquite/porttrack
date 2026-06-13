@@ -4,7 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /*
- * PORTTRACK — palette inspirée du cahier des charges
+ * PORTTRACK — palette de l'application
  * Primary = #1B3A5C (bleu marine du Port d'Abidjan)
  * Success = #0D6B3F (vert validation)
  * Danger  = #C0392B (rouge critique)

@@ -6,7 +6,7 @@ import {
 } from "@porttrack/shared";
 
 /**
- * Bot WhatsApp de consultation de documents (cahier v7 §7.5).
+ * Bot WhatsApp de consultation de documents.
  *
  * Reçoit une commande texte (« CG AA-1234-CI »), vérifie que le numéro est
  * autorisé, résout le matériel + document du bon tenant, et retourne la liste
@@ -19,7 +19,7 @@ import {
 
 type Admin = SupabaseClient<Database>;
 
-/** Codes acceptés → type_document (sous-ensemble matériel du cahier §7.5). */
+/** Codes acceptés → type_document (sous-ensemble matériel). */
 const COMMAND_TO_DOCTYPE: Record<string, string> = {
   CG: "CARTE_GRISE",
   AS: "ASSURANCE",
@@ -92,7 +92,7 @@ export async function processBotCommand(
     .maybeSingle();
 
   if (!allow) {
-    // Numéro inconnu → AUCUNE réponse (cahier §7.5), mais on journalise.
+    // Numéro inconnu → AUCUNE réponse, mais on journalise.
     await journal(admin, { tenant_id: null, numero, commande_brute: textRaw, statut: "NON_AUTORISE" });
     return { statut: "NON_AUTORISE", outbound: [] };
   }
@@ -119,7 +119,7 @@ export async function processBotCommand(
   }
   const { code, immatriculation } = parsed;
 
-  // Commande SUIVI <numéro conteneur> → fiche de suivi (cahier §7.5 étendu)
+  // Commande SUIVI <numéro conteneur> → fiche de suivi
   if (code === "SUIVI") {
     return handleConteneur(admin, tenantId, numero, textRaw, immatriculation);
   }

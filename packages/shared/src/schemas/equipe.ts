@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // =============================================================================
-// Schéma création/mise à jour d'une équipe (cahier §7.2)
+// Schéma création/mise à jour d'une équipe
 // =============================================================================
 
 const optionalString = (max?: number) =>

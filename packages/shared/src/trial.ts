@@ -1,5 +1,5 @@
 // =============================================================================
-// Période d'essai & suspension (cahier §15.3 — V7)
+// Période d'essai & suspension (V7)
 // =============================================================================
 // Un tenant démarre en statut TRIAL avec une date de fin d'essai. À l'échéance,
 // le compte est suspendu (accès bloqué). Helpers purs partagés serveur/client.

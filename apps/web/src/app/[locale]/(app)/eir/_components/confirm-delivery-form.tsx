@@ -103,7 +103,7 @@ export function ConfirmDeliveryForm({
       </div>
 
       <p className="text-[11px] text-muted-foreground">
-        L&apos;upload de l&apos;EIR est obligatoire (cahier §9.2). Photo smartphone acceptée — PDF, JPG, PNG, HEIC, 10 Mo max.
+        L&apos;upload de l&apos;EIR est obligatoire. Photo smartphone acceptée — PDF, JPG, PNG, HEIC, 10 Mo max.
         Une fois confirmé, le conteneur passe en <strong>Livré</strong> et l&apos;EIR est archivé (conservation 5 ans).
       </p>
 

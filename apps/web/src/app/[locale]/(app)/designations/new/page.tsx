@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 
 /**
  * L'ancien formulaire de désignation unitaire est remplacé par l'écran de
- * désignation à 2 panneaux (cahier v8 §6.2). On redirige toute arrivée sur
+ * désignation à 2 panneaux. On redirige toute arrivée sur
  * /designations/new vers l'écran principal, en conservant la date éventuelle.
  */
 export default async function NewDesignationRedirect({

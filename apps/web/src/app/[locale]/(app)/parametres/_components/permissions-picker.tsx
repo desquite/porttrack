@@ -31,7 +31,7 @@ function serialize(isManager: boolean, states: Record<PermissionDomain, DomainSt
 }
 
 /**
- * Sélecteur de droits par profil (cahier v8 §3).
+ * Sélecteur de droits par profil.
  * - Case « Accès Manager » → role MANAGER, accès total (les profils sont masqués).
  * - Sinon : pour chaque profil coché, « Tous les droits » est coché par défaut ;
  *   le décocher révèle les sous-droits à sélectionner.

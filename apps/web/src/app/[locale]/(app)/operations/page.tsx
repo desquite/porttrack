@@ -24,7 +24,7 @@ function addDays(iso: string, n: number): string {
 }
 
 /**
- * Tableau de bord Opérations (cahier v8 §6.3) — navigable par date.
+ * Tableau de bord Opérations — navigable par date.
  *
  * Métriques ANCRÉES sur la date (exactes pour toute date) : chauffeurs désignés,
  * check-lists, livraisons confirmées du jour, BADT critiques.
@@ -50,7 +50,7 @@ export default async function OperationsPage({
 
   const supabase = await createClient();
 
-  // Si la date est dans le futur : pas de données (cahier §6.3)
+  // Si la date est dans le futur : pas de données
   if (isFuture) {
     return (
       <div className="space-y-6">

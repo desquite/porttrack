@@ -8,7 +8,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 
 /**
- * Garde serveur d'accès à un sous-droit (cahier v8 §3). À appeler en tête d'un
+ * Garde serveur d'accès à un sous-droit. À appeler en tête d'un
  * layout de module — protège la page ET toutes ses sous-routes, même en accès
  * direct par URL (le menu masqué ne suffit pas).
  *

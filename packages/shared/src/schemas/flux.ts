@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // =============================================================================
-// Métadonnées d'un import de flux (cahier §4)
+// Métadonnées d'un import de flux
 // =============================================================================
 // Le fichier Excel lui-même transite en FormData (File) ; ce schéma valide les
 // métadonnées qui l'accompagnent : tenant cible, aconier détecté/choisi, nom du
@@ -20,7 +20,7 @@ export const fluxImportMetaSchema = z.object({
 export type FluxImportMeta = z.infer<typeof fluxImportMetaSchema>;
 
 // =============================================================================
-// Rapport d'import renvoyé au client (cahier §4.3)
+// Rapport d'import renvoyé au client
 // =============================================================================
 
 export interface FluxImportReport {

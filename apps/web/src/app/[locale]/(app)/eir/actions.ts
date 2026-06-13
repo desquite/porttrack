@@ -19,7 +19,7 @@ function sanitizeFilename(name: string): string {
 }
 
 // =============================================================================
-// Confirmation de livraison avec EIR obligatoire (cahier §9.2)
+// Confirmation de livraison avec EIR obligatoire
 // =============================================================================
 
 export async function confirmDeliveryWithEirAction(

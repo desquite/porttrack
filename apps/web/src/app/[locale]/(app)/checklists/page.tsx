@@ -69,7 +69,7 @@ export default async function ChecklistsPage({
     `)
     .eq("date_designation", date)
     // Désignations VALIDÉES et NON annulées (brouillon = pas officiel ; annulée
-    // = camion en panne, chauffeur libéré — cahier v8).
+    // = camion en panne, chauffeur libéré).
     .not("validee_at", "is", null)
     .is("annulee_at", null)
     .order("created_at", { ascending: true });

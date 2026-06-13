@@ -1,5 +1,5 @@
 // =============================================================================
-// Permissions par profil (cahier v8 §3 — modèle « cases hiérarchiques »)
+// Permissions par profil (modèle « cases hiérarchiques »)
 // =============================================================================
 // Un utilisateur se voit attribuer un ou plusieurs PROFILS (= domaines).
 // Pour chaque profil : soit « tous les droits » du domaine ("*"), soit une

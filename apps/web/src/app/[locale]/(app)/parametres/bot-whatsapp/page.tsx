@@ -99,7 +99,7 @@ export default async function BotWhatsappPage({
           Bot WhatsApp — consultation documents
         </h1>
         <p className="text-sm text-muted-foreground">
-          Le bot renvoie la photo d&apos;un document matériel sur simple commande WhatsApp (cahier §7.5).
+          Le bot renvoie la photo d&apos;un document matériel sur simple commande WhatsApp.
         </p>
       </div>
 
@@ -151,7 +151,7 @@ export default async function BotWhatsappPage({
             <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-muted-foreground">{numeros?.length ?? 0}</span>
           </CardTitle>
           <CardDescription>
-            Seuls ces numéros peuvent interroger le bot. Un numéro inconnu ne reçoit aucune réponse (cahier §7.5).
+            Seuls ces numéros peuvent interroger le bot. Un numéro inconnu ne reçoit aucune réponse.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

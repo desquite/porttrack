@@ -80,7 +80,7 @@ export async function createTrackedModificationAction(
     return { status: "error", formError: "Ce champ n'est pas modifiable via la traçabilité.", values };
   }
 
-  // 2) Justificatif obligatoire (cahier §8.4 RÈGLE 1)
+  // 2) Justificatif obligatoire
   const file = formData.get("justificatif");
   if (!(file instanceof File) || file.size === 0) {
     return { status: "error", formError: "Un justificatif est obligatoire pour valider la modification.", values };
