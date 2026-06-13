@@ -29,6 +29,8 @@ export interface FluxImportReport {
   nomFichier: string;
   nombreLignes: number;
   nombreImportes: number;
+  nombreCompletes: number; // conteneurs déjà en base dont des champs vides (ex. BL) ont été complétés depuis le fichier
+  nombreReinitialises: number; // conteneurs revenus avec un nouveau BL → réinitialisés pour un nouveau cycle
   nombreDoublons: number;
   nombreErreurs: number;
   nombreIgnorees: number; // lignes sans n° de conteneur (footers, lignes vides de données)

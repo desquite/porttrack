@@ -161,6 +161,32 @@ function clamp(value: string | null, max: number): string | null {
   return value.length > max ? value.slice(0, max) : value;
 }
 
+// Colonnes complétables sur un conteneur DÉJÀ en base. On ne remplit que celles
+// qui sont vides (sans jamais écraser une donnée présente), et on EXCLUT le
+// statut métier (le conteneur a pu avancer dans le workflow) ainsi que les clés
+// d'attribution (tenant_id, numero, created_by, flux_id).
+const FILLABLE_KEYS = [
+  "numero_bl", "num_declaration", "type_visite", "client", "transitaire",
+  "marchandise", "mode_livraison", "transporteur", "aconier", "plomb",
+  "navire_voyage", "poids_kg", "date_do", "date_badt",
+  "destination_id", "destination_libre", "type_conteneur_id", "shipping_line_id",
+] as const satisfies readonly (keyof ConteneurInsert)[];
+
+/** Vide = null/undefined ou chaîne blanche. */
+function isBlank(v: unknown): boolean {
+  return v === null || v === undefined || (typeof v === "string" && v.trim() === "");
+}
+
+/** BL normalisé pour comparaison (casse + ponctuation ignorées). */
+function normBl(v: unknown): string {
+  return String(v ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+}
+
+/** Copie typée d'une clé (préserve la corrélation source[K] → target[K]). */
+function assignKey<T, K extends keyof T>(target: Partial<T>, source: T, key: K): void {
+  target[key] = source[key];
+}
+
 function emptyReport(meta: { aconier: string; nomFichier: string }): FluxImportReport {
   return {
     fluxId: null,
@@ -168,6 +194,8 @@ function emptyReport(meta: { aconier: string; nomFichier: string }): FluxImportR
     nomFichier: meta.nomFichier,
     nombreLignes: 0,
     nombreImportes: 0,
+    nombreCompletes: 0,
+    nombreReinitialises: 0,
     nombreDoublons: 0,
     nombreErreurs: 0,
     nombreIgnorees: 0,
@@ -378,26 +406,105 @@ export async function importFluxAction(
     });
   });
 
-  // --- 5. Détection des doublons déjà en base (même tenant) ---
+  // --- 5. Conteneurs déjà en base (même numéro) : 3 cas. Le numéro ISO 6346 est
+  //        physique et réutilisable → un conteneur revient au port plusieurs
+  //        fois, à chaque fois avec un NOUVEAU BL après avoir bouclé son cycle.
+  //   (a) même BL (ou BL absent d'un côté) → COMPLÉTER les champs vides
+  //       (rattrapage backfill, sans rien écraser ni toucher au statut).
+  //   (b) BL DIFFÉRENT + cycle précédent CLÔTURÉ (LIVRE + récup CONFIRMÉE, ou
+  //       ANNULE) → RÉINITIALISER pour un nouveau cycle : on écrase les données
+  //       avec celles du fichier, statut → valeur fichier (EN_ATTENTE en
+  //       général), dates de livraison effacées, rattaché au nouveau flux ; les
+  //       récupérations du cycle précédent passent en ANNULEE (la preuve de
+  //       livraison reste dans eir_archives).
+  //   (c) BL DIFFÉRENT + cycle ENCORE EN COURS → conflit : on ne touche à rien
+  //       (avertissement), pour ne pas écraser une opération vivante.
+  //   Dans tous les cas le conteneur sort des candidats à insérer (1 ligne/numéro).
   const doublons: string[] = [];
+  const completions: { numero: string; payload: Partial<ConteneurInsert> }[] = [];
+  const resets: { numero: string; conteneurId: string; payload: Partial<ConteneurInsert> }[] = [];
   if (candidates.length > 0) {
     const numeros = candidates.map((c) => c.numero);
-    const existing = new Set<string>();
+    const existingByNumero = new Map<string, Record<string, unknown>>();
     for (let i = 0; i < numeros.length; i += 500) {
       const chunk = numeros.slice(i, i + 500);
       const { data } = await supabase
         .from("conteneurs")
-        .select("numero")
+        .select(
+          "id, statut, numero, numero_bl, num_declaration, type_visite, client, transitaire, marchandise, mode_livraison, transporteur, aconier, plomb, navire_voyage, poids_kg, date_do, date_badt, destination_id, destination_libre, type_conteneur_id, shipping_line_id",
+        )
         .eq("tenant_id", meta.tenantId)
         .in("numero", chunk);
-      for (const c of data ?? []) existing.add(c.numero);
+      for (const r of (data ?? []) as unknown as Record<string, unknown>[]) {
+        existingByNumero.set(String(r.numero), r);
+      }
     }
-    if (existing.size > 0) {
+
+    // Cycle « clôturé » = conteneur LIVRE possédant une récupération CONFIRMÉE.
+    const matchedIds: string[] = [];
+    for (const c of candidates) {
+      const ex = existingByNumero.get(c.numero);
+      if (ex) matchedIds.push(String(ex.id));
+    }
+    const confirmedRecupIds = new Set<string>();
+    for (let i = 0; i < matchedIds.length; i += 500) {
+      const chunk = matchedIds.slice(i, i + 500);
+      if (chunk.length === 0) break;
+      const { data } = await supabase
+        .from("recuperations")
+        .select("conteneur_id")
+        .eq("tenant_id", meta.tenantId)
+        .eq("statut", "CONFIRMEE")
+        .in("conteneur_id", chunk);
+      for (const r of (data ?? []) as unknown as Record<string, unknown>[]) {
+        confirmedRecupIds.add(String(r.conteneur_id));
+      }
+    }
+
+    if (existingByNumero.size > 0) {
       for (let i = candidates.length - 1; i >= 0; i--) {
-        if (existing.has(candidates[i].numero)) {
-          doublons.push(candidates[i].numero);
-          candidates.splice(i, 1);
+        const candidate = candidates[i];
+        const existing = existingByNumero.get(candidate.numero);
+        if (!existing) continue; // nouveau conteneur → reste dans candidates
+        doublons.push(candidate.numero);
+
+        const blDifferent =
+          !isBlank(existing.numero_bl) &&
+          !isBlank(candidate.numero_bl) &&
+          normBl(existing.numero_bl) !== normBl(candidate.numero_bl);
+
+        if (!blDifferent) {
+          // (a) Même opération / backfill → compléter uniquement les champs vides.
+          const payload: Partial<ConteneurInsert> = {};
+          for (const key of FILLABLE_KEYS) {
+            if (isBlank(existing[key]) && !isBlank(candidate[key])) {
+              assignKey(payload, candidate, key);
+            }
+          }
+          if (Object.keys(payload).length > 0) {
+            completions.push({ numero: candidate.numero, payload });
+          }
+        } else {
+          const conteneurId = String(existing.id);
+          const exStatut = String(existing.statut);
+          const cloture =
+            exStatut === "ANNULE" ||
+            (exStatut === "LIVRE" && confirmedRecupIds.has(conteneurId));
+          if (cloture) {
+            // (b) Nouveau cycle → réinitialisation (écrasement complet des champs).
+            const payload: Partial<ConteneurInsert> = {};
+            for (const key of FILLABLE_KEYS) assignKey(payload, candidate, key);
+            payload.statut = candidate.statut;
+            resets.push({ numero: candidate.numero, conteneurId, payload });
+          } else {
+            // (c) Cycle encore en cours avec un autre BL → conflit, on n'écrase pas.
+            avertissements.push({
+              ligne: 0,
+              message: `${candidate.numero} : déjà en base avec un autre BL (${String(existing.numero_bl)}) et son cycle n'est pas clôturé — non réinitialisé, à vérifier.`,
+            });
+          }
         }
+        candidates.splice(i, 1);
       }
     }
   }
@@ -466,8 +573,51 @@ export async function importFluxAction(
     }
   }
 
+  // --- 7b. Complétion des conteneurs déjà en base (champs vides uniquement) ---
+  let completes = 0;
+  for (const u of completions) {
+    const { error } = await supabase
+      .from("conteneurs")
+      .update(u.payload)
+      .eq("tenant_id", meta.tenantId)
+      .eq("numero", u.numero);
+    if (error) {
+      erreurs.push({ ligne: 0, message: `Complétion ${u.numero} : ${error.message}` });
+    } else {
+      completes += 1;
+    }
+  }
+
+  // --- 7c. Réinitialisation des conteneurs revenus pour un nouveau cycle ---
+  let reinitialises = 0;
+  for (const u of resets) {
+    const { error } = await supabase
+      .from("conteneurs")
+      .update({
+        ...u.payload,
+        date_livraison_reelle: null,
+        date_livraison_prevue: null,
+        flux_id: flux.id,
+      })
+      .eq("tenant_id", meta.tenantId)
+      .eq("id", u.conteneurId);
+    if (error) {
+      erreurs.push({ ligne: 0, message: `Réinitialisation ${u.numero} : ${error.message}` });
+      continue;
+    }
+    // Clôt le cycle précédent : ses récupérations actives passent en ANNULEE
+    // (libère l'unicité récup + nettoie les vues « à récupérer »). La preuve de
+    // livraison du cycle 1 reste dans eir_archives.
+    await supabase
+      .from("recuperations")
+      .update({ statut: "ANNULEE" })
+      .eq("conteneur_id", u.conteneurId)
+      .neq("statut", "ANNULEE");
+    reinitialises += 1;
+  }
+
   const statut: FluxImportReport["statut"] =
-    importes === 0
+    importes === 0 && completes === 0 && reinitialises === 0
       ? "ECHEC"
       : doublons.length > 0 || erreurs.length > 0
         ? "PARTIEL"
@@ -507,6 +657,8 @@ export async function importFluxAction(
     nomFichier: meta.nomFichier,
     nombreLignes,
     nombreImportes: importes,
+    nombreCompletes: completes,
+    nombreReinitialises: reinitialises,
     nombreDoublons: doublons.length,
     nombreErreurs: erreurs.length,
     nombreIgnorees: ignorees,

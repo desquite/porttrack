@@ -465,9 +465,11 @@ function ReportStep({
         </span>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Stat label="Lignes lues" value={report.nombreLignes} />
         <Stat label="Importés" value={report.nombreImportes} tone="success" />
+        <Stat label="Complétés" value={report.nombreCompletes} tone="success" />
+        <Stat label="Réinitialisés" value={report.nombreReinitialises} tone="warn" />
         <Stat label="Doublons" value={report.nombreDoublons} tone="warn" />
         <Stat label="Erreurs" value={report.nombreErreurs} tone="danger" />
         <Stat label="Ignorées (sans n°)" value={report.nombreIgnorees} />
@@ -475,7 +477,7 @@ function ReportStep({
 
       {report.doublons.length > 0 && (
         <DetailList
-          title={`Doublons ignorés (${report.doublons.length})`}
+          title={`Déjà en base (${report.doublons.length}) — champs vides complétés le cas échéant`}
           tone="warn"
           items={report.doublons}
         />

@@ -83,7 +83,10 @@ export const HEADER_ALIASES: Record<FluxFieldKey, string[]> = {
   type_conteneur:  ["TYPE DE TC", "TYPE TC", "TYPE DE CONTENEUR", "TYPE CONTENEUR", "TYPE", "ISO TYPE"],
   client:          ["CLIENT", "CONSIGNATAIRE", "DESTINATAIRE", "RECEIVER"],
   transitaire:     ["TRANSITAIRE", "FORWARDER", "AGENT"],
-  numero_bl:       ["BL", "N BL", "NUMERO BL", "BILL OF LADING", "CONNAISSEMENT"],
+  // Le matching ignore espaces/ponctuation (cf. suggestMapping), donc « B/L »
+  // (→ « B L ») et « N° BL » sont déjà couverts par "BL" / "N BL". On ajoute ici
+  // les variantes à TOKENS différents qu'un simple compactage ne rattrape pas.
+  numero_bl:       ["BL", "N BL", "BL N", "NUMERO BL", "NUM BL", "NO BL", "NUMERO DE BL", "BL NUMBER", "BL NO", "BILL OF LADING", "CONNAISSEMENT", "N CONNAISSEMENT", "NUMERO CONNAISSEMENT"],
   destination:     ["LIEU DE LIVRAISON", "LIEU LIVRAISON", "ZONE DE LIVRAISON", "ZONE LIVRAISON", "DESTINATION", "ADRESSE DE LIVRAISON", "DELIVERY PLACE"],
   poids:           ["POIDS", "POIDS T", "POIDS TONNES", "TONNAGE", "WEIGHT"],
   marchandise:     ["MARCHANDISE", "NATURE", "DESCRIPTION", "COMMODITY"],
@@ -170,7 +173,16 @@ export type FluxMapping = Record<FluxFieldKey, string>; // champ → en-tête (o
  *      détecte par le contenu (motif ISO 6346) — gère les colonnes sans titre.
  */
 export function suggestMapping(headers: string[], sampleRows?: string[][]): FluxMapping {
-  const normalized = headers.map((h) => ({ raw: h, norm: normalizeHeader(h) }));
+  // Forme « compacte » (sans espaces) pour tolérer la ponctuation : un en-tête
+  // « B/L » se normalise en « B L » et doit matcher l'alias « BL ». On compare
+  // donc l'en-tête à l'alias en exact PUIS en compacté (espaces retirés des deux
+  // côtés). La comparaison reste une égalité de chaîne entière → pas de faux
+  // positif (un alias « BL » ne matche que les en-têtes valant « BL »).
+  const compact = (s: string) => s.replace(/ /g, "");
+  const normalized = headers.map((h) => {
+    const norm = normalizeHeader(h);
+    return { raw: h, norm, compact: compact(norm) };
+  });
   const used = new Set<string>();
   const out = {} as FluxMapping;
 
@@ -178,7 +190,10 @@ export function suggestMapping(headers: string[], sampleRows?: string[][]): Flux
     const aliases = HEADER_ALIASES[field.key];
     let found = "";
     for (const alias of aliases) {
-      const hit = normalized.find((h) => !used.has(h.raw) && h.norm === alias);
+      const aliasCompact = compact(alias);
+      const hit = normalized.find(
+        (h) => !used.has(h.raw) && (h.norm === alias || h.compact === aliasCompact),
+      );
       if (hit) {
         found = hit.raw;
         used.add(hit.raw);
