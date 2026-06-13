@@ -10,12 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
-/** Convertit un numéro CI saisi librement en E.164 (+225…). */
-function toE164(raw: string): string {
-  const d = raw.replace(/\D/g, "");
-  if (d.startsWith("225")) return "+" + d;
-  return "+225" + d.replace(/^0+/, "");
-}
+import { requestDriverOtpAction } from "../actions";
+import { toE164 } from "../_lib/phone";
 
 export function DriverLoginForm() {
   const router = useRouter();
@@ -30,11 +26,13 @@ export function DriverLoginForm() {
     e.preventDefault();
     setError(null);
     setPending(true);
-    const e164 = toE164(phone);
-    const { error } = await supabase.auth.signInWithOtp({ phone: e164 });
+    // L'envoi passe par une server action qui vérifie d'abord que le numéro
+    // correspond à un chauffeur actif, AVANT tout appel à Supabase Auth
+    // (cf. faille « comptes fantômes » : plus de signInWithOtp direct ici).
+    const result = await requestDriverOtpAction(phone);
     setPending(false);
-    if (error) {
-      setError(error.message.includes("not recognized") ? "Numéro non reconnu." : `Erreur : ${error.message}`);
+    if (!result.ok) {
+      setError(result.error);
       return;
     }
     setStep("otp");
