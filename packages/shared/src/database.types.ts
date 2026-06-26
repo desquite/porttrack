@@ -967,6 +967,7 @@ export type Database = {
           id: string
           materiel_roulant_id: string
           notes: string | null
+          poste: Database["public"]["Enums"]["designation_poste"]
           tenant_id: string
           updated_at: string
           validee_at: string | null
@@ -986,6 +987,7 @@ export type Database = {
           id?: string
           materiel_roulant_id: string
           notes?: string | null
+          poste?: Database["public"]["Enums"]["designation_poste"]
           tenant_id: string
           updated_at?: string
           validee_at?: string | null
@@ -1005,6 +1007,7 @@ export type Database = {
           id?: string
           materiel_roulant_id?: string
           notes?: string | null
+          poste?: Database["public"]["Enums"]["designation_poste"]
           tenant_id?: string
           updated_at?: string
           validee_at?: string | null
@@ -1923,6 +1926,68 @@ export type Database = {
           },
         ]
       }
+      roulement_config: {
+        Row: {
+          created_at: string
+          date_reference: string
+          equipe_jour_id: string
+          equipe_nuit_id: string
+          equipe_repos_id: string
+          tenant_id: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          date_reference: string
+          equipe_jour_id: string
+          equipe_nuit_id: string
+          equipe_repos_id: string
+          tenant_id: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          date_reference?: string
+          equipe_jour_id?: string
+          equipe_nuit_id?: string
+          equipe_repos_id?: string
+          tenant_id?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roulement_config_equipe_jour_id_fkey"
+            columns: ["equipe_jour_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roulement_config_equipe_nuit_id_fkey"
+            columns: ["equipe_nuit_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roulement_config_equipe_repos_id_fkey"
+            columns: ["equipe_repos_id"]
+            isOneToOne: false
+            referencedRelation: "equipes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roulement_config_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: true
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       shipping_lines: {
         Row: {
           actif: boolean
@@ -2151,6 +2216,7 @@ export type Database = {
       chauffeur_statut: "ACTIF" | "EN_CONGE" | "SUSPENDU" | "INACTIF"
       checklist_item_etat: "OK" | "ANOMALIE"
       conteneur_statut: "EN_ATTENTE" | "EN_COURS" | "LIVRE" | "ANNULE"
+      designation_poste: "JOUR" | "NUIT"
       designation_whatsapp_statut: "PENDING" | "SENT" | "FAILED" | "SKIPPED"
       document_owner_type: "CHAUFFEUR" | "MATERIEL"
       document_type:
@@ -2349,6 +2415,7 @@ export const Constants = {
       chauffeur_statut: ["ACTIF", "EN_CONGE", "SUSPENDU", "INACTIF"],
       checklist_item_etat: ["OK", "ANOMALIE"],
       conteneur_statut: ["EN_ATTENTE", "EN_COURS", "LIVRE", "ANNULE"],
+      designation_poste: ["JOUR", "NUIT"],
       designation_whatsapp_statut: ["PENDING", "SENT", "FAILED", "SKIPPED"],
       document_owner_type: ["CHAUFFEUR", "MATERIEL"],
       document_type: [

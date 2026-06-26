@@ -4,6 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { sendWhatsapp } from "@/lib/notifications/whatsapp-wasender";
+import { ROULEMENT_POSTE_HORAIRES, ROULEMENT_POSTE_LABEL, type Database } from "@porttrack/shared";
+
+type DesignationPoste = Database["public"]["Enums"]["designation_poste"];
 
 // =============================================================================
 // Construction du message WhatsApp
@@ -15,24 +18,24 @@ function buildWhatsappMessage(args: {
   chrono: string | null;
   immatriculation: string;
   equipeNom: string | null;
-  heureDebut: string | null;
-  heureFin: string | null;
+  poste: DesignationPoste;
 }): string {
   const mrLabel = args.chrono
     ? `${args.chrono} (${args.immatriculation})`
     : args.immatriculation;
+
+  const horaires = ROULEMENT_POSTE_HORAIRES[args.poste];
+  const posteLabel = ROULEMENT_POSTE_LABEL[args.poste];
 
   const lines = [
     "PORTTRACK – Désignation du jour",
     "",
     `Bonjour ${args.chauffeurNom} ${args.chauffeurPrenoms},`,
     `Vous êtes désigné(e) sur ${mrLabel}.`,
+    `Poste : ${posteLabel}${horaires ? ` (${horaires})` : ""}.`,
   ];
   if (args.equipeNom) {
-    const horaires = args.heureDebut && args.heureFin
-      ? `${args.heureDebut.slice(0, 5)} – ${args.heureFin.slice(0, 5)}`
-      : "horaires non précisés";
-    lines.push(`Équipe : ${args.equipeNom} (${horaires})`);
+    lines.push(`Équipe : ${args.equipeNom}`);
   }
   lines.push("Effectuez votre check-list avant le départ.");
 
@@ -52,10 +55,10 @@ async function sendDesignationWhatsapp(
   const { data: d } = await supabase
     .from("designations")
     .select(`
-      id, materiel_roulant_id, chauffeur_id, equipe_id,
+      id, materiel_roulant_id, chauffeur_id, equipe_id, poste,
       chauffeur:chauffeurs ( nom, prenoms, telephone ),
       materiel:materiel_roulant ( immatriculation ),
-      equipe:equipes ( nom, heure_debut, heure_fin )
+      equipe:equipes ( nom )
     `)
     .eq("id", designationId)
     .maybeSingle();
@@ -73,7 +76,8 @@ async function sendDesignationWhatsapp(
     .eq("id", d.materiel_roulant_id)
     .maybeSingle();
 
-  const equipe = dAny.equipe as { nom: string; heure_debut: string | null; heure_fin: string | null } | null;
+  const equipe = dAny.equipe as { nom: string } | null;
+  const poste = (dAny.poste as DesignationPoste) ?? "JOUR";
 
   if (!chauffeur?.telephone) {
     await supabase
@@ -94,8 +98,7 @@ async function sendDesignationWhatsapp(
     chrono: (matExtra as any)?.chrono ?? null,
     immatriculation: materiel?.immatriculation ?? "—",
     equipeNom: equipe?.nom ?? null,
-    heureDebut: equipe?.heure_debut ?? null,
-    heureFin: equipe?.heure_fin ?? null,
+    poste,
   });
 
   const result = await sendWhatsapp(chauffeur.telephone, message);
@@ -145,8 +148,10 @@ export async function addPaireAction(
   date: string,
   chauffeurId: string,
   materielId: string,
+  poste: DesignationPoste = "JOUR",
 ): Promise<PaireResult> {
   if (!date || !chauffeurId || !materielId) return { ok: false, error: "Paramètres manquants." };
+  if (poste !== "JOUR" && poste !== "NUIT") return { ok: false, error: "Poste invalide." };
   if (isLocked(date)) return { ok: false, error: "Journée verrouillée (date passée)." };
   if (isHorsDelai(date)) return { ok: false, error: "Date hors délai (au-delà de J+30)." };
 
@@ -176,6 +181,7 @@ export async function addPaireAction(
       chauffeur_id: chauffeurId,
       materiel_roulant_id: materielId,
       date_designation: date,
+      poste,
       equipe_id: chauffeur?.equipe_id_defaut ?? null,
       created_by: user.id,
       // validee_at null (brouillon) + whatsapp_statut PENDING par défaut → pas d'envoi
@@ -185,8 +191,8 @@ export async function addPaireAction(
 
   if (error || !created) {
     if (error?.code === "23505") {
-      if (error.message.includes("chauffeur")) return { ok: false, error: "Ce chauffeur est déjà désigné ce jour-là." };
-      if (error.message.includes("materiel")) return { ok: false, error: "Ce camion est déjà attribué ce jour-là." };
+      if (error.message.includes("chauffeur")) return { ok: false, error: "Ce chauffeur est déjà désigné sur ce poste." };
+      if (error.message.includes("materiel")) return { ok: false, error: "Ce camion est déjà attribué sur ce poste." };
     }
     if (error?.code === "42501" || error?.message.includes("row-level security")) {
       return { ok: false, error: "Tu n'as pas les droits pour cette opération." };
@@ -243,24 +249,26 @@ export async function libererDesignationAction(designationId: string): Promise<P
   return { ok: true };
 }
 
-/** Valide TOUS les brouillons du jour + envoi WhatsApp groupé. */
-export async function validerToutAction(date: string): Promise<ValiderToutResult> {
+/** Valide tous les brouillons du jour POUR LE POSTE choisi + envoi WhatsApp groupé. */
+export async function validerToutAction(date: string, poste: DesignationPoste = "JOUR"): Promise<ValiderToutResult> {
   if (!date) return { ok: false, error: "Date manquante." };
+  if (poste !== "JOUR" && poste !== "NUIT") return { ok: false, error: "Poste invalide." };
   if (isLocked(date)) return { ok: false, error: "Journée verrouillée (date passée)." };
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { ok: false, error: "Session expirée." };
 
-  // Brouillons du jour (RLS limite déjà au tenant courant)
+  // Brouillons du jour pour ce poste (RLS limite déjà au tenant courant)
   const { data: drafts, error } = await supabase
     .from("designations")
     .select("id")
     .eq("date_designation", date)
+    .eq("poste", poste)
     .is("validee_at", null);
   if (error) return { ok: false, error: error.message };
   if (!drafts || drafts.length === 0) {
-    return { ok: false, error: "Aucune désignation en brouillon à valider pour cette date." };
+    return { ok: false, error: "Aucune désignation en brouillon à valider pour ce poste." };
   }
 
   const now = new Date().toISOString();

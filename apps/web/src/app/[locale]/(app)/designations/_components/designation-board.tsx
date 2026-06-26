@@ -43,6 +43,7 @@ const WA_ICON: Record<WhatsappStatut, typeof MessageSquare> = {
 
 export function DesignationBoard({
   date,
+  poste,
   locked,
   horsDelai,
   trucks,
@@ -50,6 +51,7 @@ export function DesignationBoard({
   pairs,
 }: {
   date: string;
+  poste: Database["public"]["Enums"]["designation_poste"];
   locked: boolean;
   horsDelai: boolean;
   trucks: BoardOption[];
@@ -70,7 +72,7 @@ export function DesignationBoard({
     if (!selTruck || !selDriver) return;
     setError(null); setBilan(null);
     startTransition(async () => {
-      const r = await addPaireAction(date, selDriver, selTruck);
+      const r = await addPaireAction(date, selDriver, selTruck, poste);
       if (!r.ok) { setError(r.error); return; }
       setSelTruck(null); setSelDriver(null);
       router.refresh();
@@ -89,7 +91,7 @@ export function DesignationBoard({
   function validerTout() {
     setError(null); setBilan(null);
     startTransition(async () => {
-      const r = await validerToutAction(date);
+      const r = await validerToutAction(date, poste);
       if (!r.ok) { setError(r.error); return; }
       setBilan(`${r.total} désignation(s) validée(s) — ${r.sent} WhatsApp envoyé(s), ${r.failed} échec(s), ${r.skipped} non envoyé(s).`);
       router.refresh();

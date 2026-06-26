@@ -8,6 +8,7 @@ import {
   Plus,
   ClipboardCheck,
   MessageSquare,
+  RefreshCw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -336,6 +337,27 @@ export default async function ParametresPage({
           <Button asChild variant="outline" size="sm">
             <Link href="/parametres/checklist-items">
               Gérer<ChevronRight className="ml-1 size-3.5" />
+            </Link>
+          </Button>
+        </CardHeader>
+      </Card>
+
+      {/* Section Roulement du planning */}
+      <Card>
+        <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0">
+          <div className="space-y-1">
+            <CardTitle className="flex items-center gap-2 text-base">
+              <RefreshCw className="size-4 text-primary" />
+              Roulement du planning
+            </CardTitle>
+            <CardDescription>
+              Règle le cycle des équipes (2 jours / 2 nuits / 2 repos) à partir d&apos;une date de
+              référence. Le planning mensuel se calcule automatiquement.
+            </CardDescription>
+          </div>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/parametres/roulement">
+              Régler<ChevronRight className="ml-1 size-3.5" />
             </Link>
           </Button>
         </CardHeader>
