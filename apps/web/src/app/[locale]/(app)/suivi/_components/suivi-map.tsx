@@ -32,6 +32,26 @@ function initials(name: string): string {
   return name.split(/\s+/).map((s) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 }
 
+/** Marqueur = camion tracteur (vue de côté) coloré par chauffeur. */
+function truckMarkerHtml(color: string): string {
+  return (
+    `<div style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))">` +
+    `<svg width="46" height="30" viewBox="0 0 46 30" xmlns="http://www.w3.org/2000/svg">` +
+      // remorque / caisse
+      `<rect x="2" y="6" width="22" height="14" rx="2" fill="${color}" stroke="#fff" stroke-width="1.6"/>` +
+      // cabine du tracteur
+      `<path d="M24 9 h7 a3 3 0 0 1 2.6 1.5 L37 16 v4 H24 Z" fill="${color}" stroke="#fff" stroke-width="1.6"/>` +
+      // pare-brise
+      `<path d="M26 11 h4.6 l2.4 4 H26 Z" fill="#cfe8ff"/>` +
+      // essieux / roues
+      `<circle cx="11" cy="22" r="4.2" fill="#1f2937" stroke="#fff" stroke-width="1.4"/>` +
+      `<circle cx="30" cy="22" r="4.2" fill="#1f2937" stroke="#fff" stroke-width="1.4"/>` +
+      `<circle cx="11" cy="22" r="1.4" fill="#9ca3af"/>` +
+      `<circle cx="30" cy="22" r="1.4" fill="#9ca3af"/>` +
+    `</svg></div>`
+  );
+}
+
 export function SuiviMap() {
   const mapDiv = useRef<HTMLDivElement>(null);
   const mapRef = useRef<LeafletMap | null>(null);
@@ -72,9 +92,10 @@ export function SuiviMap() {
           const color = colorFor(p.chauffeurId);
           const icon = L.divIcon({
             className: "",
-            html: `<div style="display:flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${color};color:#fff;font-size:10px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)"><span style="transform:rotate(45deg)">${initials(p.nom)}</span></div>`,
-            iconSize: [28, 28],
-            iconAnchor: [14, 28],
+            html: truckMarkerHtml(color),
+            iconSize: [46, 30],
+            iconAnchor: [23, 27],
+            popupAnchor: [0, -24],
           });
           const m = L.marker([p.lat, p.lng], { icon }).addTo(group);
           m.bindPopup(
