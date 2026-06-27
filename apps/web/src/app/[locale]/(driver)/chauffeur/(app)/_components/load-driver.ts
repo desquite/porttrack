@@ -21,9 +21,9 @@ export async function loadDriverContext() {
   const { data: designation } = await supabase
     .from("designations")
     .select(`
-      id, date_designation,
+      id, date_designation, poste,
       materiel:materiel_roulant ( id, immatriculation, chrono, marque ),
-      equipe:equipes ( nom, code, couleur, heure_debut, heure_fin )
+      equipe:equipes ( nom, code, couleur )
     `)
     .eq("chauffeur_id", chauffeur.id)
     .eq("date_designation", today)

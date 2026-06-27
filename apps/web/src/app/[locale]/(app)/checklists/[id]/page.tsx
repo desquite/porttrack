@@ -12,8 +12,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatDateFR } from "@/lib/utils/dates";
+import { ROULEMENT_POSTE_HORAIRES, ROULEMENT_POSTE_LABEL, type Database } from "@porttrack/shared";
 import { ChecklistForm, type ChecklistFormItem } from "../_components/checklist-form";
 import { DeleteChecklistButton } from "../_components/delete-checklist-button";
+
+type DesignationPoste = Database["public"]["Enums"]["designation_poste"];
 import {
   addChecklistPhotoAction,
   deleteChecklistPhotoAction,
@@ -38,7 +41,7 @@ export default async function ChecklistDetailPage({
       *,
       chauffeur:chauffeurs ( id, nom, prenoms, telephone ),
       materiel:materiel_roulant ( id, immatriculation, chrono, marque, modele ),
-      designation:designations ( id, date_designation, equipe:equipes ( nom, code, couleur, heure_debut, heure_fin ) )
+      designation:designations ( id, date_designation, poste, equipe:equipes ( nom, code, couleur ) )
     `)
     .eq("id", id)
     .maybeSingle();
@@ -86,8 +89,9 @@ export default async function ChecklistDetailPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mr = (cl as any).materiel as { id: string; immatriculation: string; chrono: string | null; marque: string | null; modele: string | null } | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const des = (cl as any).designation as { id: string; date_designation: string; equipe: { nom: string; code: string; couleur: string | null; heure_debut: string | null; heure_fin: string | null } | null } | null;
+  const des = (cl as any).designation as { id: string; date_designation: string; poste: DesignationPoste | null; equipe: { nom: string; code: string; couleur: string | null } | null } | null;
   const eq = des?.equipe ?? null;
+  const poste: DesignationPoste = des?.poste ?? "JOUR";
 
   const statut = cl.statut_global as "FAITE" | "REMARQUE";
   const statutVariant = statut === "FAITE" ? "success" : "warning";
@@ -172,7 +176,7 @@ export default async function ChecklistDetailPage({
               Équipe : {eq.nom}
             </CardTitle>
             <CardDescription className="text-xs">
-              Horaires : {eq.heure_debut && eq.heure_fin ? `${eq.heure_debut.slice(0, 5)} – ${eq.heure_fin.slice(0, 5)}` : "non précisés"}
+              Poste : {ROULEMENT_POSTE_LABEL[poste]}{ROULEMENT_POSTE_HORAIRES[poste] ? ` (${ROULEMENT_POSTE_HORAIRES[poste]})` : ""}
             </CardDescription>
           </CardHeader>
         </Card>

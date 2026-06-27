@@ -12,11 +12,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { formatDateFR } from "@/lib/utils/dates";
-import type { Database } from "@porttrack/shared";
+import { ROULEMENT_POSTE_HORAIRES, ROULEMENT_POSTE_LABEL, type Database } from "@porttrack/shared";
 import { DeleteDesignationButton } from "../_components/delete-designation-button";
 import { resendWhatsappAction } from "../actions";
 
 type WhatsappStatut = Database["public"]["Enums"]["designation_whatsapp_statut"];
+type DesignationPoste = Database["public"]["Enums"]["designation_poste"];
 
 const WA_LABEL: Record<WhatsappStatut, string> = {
   PENDING: "En attente", SENT: "Envoyé", FAILED: "Échec", SKIPPED: "Non envoyé",
@@ -46,7 +47,7 @@ export default async function DesignationDetailPage({
       *,
       chauffeur:chauffeurs ( id, nom, prenoms, telephone ),
       materiel:materiel_roulant ( id, immatriculation, chrono, marque, modele ),
-      equipe:equipes ( id, nom, code, couleur, heure_debut, heure_fin )
+      equipe:equipes ( id, nom, code, couleur )
     `)
     .eq("id", id)
     .maybeSingle();
@@ -64,7 +65,9 @@ export default async function DesignationDetailPage({
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mr = (d as any).materiel as { id: string; immatriculation: string; chrono: string | null; marque: string | null; modele: string | null } | null;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const eq = (d as any).equipe as { id: string; nom: string; code: string; couleur: string | null; heure_debut: string | null; heure_fin: string | null } | null;
+  const eq = (d as any).equipe as { id: string; nom: string; code: string; couleur: string | null } | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const poste = ((d as any).poste as DesignationPoste) ?? "JOUR";
   const wa = d.whatsapp_statut as WhatsappStatut;
   const WaIcon = WA_ICON[wa];
 
@@ -151,7 +154,7 @@ export default async function DesignationDetailPage({
               Équipe : {eq.nom}
             </CardTitle>
             <CardDescription className="text-xs">
-              Horaires : {eq.heure_debut && eq.heure_fin ? `${eq.heure_debut.slice(0, 5)} – ${eq.heure_fin.slice(0, 5)}` : "non précisés"}
+              Poste : {ROULEMENT_POSTE_LABEL[poste]}{ROULEMENT_POSTE_HORAIRES[poste] ? ` (${ROULEMENT_POSTE_HORAIRES[poste]})` : ""}
             </CardDescription>
           </CardHeader>
         </Card>

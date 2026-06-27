@@ -16,26 +16,17 @@ export type EquipeFormState =
 
 function readFormValues(formData: FormData): {
   values: Record<string, string>;
-  jours_travailles: string[];
 } {
   const values: Record<string, string> = {};
-  const jours: string[] = [];
   for (const [key, value] of formData.entries()) {
     if (typeof value !== "string") continue;
-    if (key === "jours_travailles") {
-      jours.push(value);
-    } else {
-      values[key] = value;
-    }
+    values[key] = value;
   }
-  return { values, jours_travailles: jours };
+  return { values };
 }
 
-function parseFormData(
-  values: Record<string, string>,
-  jours_travailles: string[],
-) {
-  const parsed = equipeCreateSchema.safeParse({ ...values, jours_travailles });
+function parseFormData(values: Record<string, string>) {
+  const parsed = equipeCreateSchema.safeParse(values);
   if (parsed.success) return { ok: true as const, data: parsed.data };
   const fieldErrors: Partial<Record<keyof EquipeCreateInput, string[]>> = {};
   for (const issue of parsed.error.issues) {
@@ -75,8 +66,8 @@ export async function createEquipeAction(
   _prev: EquipeFormState,
   formData: FormData,
 ): Promise<EquipeFormState> {
-  const { values, jours_travailles } = readFormValues(formData);
-  const parsed = parseFormData(values, jours_travailles);
+  const { values } = readFormValues(formData);
+  const parsed = parseFormData(values);
   if (!parsed.ok) return parsed.state;
 
   const supabase = await createClient();
@@ -90,9 +81,6 @@ export async function createEquipeAction(
       tenant_id: d.tenant_id,
       nom: d.nom,
       code: d.code,
-      heure_debut: d.heure_debut,
-      heure_fin: d.heure_fin,
-      jours_travailles: d.jours_travailles,
       couleur: d.couleur,
       ordre: d.ordre,
       actif: d.actif,
@@ -119,8 +107,8 @@ export async function updateEquipeAction(
   _prev: EquipeFormState,
   formData: FormData,
 ): Promise<EquipeFormState> {
-  const { values, jours_travailles } = readFormValues(formData);
-  const parsed = parseFormData(values, jours_travailles);
+  const { values } = readFormValues(formData);
+  const parsed = parseFormData(values);
   if (!parsed.ok) return parsed.state;
 
   const supabase = await createClient();
@@ -133,9 +121,6 @@ export async function updateEquipeAction(
     .update({
       nom: d.nom,
       code: d.code,
-      heure_debut: d.heure_debut,
-      heure_fin: d.heure_fin,
-      jours_travailles: d.jours_travailles,
       couleur: d.couleur,
       ordre: d.ordre,
       actif: d.actif,

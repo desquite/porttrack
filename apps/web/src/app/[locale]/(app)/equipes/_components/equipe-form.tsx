@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { WEEKDAYS, type Database } from "@porttrack/shared";
+import type { Database } from "@porttrack/shared";
 import { createEquipeAction, updateEquipeAction, type EquipeFormState } from "../actions";
 
 type Equipe = Database["public"]["Tables"]["equipes"]["Row"];
@@ -34,8 +34,6 @@ export function EquipeForm({ mode, equipeId, defaultValues, tenantId }: Props) {
     if (defaultValues && name in defaultValues) {
       const v = (defaultValues as Record<string, unknown>)[name];
       if (v == null) return "";
-      // time fields : tronque seconde si présente
-      if ((name === "heure_debut" || name === "heure_fin") && typeof v === "string") return v.slice(0, 5);
       return String(v);
     }
     return "";
@@ -46,7 +44,6 @@ export function EquipeForm({ mode, equipeId, defaultValues, tenantId }: Props) {
   };
   const fieldClass = (n: string) => cn(getError(n) && "border-rose-500 focus-visible:ring-rose-500");
 
-  const defaultJours = (defaultValues?.jours_travailles as number[] | undefined) ?? [1, 2, 3, 4, 5];
   const defaultActif = defaultValues?.actif ?? true;
   const defaultCouleur = (defaultValues?.couleur as string | undefined) ?? "#3b82f6";
 
@@ -63,21 +60,13 @@ export function EquipeForm({ mode, equipeId, defaultValues, tenantId }: Props) {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <Field label="Nom de l'équipe" name="nom" required error={getError("nom")}>
-          <Input id="nom" name="nom" required placeholder="Ex. Équipe Jour"
+        <Field label="Nom de l'équipe" name="nom" required error={getError("nom")} hint="Les équipes tournent (jour → nuit → repos) : nomme-les de façon neutre.">
+          <Input id="nom" name="nom" required placeholder="Ex. Équipe A"
             defaultValue={getValue("nom")} className={fieldClass("nom")} />
         </Field>
-        <Field label="Code court" name="code" required error={getError("code")} hint="1 à 3 caractères affichés dans la grille (ex. J, N, R)">
-          <Input id="code" name="code" required maxLength={3} placeholder="J"
+        <Field label="Code court" name="code" required error={getError("code")} hint="1 à 3 caractères affichés dans la grille (ex. A, B, C)">
+          <Input id="code" name="code" required maxLength={3} placeholder="A"
             defaultValue={getValue("code")} className={fieldClass("code")} />
-        </Field>
-        <Field label="Heure début" name="heure_debut" error={getError("heure_debut")} hint="Laisse vide pour une équipe Repos">
-          <Input id="heure_debut" name="heure_debut" type="time"
-            defaultValue={getValue("heure_debut")} className={fieldClass("heure_debut")} />
-        </Field>
-        <Field label="Heure fin" name="heure_fin" error={getError("heure_fin")}>
-          <Input id="heure_fin" name="heure_fin" type="time"
-            defaultValue={getValue("heure_fin")} className={fieldClass("heure_fin")} />
         </Field>
         <Field label="Couleur d'affichage" name="couleur" error={getError("couleur")} className="md:col-span-1">
           <Input id="couleur" name="couleur" type="color"
@@ -88,22 +77,6 @@ export function EquipeForm({ mode, equipeId, defaultValues, tenantId }: Props) {
           <Input id="ordre" name="ordre" type="number" min="0" step="1"
             defaultValue={getValue("ordre") || "0"} className={fieldClass("ordre")} />
         </Field>
-      </div>
-
-      <div>
-        <Label className="text-xs">Jours travaillés <span className="text-rose-600">*</span></Label>
-        <div className="mt-2 flex flex-wrap gap-2">
-          {WEEKDAYS.map((d) => {
-            const checked = defaultJours.includes(d.value);
-            return (
-              <label key={d.value} className="flex cursor-pointer items-center gap-1.5 rounded-md border bg-background px-3 py-1.5 text-xs hover:bg-muted/40">
-                <input type="checkbox" name="jours_travailles" value={d.value} defaultChecked={checked} className="size-3.5 rounded border-input" />
-                {d.labelLong}
-              </label>
-            );
-          })}
-        </div>
-        {getError("jours_travailles") && <p className="mt-1 text-[11px] text-rose-600">{getError("jours_travailles")}</p>}
       </div>
 
       <div className="flex items-center gap-2">

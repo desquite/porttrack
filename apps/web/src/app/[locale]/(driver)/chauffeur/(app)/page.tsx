@@ -8,7 +8,10 @@ import { createClient } from "@/lib/supabase/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ROULEMENT_POSTE_HORAIRES, ROULEMENT_POSTE_LABEL, type Database } from "@porttrack/shared";
 import { loadDriverContext, firstName } from "./_components/load-driver";
+
+type DesignationPoste = Database["public"]["Enums"]["designation_poste"];
 
 const FR_LONG = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long" });
 
@@ -33,6 +36,7 @@ export default async function DriverHomePage({
   const d = designation as any;
   const mr = d?.materiel;
   const eq = d?.equipe;
+  const poste = (d?.poste as DesignationPoste) ?? "JOUR";
   const mrLabel = mr ? (mr.chrono ? `${mr.chrono} (${mr.immatriculation})` : mr.immatriculation) : null;
 
   // Check-list du jour faite ?
@@ -138,7 +142,7 @@ export default async function DriverHomePage({
                   {eq.code}
                 </span>
                 Équipe {eq.nom}
-                {eq.heure_debut && eq.heure_fin && <span>· {eq.heure_debut.slice(0, 5)} – {eq.heure_fin.slice(0, 5)}</span>}
+                <span>· {ROULEMENT_POSTE_LABEL[poste]}{ROULEMENT_POSTE_HORAIRES[poste] ? ` ${ROULEMENT_POSTE_HORAIRES[poste]}` : ""}</span>
               </div>
             )}
 
