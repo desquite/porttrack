@@ -48,6 +48,7 @@ export const PERMISSION_TREE: Record<PermissionDomain, DomainDef> = {
       { key: "exploitation.chauffeurs",   label: "Chauffeurs",   href: "/chauffeurs" },
       { key: "exploitation.equipes",      label: "Équipes",      href: "/equipes" },
       { key: "exploitation.planning",     label: "Planning",     href: "/planning" },
+      { key: "exploitation.suivi",        label: "Suivi temps réel", href: "/suivi" },
       { key: "exploitation.absences",     label: "Absences",     href: "/absences" },
       { key: "exploitation.designations", label: "Désignations", href: "/designations" },
       { key: "exploitation.checklists",   label: "Check-lists",  href: "/checklists" },

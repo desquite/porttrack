@@ -803,6 +803,64 @@ export type Database = {
           },
         ]
       }
+      chauffeur_positions: {
+        Row: {
+          accuracy_m: number | null
+          captured_at: string
+          chauffeur_id: string
+          created_at: string
+          id: string
+          latitude: number
+          longitude: number
+          materiel_id: string | null
+          tenant_id: string
+        }
+        Insert: {
+          accuracy_m?: number | null
+          captured_at?: string
+          chauffeur_id: string
+          created_at?: string
+          id?: string
+          latitude: number
+          longitude: number
+          materiel_id?: string | null
+          tenant_id: string
+        }
+        Update: {
+          accuracy_m?: number | null
+          captured_at?: string
+          chauffeur_id?: string
+          created_at?: string
+          id?: string
+          latitude?: number
+          longitude?: number
+          materiel_id?: string | null
+          tenant_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "chauffeur_positions_chauffeur_id_fkey"
+            columns: ["chauffeur_id"]
+            isOneToOne: false
+            referencedRelation: "chauffeurs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chauffeur_positions_materiel_id_fkey"
+            columns: ["materiel_id"]
+            isOneToOne: false
+            referencedRelation: "materiel_roulant"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "chauffeur_positions_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conteneurs: {
         Row: {
           aconier: string | null

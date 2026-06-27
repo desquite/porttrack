@@ -239,6 +239,16 @@ export const PLANNING_CODE_ABSENCE = "A";
 export const PLANNING_CODE_CONGE   = "C";
 
 // =============================================================================
+// Géolocalisation chauffeurs (suivi temps réel via PWA)
+// =============================================================================
+/** Intervalle d'envoi d'une position depuis la PWA chauffeur (ms). */
+export const POSITION_PING_INTERVAL_MS = 60_000;
+/** Déplacement minimal (m) entre deux envois pour éviter les pings inutiles à l'arrêt. */
+export const POSITION_MIN_MOVE_M = 30;
+/** Au-delà de ce délai (min) sans ping, un chauffeur est considéré « hors ligne ». */
+export const POSITION_LIVE_WINDOW_MIN = 10;
+
+// =============================================================================
 // Désignations (§7.3) — statuts d'envoi WhatsApp
 // =============================================================================
 

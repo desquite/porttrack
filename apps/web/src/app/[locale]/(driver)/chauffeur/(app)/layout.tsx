@@ -6,6 +6,7 @@ import { Anchor } from "lucide-react";
 import { loadDriverContext, truckLabel, shortName } from "./_components/load-driver";
 import { DriverHeaderMenu } from "./_components/driver-header-menu";
 import { DriverBottomNav } from "./_components/driver-bottom-nav";
+import { PositionTracker } from "./_components/position-tracker";
 
 export default async function DriverAppLayout({
   children,
@@ -39,6 +40,7 @@ export default async function DriverAppLayout({
 
       <main className="flex-1 px-4 py-5">{children}</main>
 
+      <PositionTracker />
       <DriverBottomNav />
     </>
   );
