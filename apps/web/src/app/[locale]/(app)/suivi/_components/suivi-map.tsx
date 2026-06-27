@@ -13,6 +13,7 @@ type LivePosition = {
   chauffeurId: string;
   nom: string;
   truck: string | null;
+  immat: string | null;
   lat: number;
   lng: number;
   accuracy: number | null;
@@ -32,11 +33,14 @@ function initials(name: string): string {
   return name.split(/\s+/).map((s) => s[0]).filter(Boolean).slice(0, 2).join("").toUpperCase();
 }
 
-/** Marqueur = camion tracteur (vue de côté) coloré par chauffeur. */
-function truckMarkerHtml(color: string): string {
-  return (
-    `<div style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))">` +
-    `<svg width="46" height="30" viewBox="0 0 46 30" xmlns="http://www.w3.org/2000/svg">` +
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c] as string));
+}
+
+/** Marqueur = camion tracteur (vue de côté) coloré par chauffeur + immatriculation dessous. */
+function truckMarkerHtml(color: string, immat: string | null): string {
+  const truck =
+    `<svg width="46" height="30" viewBox="0 0 46 30" xmlns="http://www.w3.org/2000/svg" style="filter:drop-shadow(0 1px 2px rgba(0,0,0,.45))">` +
       // remorque / caisse
       `<rect x="2" y="6" width="22" height="14" rx="2" fill="${color}" stroke="#fff" stroke-width="1.6"/>` +
       // cabine du tracteur
@@ -48,8 +52,11 @@ function truckMarkerHtml(color: string): string {
       `<circle cx="30" cy="22" r="4.2" fill="#1f2937" stroke="#fff" stroke-width="1.4"/>` +
       `<circle cx="11" cy="22" r="1.4" fill="#9ca3af"/>` +
       `<circle cx="30" cy="22" r="1.4" fill="#9ca3af"/>` +
-    `</svg></div>`
-  );
+    `</svg>`;
+  const label = immat
+    ? `<div style="margin-top:1px;padding:0 4px;border-radius:3px;background:#fff;border:1px solid rgba(0,0,0,.18);box-shadow:0 1px 2px rgba(0,0,0,.25);font:700 9px/13px system-ui,sans-serif;color:#1f2937;white-space:nowrap">${escapeHtml(immat)}</div>`
+    : "";
+  return `<div style="display:flex;flex-direction:column;align-items:center">${truck}${label}</div>`;
 }
 
 export function SuiviMap() {
@@ -92,7 +99,7 @@ export function SuiviMap() {
           const color = colorFor(p.chauffeurId);
           const icon = L.divIcon({
             className: "",
-            html: truckMarkerHtml(color),
+            html: truckMarkerHtml(color, p.immat),
             iconSize: [46, 30],
             iconAnchor: [23, 27],
             popupAnchor: [0, -24],

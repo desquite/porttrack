@@ -39,6 +39,7 @@ export async function GET() {
       chauffeurId: row.chauffeur_id,
       nom: r.chauffeur ? `${r.chauffeur.nom} ${r.chauffeur.prenoms}`.trim() : "Chauffeur",
       truck,
+      immat: r.materiel?.immatriculation ?? null,
       lat: row.latitude,
       lng: row.longitude,
       accuracy: row.accuracy_m,
