@@ -19,6 +19,12 @@ import { DesignationBoard, type BoardPair, type BoardOption } from "./_component
 
 type DesignationPoste = Database["public"]["Enums"]["designation_poste"];
 
+// La validation groupée espace les envois WhatsApp de 5 s (anti-blocage) → la
+// server action peut durer ~N×5 s. On laisse jusqu'à 60 s (≈ 11 envois). Au-delà,
+// les désignations restent validées (faites en bloc) et les WhatsApp non partis
+// sont renvoyables manuellement.
+export const maxDuration = 60;
+
 const FR_LONG = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
 
 function isoDate(d: Date): string {

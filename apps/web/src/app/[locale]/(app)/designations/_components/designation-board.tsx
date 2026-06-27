@@ -243,7 +243,8 @@ export function DesignationBoard({
             Valider tout et notifier ({drafts.length})
           </Button>
           <p className="text-[11px] text-muted-foreground">
-            Aucun WhatsApp n&apos;est envoyé tant que tu ne cliques pas. La validation envoie tout d&apos;un coup.
+            Aucun WhatsApp n&apos;est envoyé tant que tu ne cliques pas. Les messages partent ensuite
+            un par un, espacés de 5 secondes (anti-blocage) — patiente jusqu&apos;à la fin.
           </p>
         </div>
       )}

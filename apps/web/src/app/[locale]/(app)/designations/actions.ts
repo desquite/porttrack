@@ -8,6 +8,10 @@ import { ROULEMENT_POSTE_HORAIRES, ROULEMENT_POSTE_LABEL, type Database } from "
 
 type DesignationPoste = Database["public"]["Enums"]["designation_poste"];
 
+/** Délai entre deux envois WhatsApp lors d'une validation groupée (anti-blocage). */
+const WHATSAPP_SEND_INTERVAL_MS = 5_000;
+const sleep = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 // =============================================================================
 // Construction du message WhatsApp
 // =============================================================================
@@ -271,13 +275,21 @@ export async function validerToutAction(date: string, poste: DesignationPoste = 
     return { ok: false, error: "Aucune désignation en brouillon à valider pour ce poste." };
   }
 
+  // 1) On valide TOUT d'un coup → visible immédiatement en aval (Opérations,
+  //    PWA chauffeur, check-lists), sans attendre les envois WhatsApp.
   const now = new Date().toISOString();
+  await supabase
+    .from("designations")
+    .update({ validee_at: now })
+    .in("id", drafts.map((d) => d.id));
+
+  // 2) On envoie les WhatsApp un par un, ESPACÉS DE 5 SECONDES, pour éviter les
+  //    blocages côté WhatsApp (WasenderAPI = WhatsApp Web non officiel, sensible
+  //    aux rafales). Un échec d'envoi n'annule pas la validation (renvoi possible).
   let sent = 0, failed = 0, skipped = 0;
-  for (const row of drafts) {
-    // On valide d'abord (visible en aval), puis on envoie : le WhatsApp est
-    // best-effort, un échec n'annule pas la validation (renvoi possible ensuite).
-    await supabase.from("designations").update({ validee_at: now }).eq("id", row.id);
-    const statut = await sendDesignationWhatsapp(row.id);
+  for (let i = 0; i < drafts.length; i++) {
+    if (i > 0) await sleep(WHATSAPP_SEND_INTERVAL_MS);
+    const statut = await sendDesignationWhatsapp(drafts[i].id);
     if (statut === "SENT") sent += 1;
     else if (statut === "FAILED") failed += 1;
     else skipped += 1;
